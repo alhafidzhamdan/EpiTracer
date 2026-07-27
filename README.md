@@ -26,21 +26,54 @@ The package currently provides two functions:
 
 ## Installation
 
-EpiTracer depends on [`gUtils`](https://github.com/mskilab/gUtils) (GitHub) and
-several Bioconductor/CRAN packages. Install with:
+EpiTracer is **not on CRAN** — it depends on Bioconductor packages
+(`GenomicRanges`, `regioneR`) and on [`gUtils`](https://github.com/mskilab/gUtils)
+(GitHub-only). Install it with any tool that resolves Bioconductor + GitHub
+dependencies (the `Remotes:` field pulls in `gUtils` automatically):
 
-```r
-# install.packages("remotes")
-remotes::install_github("alhafidzhamdan/EpiTracer")
-```
-
-If the Bioconductor dependencies are not already present:
+**BiocManager** (recommended — resolves Bioconductor, GitHub and `Remotes:`):
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-BiocManager::install(c("GenomicRanges", "regioneR"))
-remotes::install_github("mskilab/gUtils")
+BiocManager::install("alhafidzhamdan/EpiTracer")
 ```
+
+**pak** (also resolves everything in one call):
+
+```r
+# install.packages("pak")
+pak::pak("alhafidzhamdan/EpiTracer")
+```
+
+**remotes / devtools** (enable Bioconductor repos first so the Bioc deps resolve):
+
+```r
+install.packages(c("remotes", "BiocManager"))
+options(repos = BiocManager::repositories())
+remotes::install_github("alhafidzhamdan/EpiTracer")
+```
+
+**r-universe** — a CRAN-like experience without CRAN. If the package is built on
+a personal [r-universe](https://r-universe.dev), users install with plain
+`install.packages()`:
+
+```r
+install.packages("EpiTracer",
+  repos = c("https://alhafidzhamdan.r-universe.dev",
+            "https://bioc.r-universe.dev", getOption("repos")))
+```
+
+**Local source tarball** (dependencies must be pre-installed):
+
+```sh
+R CMD build EpiTracer
+```
+```r
+install.packages("EpiTracer_0.0.0.9000.tar.gz", repos = NULL, type = "source")
+```
+
+> The GitHub-based options require the repository to be pushed to
+> `github.com/alhafidzhamdan/EpiTracer` first.
 
 ## The episome heuristic
 

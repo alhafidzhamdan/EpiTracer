@@ -27,6 +27,7 @@ plot_sv_linear(
   loh_position_ratio = 0.5,
   repel_labels = TRUE,
   gene_label_angle = NULL,
+  interchrom_arcs = TRUE,
   plot_height_custom = NULL,
   plot_width_custom = NULL,
   highlight_amp = TRUE,
@@ -104,6 +105,12 @@ installed).}
 \item{gene_label_angle}{Optional numeric label rotation in degrees. If \code{NULL}
 (default) labels are horizontal, switching to 45 degrees automatically when
 genes are crowded within a panel so they stack legibly.}
+
+\item{interchrom_arcs}{Logical; if \code{TRUE} (default) draw the connecting arcs
+between breakpoints of inter-chromosomal SVs. These arcs reach across panels
+via a large offset that stretches the source panel under free-x faceting;
+set \code{FALSE} for multi-chromosome plots to keep each panel bounded to its
+locus (breakpoints are still marked, just not joined by an arc).}
 
 \item{plot_height_custom, plot_width_custom}{Optional numeric overrides for the
 auto-selected PDF dimensions (inches).}

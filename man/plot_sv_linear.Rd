@@ -2,171 +2,169 @@
 % Please edit documentation in R/plot_sv_linear.R
 \name{plot_sv_linear}
 \alias{plot_sv_linear}
-\title{Draw a linear copy-number and structural-variant "recon" plot}
+\title{Linear copy-number and structural-variant "recon" plot}
 \usage{
 plot_sv_linear(
   sample,
-  chromosome,
-  chromosome_range = NULL,
-  genes_to_highlight = NULL,
-  karyotype,
-  gene_coord,
-  wgd_data,
   cnv_data,
   sv_data,
-  cds_gr = NULL,
-  wgd_sample_col = NULL,
-  sec_axis_adj = 10,
-  offset_gene = 1.2,
-  ymax_highlight_ratio = 1.08,
-  displayExon = FALSE,
-  scale_ticks = NULL,
-  yend_left = NULL,
-  yend_right = 100,
-  yend_right_line = 2,
-  loh_position_ratio = 0.5,
-  repel_labels = TRUE,
+  wgd_data,
+  karyotype,
+  gene_coord,
+  chromosome = NULL,
+  chromosome_range = NULL,
+  loci = NULL,
+  margin = 0.15,
+  min_cn_ratio = 3,
+  min_amp_width = 1e+05,
+  gap_frac = 0.06,
+  genes_to_highlight = NULL,
   gene_label_angle = NULL,
-  interchrom_arcs = TRUE,
-  plot_height_custom = NULL,
-  plot_width_custom = NULL,
+  repel_labels = TRUE,
+  cn_max = NULL,
+  offset_gene = 1.15,
+  ymax_highlight_ratio = 1.08,
+  karyotype_rel_size = 0.06,
+  loh_position_ratio = 0.5,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
-  karyotype_rel_size = 0.05,
+  wgd_sample_col = NULL,
   outdir = NULL,
   save = TRUE,
   format = c("pdf", "png"),
   dpi = 300,
+  plot_width_custom = NULL,
+  plot_height_custom = NULL,
   verbose = FALSE
 )
 }
 \arguments{
-\item{sample}{Character scalar; the sample identifier. Rows with
-\code{sample == sample} are selected from \code{wgd_data}, \code{cnv_data}, and \code{sv_data}.}
+\item{sample}{Character scalar; sample identifier (matched in \code{cnv_data},
+\code{sv_data}, \code{wgd_data}).}
 
-\item{chromosome}{Character vector of chromosomes to display, e.g.
-\code{c("chr7", "chr12")}.}
+\item{cnv_data}{A data.frame of copy-number segments with columns \code{sample},
+\code{seqnames}, \code{start}, \code{end}, \code{copyNumber}, \code{ploidy}, \code{majorAlleleCopyNumber},
+\code{minorAlleleCopyNumber}.}
 
-\item{chromosome_range}{Optional two-column matrix/data.frame of
-\code{start},\code{end} window limits, one row per entry in \code{chromosome}. If \code{NULL}
-(default), the full chromosome (or the SV-spanning window) is shown.}
-
-\item{genes_to_highlight}{Optional character vector of gene symbols to label.
-If \code{NULL}, a default oncogene panel is used.}
-
-\item{karyotype}{A data.frame of ideogram bands (as from the UCSC
-\code{cytoBand}/\code{chr_info} table) with columns including chromosome, \code{start},
-\code{end}, and \code{gieStain}; the first column is treated as the chromosome name.
-A file path to an \code{.rds} holding such a data.frame is also accepted.}
-
-\item{gene_coord}{A data.frame of gene coordinates with columns
-\code{chr},\code{start},\code{end},\code{strand},\code{gene}. A path to a headerless tab-separated
-BED-like file with those five columns is also accepted.}
+\item{sv_data}{A data.frame of SVs with columns \code{chrom1}, \code{start1}, \code{chrom2},
+\code{start2}, \code{strand1}, \code{strand2}, \code{svclass}, \code{VF}, \code{JCN}, \code{sample}.}
 
 \item{wgd_data}{A data.frame with a sample-identifier column (see
 \code{wgd_sample_col}) and a \code{Polyploidy} column (\code{"No"} = diploid, otherwise
 WGD) used to label the plot title.}
 
-\item{cnv_data}{A data.frame (or object coercible via \code{as.data.frame}) of
-copy-number segments with columns \code{sample}, \code{seqnames}, \code{start}, \code{end},
-\code{copyNumber}, \code{ploidy}, \code{majorAlleleCopyNumber}, \code{minorAlleleCopyNumber}.}
+\item{karyotype}{A data.frame of ideogram bands (UCSC \code{cytoBand} / \code{chr_info}
+style) with columns including chromosome, \code{start}, \code{end}, and \code{gieStain};
+the first column is treated as the chromosome name. A path to an \code{.rds}
+holding such a data.frame is also accepted.}
 
-\item{sv_data}{A data.frame of SVs with columns \code{chrom1}, \code{start1}, \code{chrom2},
-\code{start2}, \code{strand1}, \code{strand2}, \code{svclass}, \code{VF}, \code{JCN}, \code{sample}.}
+\item{gene_coord}{A data.frame of gene coordinates with columns
+\code{chr},\code{start},\code{end},\code{strand},\code{gene}. A path to a headerless tab-separated
+BED-like file with those five columns is also accepted.}
 
-\item{cds_gr}{Optional \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of CDS/exon ranges (metadata
-column \code{gene_name}) used only when \code{displayExon = TRUE} to draw exon models.}
+\item{chromosome}{Optional character vector of chromosomes to display, e.g.
+\code{c("chr7", "chr12")}.}
 
-\item{wgd_sample_col}{Optional name of the sample-identifier column in
-\code{wgd_data}. If \code{NULL} (default) the function uses \code{sample}, falling back to
-\code{WGS_ID} if present.}
+\item{chromosome_range}{Optional two-column matrix/data.frame of \code{start},\code{end}
+window limits, one row per entry in \code{chromosome}.}
 
-\item{sec_axis_adj, offset_gene, ymax_highlight_ratio}{Numeric layout tuning
-parameters (see Details of the original implementation).}
+\item{loci}{Optional explicit loci: a \code{data.frame} with columns
+\code{chr},\code{start},\code{end}, or a character vector of \code{"chr:start-end"} strings.
+Takes precedence over \code{chromosome}/\code{chromosome_range}.}
 
-\item{displayExon}{Logical; if \code{TRUE}, draw exon models (requires \code{cds_gr}).}
+\item{margin}{Numeric; fraction of each auto-detected amplicon's width to pad
+on both sides (default \code{0.15}).}
 
-\item{scale_ticks}{Numeric x-axis tick spacing in bp. If \code{NULL} (default) a
-sensible spacing is derived from the width of the widest panel.}
+\item{min_cn_ratio}{Numeric; a segment is "amplified" when
+\code{copyNumber > min_cn_ratio * ploidy} (default \code{3}).}
 
-\item{yend_left, yend_right, yend_right_line}{Numeric layout tuning parameters
-for the axes. \code{yend_left} may be \code{NULL} (default) to auto-scale the
-copy-number axis top to the data.}
+\item{min_amp_width}{Numeric; drop auto-detected loci whose total amplified
+span is below this many bp (default \code{1e5}).}
 
-\item{loh_position_ratio}{Numeric in \verb{(0, 1)}; vertical position of the LOH /
-homozygous-deletion bars as a fraction of the gap between the main-plot
-baseline and the ideogram (0.5 = midway, the default), so the bars sit in
-the empty band between the ideogram and the copy-number track.}
+\item{gap_frac}{Numeric; gap between loci as a fraction of the total plotted
+width (default \code{0.06}).}
 
-\item{repel_labels}{Logical; if \code{TRUE} (default) use \pkg{ggrepel} to keep
-gene labels from overlapping (falls back to plain labels if ggrepel is not
-installed).}
+\item{genes_to_highlight}{Optional character vector of gene symbols. If \code{NULL},
+a default oncogene panel is used; only genes falling inside a locus window
+are drawn.}
 
 \item{gene_label_angle}{Optional numeric label rotation in degrees. If \code{NULL}
 (default) labels are horizontal, switching to 45 degrees automatically when
-genes are crowded within a panel so they stack legibly.}
+genes are crowded.}
 
-\item{interchrom_arcs}{Logical; if \code{TRUE} (default) draw the connecting arcs
-between breakpoints of inter-chromosomal SVs. These arcs reach across panels
-via a large offset that stretches the source panel under free-x faceting;
-set \code{FALSE} for multi-chromosome plots to keep each panel bounded to its
-locus (breakpoints are still marked, just not joined by an arc).}
+\item{repel_labels}{Logical; use \pkg{ggrepel} to de-collide gene labels
+(default \code{TRUE}; falls back to plain labels if ggrepel is absent).}
 
-\item{plot_height_custom, plot_width_custom}{Optional numeric overrides for the
-auto-selected PDF dimensions (inches).}
+\item{cn_max}{Optional numeric override for the copy-number axis top; if
+\code{NULL} it is rounded up from the data to two significant figures.}
 
-\item{highlight_amp, highlight_hom_del}{Logical; shade amplified /
-homozygously deleted segments.}
+\item{offset_gene, ymax_highlight_ratio, karyotype_rel_size, loh_position_ratio}{Layout tuning parameters.}
 
-\item{karyotype_rel_size}{Numeric; ideogram height relative to the CN axis.}
+\item{highlight_amp, highlight_hom_del}{Logical; shade amplified / homozygously
+deleted segments.}
 
-\item{outdir}{Optional directory in which to write the PDF. If \code{NULL}
-(default) no file is written and only the plot object is returned.}
+\item{wgd_sample_col}{Optional name of the sample column in \code{wgd_data}
+(default: \code{sample}, falling back to \code{WGS_ID}).}
+
+\item{outdir}{Optional directory in which to write the plot. If \code{NULL} no file
+is written and only the plot object is returned.}
 
 \item{save}{Logical; if \code{TRUE} (default) and \code{outdir} is supplied, write the
-plot. Set \code{FALSE} to build the plot without writing a file.}
+plot.}
 
-\item{format}{Character vector of output formats to write when saving; any of
-\code{"pdf"} and \code{"png"} (default both). The PNG is rendered from the plot object
-at \code{dpi} for a crisp, high-resolution raster.}
+\item{format}{Character vector of output formats: any of \code{"pdf"} and \code{"png"}
+(default both). The PNG is rendered from the plot object at \code{dpi}.}
 
-\item{dpi}{Numeric resolution (dots per inch) for the PNG output (default
-\code{300}).}
+\item{dpi}{Numeric PNG resolution (default \code{300}).}
 
-\item{verbose}{Logical; if \code{TRUE}, print progress/diagnostic messages.}
+\item{plot_width_custom, plot_height_custom}{Optional numeric overrides for the
+output dimensions (inches).}
+
+\item{verbose}{Logical; print progress/diagnostic messages.}
 }
 \value{
 The assembled \link[ggplot2:ggplot]{ggplot2::ggplot} object (invisibly when a file is
-written). The path(s) of any written file(s) are attached as attribute
-\code{"path"}.
+written); written paths are attached as attribute \code{"path"}.
 }
 \description{
-Produces a linear, allele-specific copy-number track for one or more
-chromosomes (or sub-chromosomal windows) of a single sample, overlaid with
-arcs for intra- and inter-chromosomal structural variants (SVs), a karyotype
-ideogram, LOH / homozygous-deletion bars, and gene labels. The assembled
-\code{ggplot} object is returned, and optionally written to a PDF in \code{outdir}.
+Draws allele-specific copy number, structural-variant arcs, karyotype
+ideograms and gene labels for one or more loci laid out side-by-side on a
+single concatenated x-axis. Because all loci share one coordinate system, the
+structural variants that interconnect separate amplicons (e.g. the junctions
+of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.
 }
 \details{
-Reference annotation that was previously hard-coded is now supplied via the
-\code{karyotype}, \code{gene_coord}, and \code{cds_gr} arguments so the function is
-self-contained.
+The loci to display are resolved in this order:
+\enumerate{
+\item \code{loci} if supplied (explicit windows);
+\item \code{chromosome} + \code{chromosome_range} (explicit windows, one per
+chromosome);
+\item \code{chromosome} alone -- the amplified region on each named chromosome is
+auto-detected and padded by \code{margin}; a chromosome with no amplification
+falls back to its whole length;
+\item nothing -- every amplified locus in the sample is detected
+automatically.
+}
+A locus is "amplified" where \code{copyNumber > min_cn_ratio * ploidy}; its
+extent is the min-max of amplified segments on the chromosome, padded by
+\code{margin}, with single-segment artefacts below \code{min_amp_width} dropped.
 }
 \examples{
 \dontrun{
-p <- plot_sv_linear(
-  sample     = "DO12742T1",
-  chromosome = c("chr7", "chr12"),
-  karyotype  = "chr_info_hg38.rds",
-  gene_coord = "gene.coord_strand_name.bed",
-  wgd_data   = wgd_df,
-  cnv_data   = cnv_df,
-  sv_data    = sv_df,
-  outdir     = "plots"
-)
-p + ggplot2::labs(subtitle = "EGFR amplicon")   # compose further
-}
+# Single focused locus:
+plot_sv_linear("DO11441T1", cnv, sv, wgd, karyotype = K, gene_coord = G,
+               chromosome = "chr7",
+               chromosome_range = matrix(c(52e6, 56e6), nrow = 1),
+               outdir = "plots")
 
+# All amplified loci, interconnected (multi-fragment ecDNA hub):
+plot_sv_linear("DUMC12T1", cnv, sv, wgd, karyotype = K, gene_coord = G,
+               outdir = "plots")
+
+# Explicit loci:
+plot_sv_linear("S1", cnv, sv, wgd, karyotype = K, gene_coord = G,
+               loci = c("chr4:50e6-64e6", "chr12:57e6-59e6"))
+}
 }
 \seealso{
 \code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}

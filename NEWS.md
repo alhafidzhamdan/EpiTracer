@@ -8,16 +8,16 @@
       `after_dist_boundary_not_gained` to itself (always `TRUE`). It now
       correctly requires *both* flanks to be non-gained before calling an
       episome region.
-* **New `plot_amplicon_recon()`**: multi-locus amplicon "recon" plot on a single
-  concatenated x-axis. Focuses each locus on its amplified region (auto-detected
-  as `copyNumber > min_cn_ratio x ploidy`, padded by `margin`, or supplied via
-  `loci`), places the loci side-by-side, and draws the structural variants that
-  interconnect separate amplicons as arcs spanning the loci -- the junctions of a
-  multi-fragment / hub ecDNA -- with per-locus ideograms, gene labels and the
-  shared CN / read-support axes. Unlike a faceted multi-chromosome
-  `plot_sv_linear()` plot, cross-locus arcs do not stretch the panels.
-
 * `plot_sv_linear()`: linear allele-specific copy-number / SV "recon" plotter.
+    * **Unified onto a single concatenated x-axis** (faceting retired): draws one
+      locus or many side-by-side, and structural variants interconnecting separate
+      amplicons are drawn as arcs spanning the loci (previously impossible under
+      faceting -- see the interim `plot_amplicon_recon()`, now merged in and
+      removed). Loci come from `chromosome`+`chromosome_range`, explicit `loci`, or
+      are **auto-detected** from amplified segments (`copyNumber > min_cn_ratio x
+      ploidy`, padded by `margin`) when neither is given.
+    * Removed faceting-only arguments (`scale_ticks`, `yend_left`/`yend_right`,
+      `interchrom_arcs`, `displayExon`/`cds_gr`); axis tops/ticks are now automatic.
   Reference annotation (karyotype ideogram, gene coordinates, CDS models) is now
   passed via the `karyotype`, `gene_coord`, and `cds_gr` arguments instead of
   being read from hard-coded paths. `useDingbats = FALSE` for modern R.

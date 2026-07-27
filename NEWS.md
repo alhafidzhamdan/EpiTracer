@@ -29,9 +29,11 @@
       `repel_labels`); line geoms use `linewidth` (no more ggplot2 deprecation
       warnings); debug output is gated behind `verbose`.
     * The **read-support (SV) secondary axis is always shown** alongside the
-      allele-specific copy-number axis: SV arcs are scaled to the copy-number
-      axis height so both axes stay legible at any amplification level, and the
-      read-support ticks show real variant-fraction values.
+      allele-specific copy-number axis, **sharing the same three tick positions**
+      (0, half, full). Axis tops round to two significant figures (e.g. 132 -> 140,
+      1462 -> 1500) and the read-support axis carries a grey spine.
+    * Can now **write a high-resolution PNG** (rendered from the plot object at
+      `dpi`) in addition to (or instead of) the PDF, via `format` and `dpi`.
     * **LOH / homozygous-deletion bars** are placed in the empty band between
       the ideogram and the copy-number baseline (`loh_position_ratio` now a
       fraction of that gap), so they no longer overlap the ideogram.

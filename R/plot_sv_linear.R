@@ -65,11 +65,16 @@
 #' @param outdir Optional directory in which to write the PDF. If `NULL`
 #'   (default) no file is written and only the plot object is returned.
 #' @param save Logical; if `TRUE` (default) and `outdir` is supplied, write the
-#'   PDF. Set `FALSE` to build the plot without writing a file.
+#'   plot. Set `FALSE` to build the plot without writing a file.
+#' @param format Character vector of output formats to write when saving; any of
+#'   `"pdf"` and `"png"` (default both). The PNG is rendered from the plot object
+#'   at `dpi` for a crisp, high-resolution raster.
+#' @param dpi Numeric resolution (dots per inch) for the PNG output (default
+#'   `300`).
 #' @param verbose Logical; if `TRUE`, print progress/diagnostic messages.
 #'
-#' @return The assembled [ggplot2::ggplot] object (invisibly when a PDF is
-#'   written). The path of any written PDF is attached as attribute
+#' @return The assembled [ggplot2::ggplot] object (invisibly when a file is
+#'   written). The path(s) of any written file(s) are attached as attribute
 #'   `"path"`.
 #'
 #' @examples
@@ -125,6 +130,8 @@ plot_sv_linear <- function(sample,
                            karyotype_rel_size = 0.05,
                            outdir = NULL,
                            save = TRUE,
+                           format = c("pdf", "png"),
+                           dpi = 300,
                            verbose = FALSE) {
 
   #### Base functions ####
@@ -150,11 +157,12 @@ plot_sv_linear <- function(sample,
     mult <- if (frac < 1.5) 1 else if (frac < 3) 2 else if (frac < 7) 5 else 10
     mult * mag
   }
-  ## Round a value up to a "nice" multiple, for a tidy copy-number axis top.
-  nice_ceiling <- function(x) {
+  ## Round a value up to `digits` significant figures, for tidy axis tops
+  ## (e.g. 132 -> 140, 1462 -> 1500).
+  nice_ceiling <- function(x, digits = 2) {
     if (!is.finite(x) || x <= 0) return(1)
-    s <- nice_step(x, 2)
-    ceiling(x / s) * s
+    mag <- 10^(floor(log10(x)) - (digits - 1))
+    ceiling(x / mag) * mag
   }
 
   #### Build karyotype ####
@@ -432,14 +440,15 @@ plot_sv_linear <- function(sample,
   max_y <- max.cn
   max_y_rectangle <- max_y
 
-  ## Copy-number (left) axis top and read-support (right) axis scaling.
-  ## Arcs are drawn at y = VF / coeff; tying `coeff` to the CN-axis height keeps
-  ## the SV read-support arcs visible at any amplification level, so the
-  ## secondary read-support axis can always be shown alongside the CN axis.
+  ## Copy-number (left) and read-support (right) axis tops. Both axes share the
+  ## same three tick positions (0, half, full); `coeff` maps the CN axis onto the
+  ## read-support axis so the tallest SV arc reaches ~the top and the two axes
+  ## stay aligned and legible at any amplification level.
   cn_axis_max <- if (!is.null(yend_left)) yend_left else nice_ceiling(max.cn)
-  sv_in  <- sv[sv$chr1 %in% chr_selection$chr | sv$chr2 %in% chr_selection$chr, ]
-  max_vf <- if (nrow(sv_in) > 0) max(sv_in$VF, na.rm = TRUE) else 0
-  coeff  <- if (max_vf > 0) max_vf / cn_axis_max else 1
+  sv_in       <- sv[sv$chr1 %in% chr_selection$chr | sv$chr2 %in% chr_selection$chr, ]
+  max_vf      <- if (nrow(sv_in) > 0) max(sv_in$VF, na.rm = TRUE) else 0
+  rs_axis_max <- if (max_vf > 0) nice_ceiling(max_vf) else 0
+  coeff       <- if (max_vf > 0) rs_axis_max / cn_axis_max else 1
 
   #### Plot: ####
   p <- ggplot()
@@ -517,6 +526,9 @@ plot_sv_linear <- function(sample,
       plot.title = element_text(size = size_title + 1, colour = "black", margin = unit(c(0, 0, 0.5, 0), "cm"), hjust = 0.5),
       axis.text.y.left = element_text(size = size_text + 2, colour = "black"),
       axis.text.y.right = element_text(size = size_text + 2, colour = "black"),
+      ## Grey spine + ticks for the read-support (right) axis:
+      axis.line.y.right = element_line(colour = "grey50", linewidth = 0.4),
+      axis.ticks.y.right = element_line(colour = "grey50", linewidth = 0.4),
       panel.background = element_blank(),
       strip.background = element_blank(),
       axis.ticks.length.y = unit(0.2, "cm"),
@@ -872,18 +884,16 @@ plot_sv_linear <- function(sample,
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[nrow(chr_selection)], ] %>% dplyr::filter(end == max(end)),
                  colour = "black", linewidth = 0.4)
 
-  ## Read-support (secondary, right) axis, always shown alongside the CN axis.
-  ## Arcs sit at y = VF / coeff and `coeff` is tied to the CN-axis height, so
-  ## real VF ticks (positioned via / coeff) span the full axis and stay legible
-  ## even for highly amplified loci.
+  ## Read-support (secondary, right) axis, always shown alongside the CN axis and
+  ## sharing its three tick positions (0, half, full). `breaks` are in
+  ## secondary-axis (VF) units; ggplot positions them on the primary axis via the
+  ## inverse of `trans` (primary = VF / coeff), which lands them exactly on the
+  ## CN ticks because coeff = rs_axis_max / cn_axis_max.
   if (max_vf > 0) {
-    vf_step   <- nice_step(max_vf, 2)
-    vf_values <- seq(0, floor(max_vf / vf_step) * vf_step, by = vf_step)
-    ## `breaks` are in secondary-axis (VF) units; ggplot positions them on the
-    ## primary axis via the inverse of `trans` (primary = VF / coeff).
+    rs_breaks <- unique(c(0, rs_axis_max / 2, rs_axis_max))
     p <- p + scale_y_continuous(
       breaks = cn_breaks,
-      sec.axis = sec_axis(trans = ~ . * coeff, breaks = vf_values,
+      sec.axis = sec_axis(trans = ~ . * coeff, breaks = rs_breaks,
                           name = "Read support"))
   } else {
     p <- p + scale_y_continuous(breaks = cn_breaks)
@@ -892,21 +902,35 @@ plot_sv_linear <- function(sample,
   ##### Save plot: ####
   outfile <- NULL
   if (!is.null(outdir) && save) {
+    format <- match.arg(format, several.ok = TRUE)
     if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
     ## Encode the plotted region in the filename so a zoomed view does not
-    ## overwrite the full-chromosome PDF.
+    ## overwrite the full-chromosome file.
     region_tag <- if (is.null(chromosome_range)) "" else
       paste0("_", paste(sprintf("%s-%s",
                                 format(round(chr_selection$start), scientific = FALSE),
                                 format(round(chr_selection$end), scientific = FALSE)),
                         collapse = "_"))
-    outfile <- file.path(outdir, paste0(this_sample, "_",
-                                        paste(chr_selection$chr, collapse = "_"),
-                                        region_tag, "_linear_plot.pdf"))
-    grDevices::pdf(outfile, width = plot_width, height = plot_height, useDingbats = FALSE)
-    print(p)
-    grDevices::dev.off()
-    if (verbose) message("Wrote ", outfile)
+    stem <- file.path(outdir, paste0(this_sample, "_",
+                                     paste(chr_selection$chr, collapse = "_"),
+                                     region_tag, "_linear_plot"))
+    written <- character(0)
+    if ("pdf" %in% format) {
+      pdf_path <- paste0(stem, ".pdf")
+      grDevices::pdf(pdf_path, width = plot_width, height = plot_height, useDingbats = FALSE)
+      print(p)
+      grDevices::dev.off()
+      written <- c(written, pdf_path)
+    }
+    if ("png" %in% format) {
+      ## Rendered straight from the plot object at `dpi` for a crisp raster.
+      png_path <- paste0(stem, ".png")
+      ggplot2::ggsave(png_path, p, width = plot_width, height = plot_height,
+                      dpi = dpi, bg = "white")
+      written <- c(written, png_path)
+    }
+    outfile <- written
+    if (verbose) message("Wrote ", paste(written, collapse = ", "))
   }
 
   attr(p, "path") <- outfile

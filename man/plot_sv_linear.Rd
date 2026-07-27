@@ -34,6 +34,8 @@ plot_sv_linear(
   karyotype_rel_size = 0.05,
   outdir = NULL,
   save = TRUE,
+  format = c("pdf", "png"),
+  dpi = 300,
   verbose = FALSE
 )
 }
@@ -115,13 +117,20 @@ homozygously deleted segments.}
 (default) no file is written and only the plot object is returned.}
 
 \item{save}{Logical; if \code{TRUE} (default) and \code{outdir} is supplied, write the
-PDF. Set \code{FALSE} to build the plot without writing a file.}
+plot. Set \code{FALSE} to build the plot without writing a file.}
+
+\item{format}{Character vector of output formats to write when saving; any of
+\code{"pdf"} and \code{"png"} (default both). The PNG is rendered from the plot object
+at \code{dpi} for a crisp, high-resolution raster.}
+
+\item{dpi}{Numeric resolution (dots per inch) for the PNG output (default
+\code{300}).}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress/diagnostic messages.}
 }
 \value{
-The assembled \link[ggplot2:ggplot]{ggplot2::ggplot} object (invisibly when a PDF is
-written). The path of any written PDF is attached as attribute
+The assembled \link[ggplot2:ggplot]{ggplot2::ggplot} object (invisibly when a file is
+written). The path(s) of any written file(s) are attached as attribute
 \code{"path"}.
 }
 \description{

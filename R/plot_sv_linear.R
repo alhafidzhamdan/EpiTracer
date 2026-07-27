@@ -44,12 +44,19 @@
 #' @param displayExon Logical; if `TRUE`, draw exon models (requires `cds_gr`).
 #' @param scale_ticks Numeric x-axis tick spacing in bp. If `NULL` (default) a
 #'   sensible spacing is derived from the width of the widest panel.
-#' @param yend_left,yend_right,yend_right_line,loh_position_ratio Numeric layout
-#'   tuning parameters for axes and LOH bars. `yend_left`/`yend_right` may be
-#'   `NULL` (default) to auto-scale the copy-number axis to the data.
+#' @param yend_left,yend_right,yend_right_line Numeric layout tuning parameters
+#'   for the axes. `yend_left` may be `NULL` (default) to auto-scale the
+#'   copy-number axis top to the data.
+#' @param loh_position_ratio Numeric in `(0, 1)`; vertical position of the LOH /
+#'   homozygous-deletion bars as a fraction of the gap between the main-plot
+#'   baseline and the ideogram (0.5 = midway, the default), so the bars sit in
+#'   the empty band between the ideogram and the copy-number track.
 #' @param repel_labels Logical; if `TRUE` (default) use \pkg{ggrepel} to keep
 #'   gene labels from overlapping (falls back to plain labels if ggrepel is not
 #'   installed).
+#' @param gene_label_angle Optional numeric label rotation in degrees. If `NULL`
+#'   (default) labels are horizontal, switching to 45 degrees automatically when
+#'   genes are crowded within a panel so they stack legibly.
 #' @param plot_height_custom,plot_width_custom Optional numeric overrides for the
 #'   auto-selected PDF dimensions (inches).
 #' @param highlight_amp,highlight_hom_del Logical; shade amplified /
@@ -108,8 +115,9 @@ plot_sv_linear <- function(sample,
                            yend_left = NULL,
                            yend_right = 100,
                            yend_right_line = 2,
-                           loh_position_ratio = 0.3,
+                           loh_position_ratio = 0.5,
                            repel_labels = TRUE,
+                           gene_label_angle = NULL,
                            plot_height_custom = NULL,
                            plot_width_custom = NULL,
                            highlight_amp = TRUE,
@@ -424,6 +432,15 @@ plot_sv_linear <- function(sample,
   max_y <- max.cn
   max_y_rectangle <- max_y
 
+  ## Copy-number (left) axis top and read-support (right) axis scaling.
+  ## Arcs are drawn at y = VF / coeff; tying `coeff` to the CN-axis height keeps
+  ## the SV read-support arcs visible at any amplification level, so the
+  ## secondary read-support axis can always be shown alongside the CN axis.
+  cn_axis_max <- if (!is.null(yend_left)) yend_left else nice_ceiling(max.cn)
+  sv_in  <- sv[sv$chr1 %in% chr_selection$chr | sv$chr2 %in% chr_selection$chr, ]
+  max_vf <- if (nrow(sv_in) > 0) max(sv_in$VF, na.rm = TRUE) else 0
+  coeff  <- if (max_vf > 0) max_vf / cn_axis_max else 1
+
   #### Plot: ####
   p <- ggplot()
 
@@ -451,8 +468,10 @@ plot_sv_linear <- function(sample,
                                    group = chr),
                      fill = karyotype_data_now$color, color = "black", linewidth = 0.2)
 
-  ## y-axis (secondary, read support) scaling:
-  coeff <- ceiling(max(sv$VF / 1000)) * 1000 / sec_axis_adj
+  ## LOH / homozygous-deletion bars sit in the empty band between the ideogram
+  ## (top edge = `upper_limit_karyotype`, negative) and the main-plot baseline
+  ## (y = 0), so they never overlap the ideogram at any CN scale.
+  loh_bar_y <- upper_limit_karyotype * loh_position_ratio
 
   if (highlight_amp) {
     p <- p +
@@ -477,12 +496,12 @@ plot_sv_linear <- function(sample,
     geom_segment(aes(x = start, y = majorAlleleCopyNumber, xend = end,
                      yend = majorAlleleCopyNumber, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ], colour = color_major_cn, linewidth = cn_size) +
-    geom_segment(aes(x = start, y = -loh_position_ratio * max.cn, xend = end,
-                     yend = -loh_position_ratio * max.cn, group = chr),
+    geom_segment(aes(x = start, y = loh_bar_y, xend = end,
+                     yend = loh_bar_y, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ] %>% dplyr::filter(minorAlleleCopyNumber < 0.5),
                  colour = color_loh, linewidth = cn_size) +
-    geom_segment(aes(x = start, y = -loh_position_ratio * max.cn, xend = end,
-                     yend = -loh_position_ratio * max.cn, group = chr),
+    geom_segment(aes(x = start, y = loh_bar_y, xend = end,
+                     yend = loh_bar_y, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ] %>% dplyr::filter(copyNumber < 0.5),
                  colour = color_homdel, linewidth = cn_size) +
     facet_grid(. ~ factor(chr, levels = unique(chr_selection$chr)),
@@ -786,17 +805,39 @@ plot_sv_linear <- function(sample,
       ## Anchor points at the locus, then labels above.
       p <- p + geom_point(data = gene_label_df, mapping = aes(x = pos, y = y * 0.92),
                           shape = 16, size = 1, colour = "black")
+      ## Decide label angle: keep horizontal unless genes are crowded within a
+      ## panel (adjacent genes closer than ~6% of the panel width), then angle
+      ## them so same-position labels stack legibly. `gene_label_angle` overrides.
+      if (is.null(gene_label_angle)) {
+        crowded <- FALSE
+        for (cc in unique(as.character(gene_label_df$chr))) {
+          pw <- chr_selection$end[chr_selection$chr == cc] -
+                chr_selection$start[chr_selection$chr == cc]
+          gp <- sort(gene_label_df$pos[as.character(gene_label_df$chr) == cc])
+          if (length(gp) > 1 && length(pw) == 1 &&
+              min(diff(gp)) < 0.06 * pw) crowded <- TRUE
+        }
+        gene_label_angle <- if (crowded) 45 else 0
+      }
+
       use_repel <- repel_labels && requireNamespace("ggrepel", quietly = TRUE)
       if (use_repel) {
+        ## Spread labels above the CN track; when several genes sit at almost
+        ## the same position, angle them so they stack without overprinting
+        ## (leader lines connect each label to its locus).
         p <- p + ggrepel::geom_text_repel(
           data = gene_label_df, mapping = aes(x = pos, y = y, label = label),
           size = size_gene_label, fontface = "italic",
-          direction = "x", segment.size = 0.2, segment.colour = "grey60",
-          min.segment.length = 0, box.padding = 0.15, max.overlaps = Inf,
-          seed = 1L)
+          angle = gene_label_angle, hjust = 0,
+          direction = "both", nudge_y = max.cn * 0.15,
+          ylim = c(max.cn * 1.02, NA),
+          segment.size = 0.2, segment.colour = "grey60",
+          min.segment.length = 0, box.padding = 0.25, point.padding = 0.1,
+          max.overlaps = Inf, seed = 1L)
       } else {
         p <- p + geom_text(data = gene_label_df, mapping = aes(x = pos, y = y, label = label),
-                           size = size_gene_label, fontface = "italic")
+                           size = size_gene_label, fontface = "italic",
+                           angle = gene_label_angle, hjust = if (gene_label_angle == 0) 0.5 else 0)
       }
     }
   }
@@ -819,19 +860,9 @@ plot_sv_linear <- function(sample,
     if (!is.null(intraSV) && nrow(intraSV) > 0) message("Max intraSV VF: ", max(intraSV$VF))
   }
 
-  ## Copy-number (left) axis: breaks span the actual CN range so labels do not
-  ## bunch at the baseline for highly amplified samples. `yend_left` (when set)
-  ## overrides the auto axis top.
-  cn_axis_max <- if (!is.null(yend_left)) yend_left else nice_ceiling(max.cn)
-  cn_breaks   <- unique(c(0, cn_axis_max / 2, cn_axis_max))
-
-  ## Read-support (secondary, right) axis. Arcs sit at y = VF / coeff, so the
-  ## SVs occupy the CN axis up to `arc_top`. Place the read-support ticks at
-  ## real VF values (positioned via / coeff). When a focal amplicon dwarfs the
-  ## SV arcs, the secondary axis is uninformative and would collide, so omit it.
-  max_vf  <- if (nrow(sv) > 0) max(sv$VF, na.rm = TRUE) else 0
-  arc_top <- if (coeff > 0) max_vf / coeff else 0
-  show_read_support <- arc_top >= 0.12 * cn_axis_max
+  ## Copy-number (left) axis breaks span the actual CN range so labels do not
+  ## bunch at the baseline for highly amplified samples.
+  cn_breaks <- unique(c(0, cn_axis_max / 2, cn_axis_max))
 
   p <- p +
     geom_segment(aes(x = start, xend = start, y = 0, yend = cn_axis_max, group = chr),
@@ -841,16 +872,20 @@ plot_sv_linear <- function(sample,
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[nrow(chr_selection)], ] %>% dplyr::filter(end == max(end)),
                  colour = "black", linewidth = 0.4)
 
-  if (show_read_support) {
+  ## Read-support (secondary, right) axis, always shown alongside the CN axis.
+  ## Arcs sit at y = VF / coeff and `coeff` is tied to the CN-axis height, so
+  ## real VF ticks (positioned via / coeff) span the full axis and stay legible
+  ## even for highly amplified loci.
+  if (max_vf > 0) {
     vf_step   <- nice_step(max_vf, 2)
     vf_values <- seq(0, floor(max_vf / vf_step) * vf_step, by = vf_step)
+    ## `breaks` are in secondary-axis (VF) units; ggplot positions them on the
+    ## primary axis via the inverse of `trans` (primary = VF / coeff).
     p <- p + scale_y_continuous(
       breaks = cn_breaks,
-      sec.axis = sec_axis(trans = ~ . * coeff, breaks = vf_values / coeff,
-                          labels = vf_values, name = "Read support"))
+      sec.axis = sec_axis(trans = ~ . * coeff, breaks = vf_values,
+                          name = "Read support"))
   } else {
-    if (verbose) message("Omitting read-support axis (SV arcs are small relative ",
-                         "to the copy-number range at this locus).")
     p <- p + scale_y_continuous(breaks = cn_breaks)
   }
 

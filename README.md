@@ -18,7 +18,7 @@ The package currently provides two functions:
 - **`plot_sv_linear()`** — a linear allele-specific copy-number / structural-
   variant "recon" plotter. It draws one or more loci side-by-side on a single
   concatenated x-axis with CN tracks, SV arcs, karyotype ideograms, LOH /
-  homozygous-deletion bars, and gene labels (PDF + high-res PNG). Point it at a
+  homozygous-deletion bars, and gene labels (saved as PDF). Point it at a
   single focused locus (`chromosome` + `chromosome_range`), give explicit
   `loci`, or let it **auto-detect every amplified locus** in the sample — the
   structural variants interconnecting separate amplicons (multi-fragment / hub
@@ -86,7 +86,8 @@ plot_sv_linear(
   cnv_data   = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
   karyotype  = "chr_info_hg38.rds",
   gene_coord = "gene.coord_strand_name.bed",
-  outdir     = "plots"                          # loci auto-detected; or loci = c("chr4:...", ...)
+  outdir     = "plots",                         # loci auto-detected; or loci = c("chr4:...", ...)
+  flank_pct  = 10                              # extend each auto-detected window by +/-10%
 )
 ```
 

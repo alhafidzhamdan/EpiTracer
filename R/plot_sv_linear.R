@@ -12,14 +12,14 @@
 #'   \item `chromosome` + `chromosome_range` (explicit windows, one per
 #'     chromosome);
 #'   \item `chromosome` alone -- the amplified region on each named chromosome is
-#'     auto-detected and padded by `margin`; a chromosome with no amplification
+#'     auto-detected and padded by `flank_pct`; a chromosome with no amplification
 #'     falls back to its whole length;
 #'   \item nothing -- every amplified locus in the sample is detected
 #'     automatically.
 #' }
 #' A locus is "amplified" where `copyNumber > min_cn_ratio * ploidy`; its
 #' extent is the min-max of amplified segments on the chromosome, padded by
-#' `margin`, with single-segment artefacts below `min_amp_width` dropped.
+#' `flank_pct`, with single-segment artefacts below `min_amp_width` dropped.
 #'
 #' @param sample Character scalar; sample identifier (matched in `cnv_data`,
 #'   `sv_data`, `wgd_data`).
@@ -56,8 +56,10 @@
 #' @param cluster_gap Numeric; when auto-detecting, consecutive event segments
 #'   more than this many bp apart start a new locus, so scattered focal events
 #'   become separate panels instead of one whole-chromosome span (default `5e6`).
-#' @param margin Numeric; fraction of each auto-detected region's width to pad on
-#'   both sides (default `0.15`).
+#' @param flank_pct Numeric percentage by which each auto-detected (CN-status)
+#'   region is extended on both sides -- i.e. the flanking window shown around an
+#'   amplicon / deletion, as a percent of its width (default `10` = +/-10%). Only
+#'   applies to auto-detected loci, not to explicit `chromosome`/`loci`.
 #' @param min_cn_ratio Numeric; amplification threshold as a multiple of ploidy
 #'   (`copyNumber > min_cn_ratio * ploidy`, default `3`).
 #' @param gain_ratio Numeric; gain threshold as a multiple of ploidy (default
@@ -93,12 +95,7 @@
 #' @param outdir Optional directory in which to write the plot. If `NULL` no file
 #'   is written and only the plot object is returned.
 #' @param save Logical; if `TRUE` (default) and `outdir` is supplied, write the
-#'   plot.
-#' @param format Character vector of output formats: `"pdf"` (default) and/or
-#'   `"png"`. Pass `format = c("pdf", "png")` (or `"png"`) to also/only write a
-#'   PNG, rendered from the plot object at `dpi`.
-#' @param dpi Numeric PNG resolution, used only when `"png"` is in `format`
-#'   (default `300`).
+#'   plot as a PDF.
 #' @param plot_width_custom,plot_height_custom Optional numeric overrides for the
 #'   output dimensions (inches).
 #' @param verbose Logical; print progress/diagnostic messages.
@@ -140,7 +137,7 @@ plot_sv_linear <- function(sample,
                            loci = NULL,
                            events = "amp",
                            cluster_gap = 5e6,
-                           margin = 0.15,
+                           flank_pct = 10,
                            min_cn_ratio = 3,
                            gain_ratio = 1.4,
                            loh_thresh = 0.5,
@@ -162,8 +159,6 @@ plot_sv_linear <- function(sample,
                            wgd_sample_col = NULL,
                            outdir = NULL,
                            save = TRUE,
-                           format = "pdf",
-                           dpi = 300,
                            plot_width_custom = NULL,
                            plot_height_custom = NULL,
                            verbose = FALSE) {
@@ -250,8 +245,9 @@ plot_sv_linear <- function(sample,
     agg <- agg[agg$amp_bp >= min_amp_width, , drop = FALSE]
     if (nrow(agg) > 0) {
       w <- agg$end - agg$start
-      agg$start <- pmax(0, round(agg$start - margin * w))
-      agg$end   <- pmin(chr_len[agg$chr], round(agg$end + margin * w))
+      flank <- (flank_pct / 100) * w
+      agg$start <- pmax(0, round(agg$start - flank))
+      agg$end   <- pmin(chr_len[agg$chr], round(agg$end + flank))
     }
     if (is.null(chroms)) {
       if (nrow(agg) == 0) stop("No ", paste(events, collapse = "/"), " loci found for ",
@@ -601,25 +597,14 @@ plot_sv_linear <- function(sample,
 
   outfile <- NULL
   if (!is.null(outdir) && save) {
-    format <- match.arg(format, c("pdf", "png"), several.ok = TRUE)
     if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
     region_tag <- if (nrow(loci) == 1)
       sprintf("_%.0f-%.0f", round(loci$start[1]), round(loci$end[1])) else ""
-    stem <- file.path(outdir, paste0(this_sample, "_", paste(loci$chr, collapse = "_"),
-                                     region_tag, "_linear_plot"))
-    written <- character(0)
-    if ("pdf" %in% format) {
-      pp <- paste0(stem, ".pdf")
-      grDevices::pdf(pp, width = plot_width, height = plot_height, useDingbats = FALSE)
-      print(p); grDevices::dev.off(); written <- c(written, pp)
-    }
-    if ("png" %in% format) {
-      pp <- paste0(stem, ".png")
-      ggplot2::ggsave(pp, p, width = plot_width, height = plot_height, dpi = dpi, bg = "white")
-      written <- c(written, pp)
-    }
-    outfile <- written
-    if (verbose) message("Wrote ", paste(written, collapse = ", "))
+    outfile <- file.path(outdir, paste0(this_sample, "_", paste(loci$chr, collapse = "_"),
+                                        region_tag, "_linear_plot.pdf"))
+    grDevices::pdf(outfile, width = plot_width, height = plot_height, useDingbats = FALSE)
+    print(p); grDevices::dev.off()
+    if (verbose) message("Wrote ", outfile)
   }
   attr(p, "path") <- outfile
   if (!is.null(outfile)) invisible(p) else p

@@ -9,6 +9,9 @@
       correctly requires *both* flanks to be non-gained before calling an
       episome region.
 * `plot_sv_linear()`: linear allele-specific copy-number / SV "recon" plotter.
+    * New `flank_pct` option: extend each auto-detected (CN-status) window on both
+      sides by a percentage of its width (default `10` = +/-10%). Replaces the
+      earlier fractional `margin`.
     * **General CN/SV viewer, not amplification-only.** New `events` argument
       (`"amp"`, `"gain"`, `"hetdel"`, `"homdel"`) chooses which copy-number events
       auto-detection targets; explicit `chromosome`/`loci` plot any region
@@ -61,7 +64,7 @@
       of batched layers (grouped by curvature/linewidth via `scale_colour_identity`)
       instead of one ggplot layer per SV. A highly-rearranged amplicon with ~300
       SVs now renders in ~2 s instead of ~2 min, with identical output.
-    * Writes a **PDF by default** (`format = "pdf"`); pass `format = c("pdf", "png")` or `"png"` to also/only write a high-resolution PNG (`dpi`).
+    * **Always saves PDF** (the PNG output option and `format`/`dpi` were removed).
     * **LOH / homozygous-deletion bars** are placed in the empty band between
       the ideogram and the copy-number baseline (`loh_position_ratio` now a
       fraction of that gap), so they no longer overlap the ideogram.

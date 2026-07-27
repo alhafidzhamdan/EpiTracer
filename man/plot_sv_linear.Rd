@@ -16,7 +16,7 @@ plot_sv_linear(
   loci = NULL,
   events = "amp",
   cluster_gap = 5e+06,
-  margin = 0.15,
+  flank_pct = 10,
   min_cn_ratio = 3,
   gain_ratio = 1.4,
   loh_thresh = 0.5,
@@ -38,8 +38,6 @@ plot_sv_linear(
   wgd_sample_col = NULL,
   outdir = NULL,
   save = TRUE,
-  format = "pdf",
-  dpi = 300,
   plot_width_custom = NULL,
   plot_height_custom = NULL,
   verbose = FALSE
@@ -92,8 +90,10 @@ function is a general CN/SV viewer, not amplification-only.}
 more than this many bp apart start a new locus, so scattered focal events
 become separate panels instead of one whole-chromosome span (default \code{5e6}).}
 
-\item{margin}{Numeric; fraction of each auto-detected region's width to pad on
-both sides (default \code{0.15}).}
+\item{flank_pct}{Numeric percentage by which each auto-detected (CN-status)
+region is extended on both sides -- i.e. the flanking window shown around an
+amplicon / deletion, as a percent of its width (default \code{10} = +/-10\%). Only
+applies to auto-detected loci, not to explicit \code{chromosome}/\code{loci}.}
 
 \item{min_cn_ratio}{Numeric; amplification threshold as a multiple of ploidy
 (\code{copyNumber > min_cn_ratio * ploidy}, default \code{3}).}
@@ -145,14 +145,7 @@ deleted segments.}
 is written and only the plot object is returned.}
 
 \item{save}{Logical; if \code{TRUE} (default) and \code{outdir} is supplied, write the
-plot.}
-
-\item{format}{Character vector of output formats: \code{"pdf"} (default) and/or
-\code{"png"}. Pass \code{format = c("pdf", "png")} (or \code{"png"}) to also/only write a
-PNG, rendered from the plot object at \code{dpi}.}
-
-\item{dpi}{Numeric PNG resolution, used only when \code{"png"} is in \code{format}
-(default \code{300}).}
+plot as a PDF.}
 
 \item{plot_width_custom, plot_height_custom}{Optional numeric overrides for the
 output dimensions (inches).}
@@ -177,14 +170,14 @@ The loci to display are resolved in this order:
 \item \code{chromosome} + \code{chromosome_range} (explicit windows, one per
 chromosome);
 \item \code{chromosome} alone -- the amplified region on each named chromosome is
-auto-detected and padded by \code{margin}; a chromosome with no amplification
+auto-detected and padded by \code{flank_pct}; a chromosome with no amplification
 falls back to its whole length;
 \item nothing -- every amplified locus in the sample is detected
 automatically.
 }
 A locus is "amplified" where \code{copyNumber > min_cn_ratio * ploidy}; its
 extent is the min-max of amplified segments on the chromosome, padded by
-\code{margin}, with single-segment artefacts below \code{min_amp_width} dropped.
+\code{flank_pct}, with single-segment artefacts below \code{min_amp_width} dropped.
 }
 \examples{
 \dontrun{

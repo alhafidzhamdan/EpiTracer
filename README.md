@@ -7,7 +7,7 @@
 (ecDNA)** from whole-genome sequencing (WGS) data and visualises the structural
 rearrangements underlying focal amplifications.
 
-The package currently provides two functions:
+The package currently provides three functions:
 
 - **`call_episomal_ecdna()`** — an episomal ecDNA caller. For each ecDNA
   amplicon it locates the structural-variant breakpoints at the amplicon

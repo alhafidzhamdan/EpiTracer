@@ -37,7 +37,9 @@
 #'   an `.rds` path. Defaults to the bundled hg38 reference.
 #' @param gene_coord Gene coordinates as a data.frame with columns
 #'   `chr`,`start`,`end`,`strand`,`gene`, or a path to a headerless tab-separated
-#'   BED-like file with those columns. Defaults to the bundled hg38 reference.
+#'   BED-like file with those columns. Defaults to a small bundled hg38 table
+#'   covering the default oncogene panel; supply your own for other genes or
+#'   genome builds.
 #' @param chromosome Optional character vector of chromosomes to display, e.g.
 #'   `c("chr7", "chr12")`.
 #' @param chromosome_range Optional two-column matrix/data.frame of `start`,`end`
@@ -131,7 +133,7 @@ plot_sv_linear <- function(sample,
                            sv_data,
                            wgd_data = NULL,
                            karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
-                           gene_coord = system.file("extdata", "Homo_sapiens.GRCh38.93.gene.coord_strand_name.bed", package = "EpiTracer"),
+                           gene_coord = system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
                            chromosome = NULL,
                            chromosome_range = NULL,
                            loci = NULL,

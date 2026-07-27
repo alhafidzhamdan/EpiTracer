@@ -15,6 +15,10 @@ The package currently provides two functions:
   *episome* model of formation: a circular amplicon bounded by a duplication
   (DUP) breakpoint, arising from an otherwise non-amplified chromosomal region,
   often leaving a deletion "excision scar" at the origin locus.
+- **`plot_amplicon_recon()`** — a multi-locus amplicon plot on a single
+  concatenated axis: focuses each amplified locus, lays them side-by-side, and
+  draws the structural variants interconnecting separate amplicons (multi-fragment
+  / hub ecDNA junctions), with per-locus ideograms.
 - **`plot_sv_linear()`** — a linear allele-specific copy-number / structural-
   variant "recon" plotter for one or more loci, drawing CN tracks, SV arcs, a
   karyotype ideogram, LOH / homozygous-deletion bars, and gene labels to PDF.

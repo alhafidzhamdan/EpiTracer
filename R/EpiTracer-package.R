@@ -16,5 +16,6 @@ utils::globalVariables(c(
   "chr", "chrom1", "chrom2", "start1", "start2", "strand1", "strand2",
   "strands", "gene", "gene_name", "pos_label", "min_coord", "max_coord",
   "Polyploidy", "y", "label", "pos", "gieStain", "color",
-  "x", "xend", "yend", "lwd", "colour", "grp"
+  "x", "xend", "yend", "lwd", "colour", "grp",
+  "gx", "gx_start", "gx_end", "amp_bp"
 ))

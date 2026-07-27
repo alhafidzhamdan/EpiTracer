@@ -50,6 +50,39 @@ make_episome_inputs <- function(flank_cn = 2) {
        cnv_gr = cnv_gr, cancer_genes_gr = cancer_genes_gr)
 }
 
+## Two amplified loci on different chromosomes joined by an inter-chromosomal
+## TRA, for the concatenated-axis recon plot.
+make_recon_inputs <- function() {
+  karyotype <- data.frame(
+    chrom    = c("chr7", "chr7", "chr12", "chr12"),
+    start    = c(0, 50e6, 0, 50e6),
+    end      = c(50e6, 159e6, 50e6, 133e6),
+    gieStain = c("gneg", "gpos50", "gneg", "gpos50")
+  )
+  gene_coord <- data.frame(
+    chr = c("chr7", "chr12"), start = c(55019017, 57747727),
+    end = c(55211628, 57756013), strand = c("+", "+"), gene = c("EGFR", "CDK4")
+  )
+  wgd_data <- data.frame(sample = "S1", Polyploidy = "No")
+  cnv_data <- data.frame(
+    sample   = "S1",
+    seqnames = c("chr7", "chr7", "chr7", "chr12", "chr12", "chr12"),
+    start    = c(40e6, 55e6, 56e6 + 1, 40e6, 57e6, 58e6 + 1),
+    end      = c(54.99e6, 56e6, 70e6, 56.99e6, 58e6, 70e6),
+    copyNumber = c(2, 20, 2, 2, 15, 2), ploidy = 2,
+    majorAlleleCopyNumber = c(1, 19, 1, 1, 14, 1),
+    minorAlleleCopyNumber = c(1, 1, 1, 1, 1, 1)
+  )
+  sv_data <- data.frame(
+    chrom1 = c("7", "12"), start1 = c(55.2e6, 57.2e6),
+    chrom2 = c("12", "7"), start2 = c(57.8e6, 55.8e6),
+    strand1 = c("+", "-"), strand2 = c("-", "+"),
+    svclass = c("TRA", "DUP"), VF = c(100, 60), JCN = c(5, 3), sample = "S1"
+  )
+  list(karyotype = karyotype, gene_coord = gene_coord, wgd_data = wgd_data,
+       cnv_data = cnv_data, sv_data = sv_data)
+}
+
 make_plot_inputs <- function() {
   karyotype <- data.frame(
     chrom    = "chr7",

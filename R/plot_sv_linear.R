@@ -45,12 +45,28 @@
 #' @param loci Optional explicit loci: a `data.frame` with columns
 #'   `chr`,`start`,`end`, or a character vector of `"chr:start-end"` strings.
 #'   Takes precedence over `chromosome`/`chromosome_range`.
-#' @param margin Numeric; fraction of each auto-detected amplicon's width to pad
-#'   on both sides (default `0.15`).
-#' @param min_cn_ratio Numeric; a segment is "amplified" when
-#'   `copyNumber > min_cn_ratio * ploidy` (default `3`).
-#' @param min_amp_width Numeric; drop auto-detected loci whose total amplified
-#'   span is below this many bp (default `1e5`).
+#' @param events Character vector of copy-number event types to target when
+#'   auto-detecting loci (used only when neither `loci` nor `chromosome_range` is
+#'   given). Any of `"amp"` (amplification), `"gain"`, `"hetdel"` (heterozygous /
+#'   single-copy loss) and `"homdel"` (homozygous deletion); default `"amp"`.
+#'   When explicit loci are supplied the whole region is plotted regardless of
+#'   event type -- the function is a general CN/SV viewer, not amplification-only.
+#' @param cluster_gap Numeric; when auto-detecting, consecutive event segments
+#'   more than this many bp apart start a new locus, so scattered focal events
+#'   become separate panels instead of one whole-chromosome span (default `5e6`).
+#' @param margin Numeric; fraction of each auto-detected region's width to pad on
+#'   both sides (default `0.15`).
+#' @param min_cn_ratio Numeric; amplification threshold as a multiple of ploidy
+#'   (`copyNumber > min_cn_ratio * ploidy`, default `3`).
+#' @param gain_ratio Numeric; gain threshold as a multiple of ploidy (default
+#'   `1.4`); a "gain" is `> gain_ratio * ploidy` but not amplified.
+#' @param hetdel_ratio Numeric; heterozygous-deletion upper threshold as a
+#'   multiple of ploidy (default `0.75`); a "hetdel" is `< hetdel_ratio * ploidy`
+#'   but not a homozygous deletion.
+#' @param homdel_thresh Numeric; homozygous-deletion copy-number threshold
+#'   (`copyNumber < homdel_thresh`, default `0.5`).
+#' @param min_amp_width Numeric; drop auto-detected loci whose total event span
+#'   is below this many bp (default `1e5`).
 #' @param gap_frac Numeric; gap between loci as a fraction of the total plotted
 #'   width (default `0.06`).
 #' @param genes_to_highlight Optional character vector of gene symbols. If `NULL`,
@@ -63,6 +79,10 @@
 #'   (default `TRUE`; falls back to plain labels if ggrepel is absent).
 #' @param cn_max Optional numeric override for the copy-number axis top; if
 #'   `NULL` it is rounded up from the data to two significant figures.
+#' @param displayExon Logical; if `TRUE`, draw exon models (from `cds_gr`) for
+#'   in-window genes instead of a point + label (default `FALSE`).
+#' @param cds_gr Optional [GenomicRanges::GRanges] of CDS/exon ranges (metadata
+#'   column `gene_name`); required when `displayExon = TRUE`.
 #' @param offset_gene,ymax_highlight_ratio,karyotype_rel_size,loh_position_ratio
 #'   Layout tuning parameters.
 #' @param highlight_amp,highlight_hom_del Logical; shade amplified / homozygously
@@ -115,17 +135,24 @@ plot_sv_linear <- function(sample,
                            chromosome = NULL,
                            chromosome_range = NULL,
                            loci = NULL,
+                           events = "amp",
+                           cluster_gap = 5e6,
                            margin = 0.15,
                            min_cn_ratio = 3,
+                           gain_ratio = 1.4,
+                           hetdel_ratio = 0.75,
+                           homdel_thresh = 0.5,
                            min_amp_width = 1e5,
                            gap_frac = 0.06,
                            genes_to_highlight = NULL,
                            gene_label_angle = NULL,
                            repel_labels = TRUE,
                            cn_max = NULL,
+                           displayExon = FALSE,
+                           cds_gr = NULL,
                            offset_gene = 1.15,
                            ymax_highlight_ratio = 1.08,
-                           karyotype_rel_size = 0.06,
+                           karyotype_rel_size = 0.048,
                            loh_position_ratio = 0.5,
                            highlight_amp = TRUE,
                            highlight_hom_del = TRUE,
@@ -179,12 +206,40 @@ plot_sv_linear <- function(sample,
   wgd_status <- if (nrow(wrow) >= 1 && wrow$Polyploidy[1] == "No") "Diploid" else "WGD"
 
   ## ---- Resolve loci -------------------------------------------------------
+  events <- match.arg(events, c("amp", "gain", "hetdel", "homdel"), several.ok = TRUE)
+  ## Copy-number event predicate over a set of segments:
+  is_event <- function(d, ploidy) {
+    keep <- rep(FALSE, nrow(d))
+    if ("amp"    %in% events) keep <- keep | (d$copyNumber > min_cn_ratio * ploidy)
+    if ("gain"   %in% events) keep <- keep | (d$copyNumber > gain_ratio * ploidy &
+                                              d$copyNumber <= min_cn_ratio * ploidy)
+    if ("hetdel" %in% events) keep <- keep | (d$copyNumber < hetdel_ratio * ploidy &
+                                              d$copyNumber >= homdel_thresh)
+    if ("homdel" %in% events) keep <- keep | (d$copyNumber < homdel_thresh)
+    keep
+  }
   detect_loci <- function(chroms = NULL) {
     ploidy <- cnv$ploidy[1]
-    amp <- cnv[cnv$copyNumber > min_cn_ratio * ploidy, , drop = FALSE]
-    agg <- if (nrow(amp) > 0) do.call(rbind, lapply(split(amp, amp$chr), function(d)
-      data.frame(chr = d$chr[1], start = min(d$start), end = max(d$end),
-                 amp_bp = sum(d$end - d$start), stringsAsFactors = FALSE))) else
+    ev <- cnv[is_event(cnv, ploidy), , drop = FALSE]
+    ## Cluster event segments per chromosome: start a new locus wherever
+    ## consecutive events are separated by more than `cluster_gap`, so scattered
+    ## focal events (e.g. homozygous deletions) become separate loci rather than
+    ## one whole-chromosome span.
+    clusters <- list()
+    for (cc in unique(ev$chr)) {
+      d <- ev[ev$chr == cc, , drop = FALSE]
+      d <- d[order(d$start), , drop = FALSE]
+      prev_max_end <- cummax(d$end)
+      newgrp <- c(TRUE, (d$start[-1] - prev_max_end[-nrow(d)]) > cluster_gap)
+      grp <- cumsum(newgrp)
+      for (g in unique(grp)) {
+        dd <- d[grp == g, , drop = FALSE]
+        clusters[[length(clusters) + 1L]] <- data.frame(
+          chr = cc, start = min(dd$start), end = max(dd$end),
+          amp_bp = sum(dd$end - dd$start), stringsAsFactors = FALSE)
+      }
+    }
+    agg <- if (length(clusters)) do.call(rbind, clusters) else
       data.frame(chr = character(), start = numeric(), end = numeric(), amp_bp = numeric())
     agg <- agg[agg$amp_bp >= min_amp_width, , drop = FALSE]
     if (nrow(agg) > 0) {
@@ -193,14 +248,14 @@ plot_sv_linear <- function(sample,
       agg$end   <- pmin(chr_len[agg$chr], round(agg$end + margin * w))
     }
     if (is.null(chroms)) {
-      if (nrow(agg) == 0) stop("No amplified loci found for ", this_sample,
-                               " (copyNumber > ", min_cn_ratio, " x ploidy, >= ",
-                               min_amp_width, " bp). Specify `chromosome` or `loci`.")
-      res <- agg[, c("chr", "start", "end")]
-      res <- res[order(suppressWarnings(as.integer(gsub("chr", "", res$chr))), res$chr), ]
+      if (nrow(agg) == 0) stop("No ", paste(events, collapse = "/"), " loci found for ",
+                               this_sample, " (>= ", min_amp_width,
+                               " bp). Specify `chromosome` or `loci`.")
+      res <- agg[order(suppressWarnings(as.integer(gsub("chr", "", agg$chr))), agg$chr, agg$start),
+                 c("chr", "start", "end")]
     } else {
       res <- do.call(rbind, lapply(chroms, function(cc) {
-        if (cc %in% agg$chr) agg[agg$chr == cc, c("chr", "start", "end")]
+        if (cc %in% agg$chr) agg[agg$chr == cc, c("chr", "start", "end"), drop = FALSE]
         else data.frame(chr = cc, start = 0, end = unname(chr_len[cc]), stringsAsFactors = FALSE)
       }))
     }
@@ -403,44 +458,78 @@ plot_sv_linear <- function(sample,
     aes(x = gx_start, xend = gx_end, y = majorAlleleCopyNumber, yend = majorAlleleCopyNumber),
     colour = color_major_cn, linewidth = cn_size - 0.3)
 
-  ## Gene labels (in-window), de-collided with ggrepel:
-  gl <- do.call(rbind, lapply(seq_len(nrow(loci)), function(i) {
-    g <- gene_coord[gene_coord$chr == loci$chr[i] &
-                    gene_coord$start >= loci$start[i] & gene_coord$end <= loci$end[i] &
-                    gene_coord$gene %in% genes, , drop = FALSE]
-    if (nrow(g) == 0) return(NULL)
-    g$gx <- loci$offset[i] + ((g$start + g$end) / 2 - loci$start[i])
-    g
-  }))
-  if (!is.null(gl) && nrow(gl) > 0) {
-    gl$y <- max.cn * offset_gene
-    if (is.null(gene_label_angle)) {
-      gp <- sort(gl$gx); gene_label_angle <- if (length(gp) > 1 && min(diff(gp)) < 0.05 * total_w) 45 else 0
+  ## Gene labels (in-window). `displayExon` draws exon models; otherwise a
+  ## point + de-collided ggrepel label.
+  if (displayExon) {
+    if (is.null(cds_gr)) stop("displayExon = TRUE requires 'cds_gr' (a GRanges of ",
+                              "CDS/exon ranges with a 'gene_name' column).")
+    cds <- as.data.frame(cds_gr)
+    cds$chr <- if (all(grepl("^chr", cds$seqnames))) as.character(cds$seqnames)
+               else paste0("chr", cds$seqnames)
+    yb <- max.cn * offset_gene
+    ex_df <- data.frame(); body_df <- data.frame(); lab_df <- data.frame()
+    for (i in seq_len(nrow(loci))) {
+      for (gn in intersect(genes, cds$gene_name[cds$chr == loci$chr[i]])) {
+        ex <- cds[cds$gene_name == gn & cds$chr == loci$chr[i] &
+                  cds$end >= loci$start[i] & cds$start <= loci$end[i], , drop = FALSE]
+        if (nrow(ex) == 0) next
+        gxs <- loci$offset[i] + (pmax(ex$start, loci$start[i]) - loci$start[i])
+        gxe <- loci$offset[i] + (pmin(ex$end,   loci$end[i])   - loci$start[i])
+        ex_df   <- rbind(ex_df, data.frame(gxs = gxs, gxe = gxe))
+        body_df <- rbind(body_df, data.frame(gxs = min(gxs), gxe = max(gxe)))
+        lab_df  <- rbind(lab_df, data.frame(gx = (min(gxs) + max(gxe)) / 2, gene = gn))
+      }
     }
-    p <- p + geom_point(data = gl, aes(x = gx, y = y * 0.94), shape = 16, size = 1, colour = "black")
-    if (repel_labels && requireNamespace("ggrepel", quietly = TRUE)) {
-      p <- p + ggrepel::geom_text_repel(data = gl, aes(x = gx, y = y, label = gene),
-        size = size_gene_label, fontface = "italic", angle = gene_label_angle, hjust = 0,
-        direction = "both", nudge_y = max.cn * 0.12, ylim = c(max.cn * 1.02, NA),
-        segment.size = 0.2, segment.colour = "grey60", min.segment.length = 0,
-        box.padding = 0.25, max.overlaps = Inf, seed = 1L)
-    } else {
-      p <- p + geom_text(data = gl, aes(x = gx, y = y, label = gene),
-                         size = size_gene_label, fontface = "italic", angle = gene_label_angle)
+    if (nrow(ex_df) > 0) {
+      p <- p +
+        geom_segment(data = body_df, aes(x = gxs, xend = gxe, y = yb * 0.95, yend = yb * 0.95),
+                     colour = "grey40", linewidth = 0.3) +
+        geom_rect(data = ex_df, aes(xmin = gxs, xmax = gxe, ymin = yb * 0.92, ymax = yb * 0.98),
+                  fill = "grey30", colour = NA) +
+        geom_text(data = lab_df, aes(x = gx, y = yb * 1.07, label = gene),
+                  size = size_gene_label, fontface = "italic")
+    }
+  } else {
+    gl <- do.call(rbind, lapply(seq_len(nrow(loci)), function(i) {
+      g <- gene_coord[gene_coord$chr == loci$chr[i] &
+                      gene_coord$start >= loci$start[i] & gene_coord$end <= loci$end[i] &
+                      gene_coord$gene %in% genes, , drop = FALSE]
+      if (nrow(g) == 0) return(NULL)
+      g$gx <- loci$offset[i] + ((g$start + g$end) / 2 - loci$start[i])
+      g
+    }))
+    if (!is.null(gl) && nrow(gl) > 0) {
+      gl$y <- max.cn * offset_gene
+      if (is.null(gene_label_angle)) {
+        gp <- sort(gl$gx); gene_label_angle <- if (length(gp) > 1 && min(diff(gp)) < 0.05 * total_w) 45 else 0
+      }
+      p <- p + geom_point(data = gl, aes(x = gx, y = y * 0.94), shape = 16, size = 1, colour = "black")
+      if (repel_labels && requireNamespace("ggrepel", quietly = TRUE)) {
+        p <- p + ggrepel::geom_text_repel(data = gl, aes(x = gx, y = y, label = gene),
+          size = size_gene_label, fontface = "italic", angle = gene_label_angle, hjust = 0,
+          direction = "both", nudge_y = max.cn * 0.12, ylim = c(max.cn * 1.02, NA),
+          segment.size = 0.2, segment.colour = "grey60", min.segment.length = 0,
+          box.padding = 0.25, max.overlaps = Inf, seed = 1L)
+      } else {
+        p <- p + geom_text(data = gl, aes(x = gx, y = y, label = gene),
+                           size = size_gene_label, fontface = "italic", angle = gene_label_angle)
+      }
     }
   }
 
   ## ---- Bottom labelling (Mb ticks + Mb labels + chromosome names) ---------
   unit_y      <- cn_axis_max * 0.07
   tick_y0     <- lower_limit_karyotype
-  tick_y1     <- lower_limit_karyotype - 0.45 * unit_y
-  mb_label_y  <- lower_limit_karyotype - 1.25 * unit_y
-  chr_label_y <- lower_limit_karyotype - 2.7 * unit_y
+  tick_y1     <- lower_limit_karyotype - 0.7 * unit_y   # longer x tick marks
+  mb_label_y  <- lower_limit_karyotype - 1.6 * unit_y
+  chr_label_y <- lower_limit_karyotype - 3.0 * unit_y
 
   tick_df <- data.frame(); mb_df <- data.frame()
   for (i in seq_len(nrow(loci))) {
     ticks <- pretty(c(loci$start[i], loci$end[i]), n = 3)
     ticks <- ticks[ticks >= loci$start[i] & ticks <= loci$end[i]]
+    ticks <- ticks[ticks != 0]                          # drop a "0.0" at a locus start
+    if (length(ticks) == 0) next
     gxt <- loci$offset[i] + (ticks - loci$start[i])
     tick_df <- rbind(tick_df, data.frame(x = gxt))
     mb_df <- rbind(mb_df, data.frame(x = gxt, lab = formatC(ticks / 1e6, format = "f", digits = 1)))
@@ -454,10 +543,10 @@ plot_sv_linear <- function(sample,
     geom_segment(data = data.frame(x = loci$gx_end[nrow(loci)]),
                  aes(x = x, xend = x, y = 0, yend = cn_axis_max), colour = "black", linewidth = 0.4) +
     geom_segment(data = tick_df, aes(x = x, xend = x, y = tick_y0, yend = tick_y1),
-                 colour = "black", linewidth = 0.3) +
-    geom_text(data = mb_df, aes(x = x, y = mb_label_y, label = lab), size = size_text / 2.6, vjust = 1) +
+                 colour = "black", linewidth = 0.4) +
+    geom_text(data = mb_df, aes(x = x, y = mb_label_y, label = lab), size = size_text / 2.1, vjust = 1) +
     geom_text(data = chr_lab, aes(x = gx, y = chr_label_y, label = chr),
-              size = size_text / 2.0, vjust = 1, fontface = "bold") +
+              size = size_text / 1.6, vjust = 1, fontface = "bold") +
     ggtitle(paste0(this_sample, " (", wgd_status, ")")) +
     labs(x = NULL, y = "Allele specific\ncopy number") +
     coord_cartesian(clip = "off", expand = FALSE) +
@@ -465,12 +554,16 @@ plot_sv_linear <- function(sample,
     theme(
       text = element_text(size = size_text, colour = "black"),
       axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.line.x = element_blank(),
-      axis.text.y = element_text(size = size_text, colour = "black"),
-      axis.title.y = element_text(size = size_text + 2, colour = "black"),
+      axis.text.y = element_text(size = size_text + 3, colour = "black"),
+      axis.text.y.right = element_text(size = size_text + 3, colour = "black"),
+      axis.title.y = element_text(size = size_text + 4, colour = "black"),
+      axis.title.y.right = element_text(size = size_text + 4, colour = "black"),
+      axis.ticks.y = element_line(colour = "black", linewidth = 0.4),
       axis.ticks.y.right = element_line(colour = "black", linewidth = 0.4),
+      axis.ticks.length.y = unit(0.2, "cm"),           # longer y tick marks
       panel.background = element_blank(), plot.background = element_blank(), panel.grid = element_blank(),
-      plot.title = element_text(hjust = 0.5, size = size_text + 3),
-      plot.margin = unit(c(.3, .5, 1.2, .2), "cm")
+      plot.title = element_text(hjust = 0.5, size = size_text + 4),
+      plot.margin = unit(c(.3, .5, 1.3, .2), "cm")
     )
 
   if (max_vf > 0) {

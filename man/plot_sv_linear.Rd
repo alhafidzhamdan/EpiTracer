@@ -14,17 +14,24 @@ plot_sv_linear(
   chromosome = NULL,
   chromosome_range = NULL,
   loci = NULL,
+  events = "amp",
+  cluster_gap = 5e+06,
   margin = 0.15,
   min_cn_ratio = 3,
+  gain_ratio = 1.4,
+  hetdel_ratio = 0.75,
+  homdel_thresh = 0.5,
   min_amp_width = 1e+05,
   gap_frac = 0.06,
   genes_to_highlight = NULL,
   gene_label_angle = NULL,
   repel_labels = TRUE,
   cn_max = NULL,
+  displayExon = FALSE,
+  cds_gr = NULL,
   offset_gene = 1.15,
   ymax_highlight_ratio = 1.08,
-  karyotype_rel_size = 0.06,
+  karyotype_rel_size = 0.048,
   loh_position_ratio = 0.5,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
@@ -72,14 +79,35 @@ window limits, one row per entry in \code{chromosome}.}
 \code{chr},\code{start},\code{end}, or a character vector of \code{"chr:start-end"} strings.
 Takes precedence over \code{chromosome}/\code{chromosome_range}.}
 
-\item{margin}{Numeric; fraction of each auto-detected amplicon's width to pad
-on both sides (default \code{0.15}).}
+\item{events}{Character vector of copy-number event types to target when
+auto-detecting loci (used only when neither \code{loci} nor \code{chromosome_range} is
+given). Any of \code{"amp"} (amplification), \code{"gain"}, \code{"hetdel"} (heterozygous /
+single-copy loss) and \code{"homdel"} (homozygous deletion); default \code{"amp"}.
+When explicit loci are supplied the whole region is plotted regardless of
+event type -- the function is a general CN/SV viewer, not amplification-only.}
 
-\item{min_cn_ratio}{Numeric; a segment is "amplified" when
-\code{copyNumber > min_cn_ratio * ploidy} (default \code{3}).}
+\item{cluster_gap}{Numeric; when auto-detecting, consecutive event segments
+more than this many bp apart start a new locus, so scattered focal events
+become separate panels instead of one whole-chromosome span (default \code{5e6}).}
 
-\item{min_amp_width}{Numeric; drop auto-detected loci whose total amplified
-span is below this many bp (default \code{1e5}).}
+\item{margin}{Numeric; fraction of each auto-detected region's width to pad on
+both sides (default \code{0.15}).}
+
+\item{min_cn_ratio}{Numeric; amplification threshold as a multiple of ploidy
+(\code{copyNumber > min_cn_ratio * ploidy}, default \code{3}).}
+
+\item{gain_ratio}{Numeric; gain threshold as a multiple of ploidy (default
+\code{1.4}); a "gain" is \verb{> gain_ratio * ploidy} but not amplified.}
+
+\item{hetdel_ratio}{Numeric; heterozygous-deletion upper threshold as a
+multiple of ploidy (default \code{0.75}); a "hetdel" is \verb{< hetdel_ratio * ploidy}
+but not a homozygous deletion.}
+
+\item{homdel_thresh}{Numeric; homozygous-deletion copy-number threshold
+(\code{copyNumber < homdel_thresh}, default \code{0.5}).}
+
+\item{min_amp_width}{Numeric; drop auto-detected loci whose total event span
+is below this many bp (default \code{1e5}).}
 
 \item{gap_frac}{Numeric; gap between loci as a fraction of the total plotted
 width (default \code{0.06}).}
@@ -97,6 +125,12 @@ genes are crowded.}
 
 \item{cn_max}{Optional numeric override for the copy-number axis top; if
 \code{NULL} it is rounded up from the data to two significant figures.}
+
+\item{displayExon}{Logical; if \code{TRUE}, draw exon models (from \code{cds_gr}) for
+in-window genes instead of a point + label (default \code{FALSE}).}
+
+\item{cds_gr}{Optional \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of CDS/exon ranges (metadata
+column \code{gene_name}); required when \code{displayExon = TRUE}.}
 
 \item{offset_gene, ymax_highlight_ratio, karyotype_rel_size, loh_position_ratio}{Layout tuning parameters.}
 

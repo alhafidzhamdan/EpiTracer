@@ -65,6 +65,48 @@ test_that("explicit loci strings are accepted", {
   expect_s3_class(p, "ggplot")
 })
 
+test_that("events = 'homdel' errors when no homozygous deletion is present", {
+  d <- make_recon_inputs()   # amplified loci only, no homdel
+  expect_error(
+    suppressWarnings(suppressMessages(
+      plot_sv_linear(
+        sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+        karyotype = d$karyotype, gene_coord = d$gene_coord, events = "homdel"
+      )
+    )),
+    "homdel"
+  )
+})
+
+test_that("displayExon draws exon models from cds_gr", {
+  d <- make_plot_inputs()
+  cds <- GenomicRanges::GRanges("chr7",
+    IRanges::IRanges(c(55019017, 55142286), c(55019365, 55142437)), gene_name = "EGFR")
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+      displayExon = TRUE, cds_gr = cds
+    )
+  ))
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("displayExon = TRUE without cds_gr errors", {
+  d <- make_plot_inputs()
+  expect_error(
+    suppressWarnings(suppressMessages(
+      plot_sv_linear(
+        sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+        karyotype = d$karyotype, gene_coord = d$gene_coord,
+        chromosome = "chr7", displayExon = TRUE
+      )
+    )),
+    "cds_gr"
+  )
+})
+
 test_that("auto-detection errors when no amplification is present", {
   d <- make_recon_inputs()
   d$cnv_data$copyNumber <- 2

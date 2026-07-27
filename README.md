@@ -26,85 +26,14 @@ The package currently provides two functions:
 
 ## Installation
 
-EpiTracer is **not on CRAN** — it depends on Bioconductor packages
+EpiTracer is not on CRAN — it depends on Bioconductor packages
 (`GenomicRanges`, `regioneR`) and on [`gUtils`](https://github.com/mskilab/gUtils)
-(GitHub-only). Install it with any tool that resolves Bioconductor + GitHub
-dependencies (the `Remotes:` field pulls in `gUtils` automatically):
-
-**BiocManager** (recommended — resolves Bioconductor, GitHub and `Remotes:`):
+(GitHub-only). Install it with `BiocManager`, which resolves the Bioconductor,
+GitHub and `Remotes:` dependencies:
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 BiocManager::install("alhafidzhamdan/EpiTracer")
-```
-
-**pak** (also resolves everything in one call):
-
-```r
-# install.packages("pak")
-pak::pak("alhafidzhamdan/EpiTracer")
-```
-
-**remotes / devtools** (enable Bioconductor repos first so the Bioc deps resolve):
-
-```r
-install.packages(c("remotes", "BiocManager"))
-options(repos = BiocManager::repositories())
-remotes::install_github("alhafidzhamdan/EpiTracer")
-```
-
-**r-universe** — a CRAN-like experience without CRAN. If the package is built on
-a personal [r-universe](https://r-universe.dev), users install with plain
-`install.packages()`:
-
-```r
-install.packages("EpiTracer",
-  repos = c("https://alhafidzhamdan.r-universe.dev",
-            "https://bioc.r-universe.dev", getOption("repos")))
-```
-
-**Local source tarball** (dependencies must be pre-installed):
-
-```sh
-R CMD build EpiTracer
-```
-```r
-install.packages("EpiTracer_0.0.0.9000.tar.gz", repos = NULL, type = "source")
-```
-
-> The GitHub-based options require the repository to be pushed to
-> `github.com/alhafidzhamdan/EpiTracer` first.
-
-### Offline / GitHub-only environments
-
-On a firewalled host where CRAN/Bioconductor are unreachable but GitHub is
-whitelisted, how you install depends on whether the dependencies are already
-present (check e.g. `requireNamespace("GenomicRanges")`). The bundled hg38
-references mean no data download is needed at run time.
-
-**Dependencies already installed** (common on managed / HPC R installs) — pull
-just EpiTracer and `gUtils` from GitHub, without touching CRAN/Bioconductor:
-
-```r
-remotes::install_github("mskilab/gUtils",           dependencies = FALSE, upgrade = "never")
-remotes::install_github("alhafidzhamdan/EpiTracer", dependencies = FALSE, upgrade = "never")
-```
-
-**Fully air-gapped** — stage everything on a connected machine, transfer, then
-install locally. Either download the whole dependency tree:
-
-```r
-# on a machine with internet:
-pak::pkg_download("alhafidzhamdan/EpiTracer", dest_dir = "epitracer_pkgs", dependencies = TRUE)
-# copy epitracer_pkgs/ across, then on the offline host:
-install.packages(dir("epitracer_pkgs", full.names = TRUE), repos = NULL, type = "source")
-```
-
-…or install from a clone (dependencies must already be present):
-
-```sh
-git clone https://github.com/alhafidzhamdan/EpiTracer.git
-R CMD INSTALL EpiTracer
 ```
 
 ## The episome heuristic

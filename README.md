@@ -34,11 +34,6 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocMana
 BiocManager::install("alhafidzhamdan/EpiTracer")
 ```
 
-## Documentation
-
-- **[`call_episomal_ecdna()`](docs/call_episomal_ecdna.md)** — the episomal ecDNA caller.
-- **[`plot_sv_linear()`](docs/plot_sv_linear.md)** — the SV + CNV plotter.
-
 ## Status
 
 Early development (`v0.0.0.9000`) — the API may change.

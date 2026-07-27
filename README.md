@@ -1,71 +1,80 @@
-# EpiTracer
+# EpiTracer <img src="https://img.shields.io/badge/status-experimental-orange.svg" align="right" alt="experimental"/>
 
 <!-- badges: start -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+![R >= 4.1](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)
 <!-- badges: end -->
 
-**EpiTracer: Calling and visualising extrachromosomal circular DNA amplicons
-likely generated from simple excision events.**
+> **EpiTracer** — *calling and visualising extrachromosomal circular DNA
+> amplicons likely generated from simple excision events.*
 
 It detects such amplicons from whole-genome sequencing (WGS) data and visualises
-the structural rearrangements underlying focal amplifications.
+the structural rearrangements underlying focal amplifications. The package
+provides two functions:
 
-The package currently provides two functions:
+| Function | What it does |
+| :--- | :--- |
+| **`call_episomal_ecdna()`** | Flags ecDNA amplicons whose structure fits the **episome** model — a circle bounded by a duplication (DUP) breakpoint, excised from an otherwise non-amplified region, often leaving a deletion **"excision scar"**. |
+| **`plot_sv_linear()`** | Draws allele-specific copy number and structural variant arcs for one or many loci on a single concatenated axis — with karyotype ideograms, LOH / deletion bars and gene labels (PDF). Auto-detects amplicons and draws the SVs interconnecting them. |
 
-- **`call_episomal_ecdna()`** — an episomal ecDNA caller. For each ecDNA
-  amplicon it locates the structural variant breakpoints at the amplicon
-  boundaries and flags amplicons whose structure is consistent with the
-  *episome* model of formation: a circular amplicon bounded by a duplication
-  (DUP) breakpoint, arising from an otherwise non-amplified chromosomal region,
-  often leaving a deletion "excision scar" at the origin locus.
-- **`plot_sv_linear()`** — a linear allele-specific copy-number and structural
-  rearrangement plotter. It draws one or more loci side-by-side on a single
-  concatenated x-axis with CN tracks, SV arcs, karyotype ideograms, LOH /
-  homozygous-deletion bars, and gene labels (saved as PDF). Point it at a
-  single focused locus (`chromosome` + `chromosome_range`), give explicit
-  `loci`, or let it **auto-detect every amplified locus** in the sample — the
-  structural variants interconnecting separate amplicons (multi-fragment / hub
-  ecDNA junctions) are drawn as arcs spanning the loci.
+---
 
 ## Installation
 
 Install with `BiocManager`, which resolves the Bioconductor
 (`GenomicRanges`, `regioneR`), GitHub ([`gUtils`](https://github.com/mskilab/gUtils))
-and `Remotes:` dependencies:
+and `Remotes:` dependencies in one call:
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 BiocManager::install("alhafidzhamdan/EpiTracer")
 ```
 
-## The episome heuristic
+---
 
-For each amplicon, `call_episomal_ecdna()`:
+## Data requirement
 
-1. finds DUP breakpoints at the amplicon boundaries that are themselves
-   amplified (`PURPLE_CN > 3 × ploidy`);
-2. requires the boundary DUP to carry the **highest variant fraction (VF)** of
-   any DUP in the amplicon;
-3. requires the chromosomal segments immediately **flanking both boundaries to
-   be non-gained** (consistent with a circle excised from a diploid region);
-4. flags a shared flanking **deletion** as a candidate **excision scar**.
+> [!IMPORTANT]
+> **Copy-number (CNV) and structural variant (SV) inputs must come from
+> [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple)**, part
+> of the Hartwig Medical Foundation (HMF) pipeline. EpiTracer relies on PURPLE's
+> allele-specific copy-number segments and its SV / breakpoint output (variant
+> fraction, junction copy number, PURPLE copy number, …). Output from other
+> callers is not supported unless coerced to the columns below.
 
-## Usage
+`call_episomal_ecdna()` expects these PURPLE / HMF metadata columns:
+
+| Object | Required columns |
+| :--- | :--- |
+| `ecdna_gr`        | `ID`, `WGS_ID` |
+| `breakpoints_gr`  | `WGS_ID`, `event`, `svclass`, `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN` |
+| `cnv_gr`          | `sample`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber` |
+| `cancer_genes_gr` | any (used for overlap annotation) |
+
+`plot_sv_linear()` uses PURPLE CNV segments (`cnv_data`) and PURPLE SV / BEDPE
+breakpoints (`sv_data`) for the same sample.
+
+---
+
+## Quick start
 
 ```r
 library(EpiTracer)
 
-# Inputs are GRanges objects (e.g. derived from AmpliconArchitect + PURPLE):
+## 1. Call episomal ecDNA (inputs are GRanges from AmpliconArchitect + PURPLE) --
 episomal <- call_episomal_ecdna(
   ecdna_gr        = ecdna_gr,        # amplicon regions; needs $ID, $WGS_ID
-  breakpoints_gr  = breakpoints_gr,  # SV breakpoints (PURPLE-style columns)
-  cnv_gr          = cnv_gr,          # allele-specific CN segments
-  cancer_genes_gr = cancer_genes_gr, # cancer gene loci for annotation
+  breakpoints_gr  = breakpoints_gr,  # PURPLE SV breakpoints
+  cnv_gr          = cnv_gr,          # PURPLE allele-specific CN segments
+  cancer_genes_gr = cancer_genes_gr, # cancer-gene loci for annotation
   ext             = 1e7,
   mc.cores        = 4
 )
 
-# A single focused locus (karyotype/gene_coord default to bundled hg38 refs;
-# wgd_data is optional — supply it to annotate WGD status in the title):
+## 2a. Plot a single focused locus ------------------------------------------
+##     (karyotype / gene_coord default to bundled hg38 references;
+##      wgd_data is optional — supply it to annotate WGD status in the title)
 plot_sv_linear(
   sample     = "DO11441T1",
   cnv_data   = cnv_df, sv_data = sv_df,
@@ -74,53 +83,56 @@ plot_sv_linear(
   outdir     = "plots"
 )
 
-# Every amplified locus, interconnected (multi-fragment ecDNA hub) — auto-detected:
+## 2b. Plot every amplified locus, interconnected (multi-fragment ecDNA hub) --
 plot_sv_linear(
-  sample     = "DUMC12T1",
-  cnv_data   = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
-  outdir     = "plots",   # loci auto-detected; or events = "homdel", loci = c("chr4:...", ...)
-  flank_pct  = 10         # extend each auto-detected window by +/-10%
+  sample    = "DUMC12T1",
+  cnv_data  = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
+  outdir    = "plots",   # loci auto-detected; or events = "homdel", loci = c("chr4:...", ...)
+  flank_pct = 10         # extend each auto-detected window by ±10%
 )
 ```
 
-## Data requirement
+---
 
-**Copy-number (CNV) and structural variant (SV) data must come from
-[PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple), part of
-the Hartwig Medical Foundation (HMF) pipeline.** EpiTracer relies on PURPLE's
-allele-specific copy-number segments and its SV/breakpoint output (variant
-fraction, junction copy number, PURPLE copy number, etc.); other callers'
-outputs are not supported unless coerced to the columns below.
+## How the caller works — the episome heuristic
 
-## Input format
+For each amplicon, `call_episomal_ecdna()`:
 
-`call_episomal_ecdna()` expects these PURPLE/HMF metadata columns:
+1. finds **DUP breakpoints at the amplicon boundaries** that are themselves
+   amplified (`PURPLE_CN > 3 × ploidy`);
+2. requires the boundary DUP to carry the **highest variant fraction (VF)** of
+   any DUP in the amplicon;
+3. requires the chromosomal segments immediately **flanking both boundaries to
+   be non-gained** (consistent with a circle excised from a diploid region);
+4. flags a shared flanking **deletion** as a candidate **excision scar**.
 
-| Object            | Required metadata |
-|-------------------|-------------------|
-| `ecdna_gr`        | `ID`, `WGS_ID` |
-| `breakpoints_gr`  | `WGS_ID`, `event`, `svclass`, `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN` |
-| `cnv_gr`          | `sample`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber` |
-| `cancer_genes_gr` | any (used for overlap annotation) |
-
-`plot_sv_linear()` uses PURPLE CNV segments (`cnv_data`) and PURPLE SV/BEDPE
-breakpoints (`sv_data`) for the same sample.
+---
 
 ## Arguments
 
 ### `call_episomal_ecdna()`
 
-Detects episomal ecDNA amplicons. **Required** arguments have no default.
+Detects episomal ecDNA amplicons. Only the four GRanges inputs are **required**.
 
-| Argument | Required | Default | Description |
-|---|:---:|---|---|
-| `ecdna_gr`        | **yes** | — | GRanges of ecDNA amplicon regions; needs `ID`, `WGS_ID`. |
-| `breakpoints_gr`  | **yes** | — | GRanges of PURPLE SV breakpoints (see *Input format*). |
-| `cnv_gr`          | **yes** | — | GRanges of PURPLE allele-specific CN segments. |
-| `cancer_genes_gr` | **yes** | — | GRanges of cancer-gene loci, for oncogene annotation. |
-| `ext`             | no | `1e7`   | bp to extend each amplicon by when searching for boundary SVs. |
-| `mc.cores`        | no | `1`     | Cores for parallel processing across amplicons. |
-| `verbose`         | no | `FALSE` | Print per-amplicon progress. |
+**Required**
+
+| Argument | Description |
+| :--- | :--- |
+| `ecdna_gr`        | ecDNA amplicon regions (GRanges); needs `ID`, `WGS_ID`. |
+| `breakpoints_gr`  | PURPLE SV breakpoints (GRanges); see *Data requirement*. |
+| `cnv_gr`          | PURPLE allele-specific CN segments (GRanges). |
+| `cancer_genes_gr` | Cancer-gene loci (GRanges), for oncogene annotation. |
+
+**Optional**
+
+| Argument | Default | Description |
+| :--- | :--- | :--- |
+| `ext`      | `1e7`   | bp to extend each amplicon by when searching for boundary SVs. |
+| `mc.cores` | `1`     | Cores for parallel processing across amplicons. |
+| `verbose`  | `FALSE` | Print per-amplicon progress. |
+
+Returns a `data.table` of annotated breakpoints with per-amplicon episomal
+classifications (`episomal`, `has_excision_scar`, …).
 
 ### `plot_sv_linear()`
 
@@ -130,15 +142,15 @@ optional.
 **Required**
 
 | Argument | Description |
-|---|---|
+| :--- | :--- |
 | `sample`   | Sample identifier (matched in `cnv_data` / `sv_data`). |
 | `cnv_data` | PURPLE CN segments: `sample`, `seqnames`, `start`, `end`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber`. |
-| `sv_data`  | PURPLE SVs/BEDPE: `chrom1`, `start1`, `chrom2`, `start2`, `strand1`, `strand2`, `svclass`, `VF`, `JCN`, `sample`. |
+| `sv_data`  | PURPLE SVs / BEDPE: `chrom1`, `start1`, `chrom2`, `start2`, `strand1`, `strand2`, `svclass`, `VF`, `JCN`, `sample`. |
 
 **Optional — references & sample metadata**
 
 | Argument | Default | Description |
-|---|---|---|
+| :--- | :--- | :--- |
 | `wgd_data`       | `NULL` | WGD table (`Polyploidy` column); annotates WGD status in the title when supplied. |
 | `karyotype`      | bundled hg38 | Ideogram bands (data.frame or `.rds` path). |
 | `gene_coord`     | bundled hg38 oncogenes | Gene coordinates (data.frame or BED path). |
@@ -147,7 +159,7 @@ optional.
 **Optional — which loci to plot**
 
 | Argument | Default | Description |
-|---|---|---|
+| :--- | :--- | :--- |
 | `chromosome`       | `NULL`  | Chromosome(s) to display. |
 | `chromosome_range` | `NULL`  | Two-column start/end window(s), one row per `chromosome`. |
 | `loci`             | `NULL`  | Explicit loci: data.frame (`chr`,`start`,`end`) or `"chr:start-end"` strings; overrides `chromosome`. |
@@ -159,7 +171,7 @@ optional.
 **Optional — event thresholds**
 
 | Argument | Default | Description |
-|---|---|---|
+| :--- | :--- | :--- |
 | `min_cn_ratio`  | `3`   | Amplification: `copyNumber > min_cn_ratio × ploidy`. |
 | `gain_ratio`    | `1.4` | Gain: `> gain_ratio × ploidy`, but not amplified. |
 | `loh_thresh`    | `0.5` | LOH: `minorAlleleCopyNumber < loh_thresh`. |
@@ -168,7 +180,7 @@ optional.
 **Optional — gene labels**
 
 | Argument | Default | Description |
-|---|---|---|
+| :--- | :--- | :--- |
 | `genes_to_highlight` | `NULL`  | Gene symbols to label (default oncogene panel if `NULL`). |
 | `gene_label_angle`   | `NULL`  | Label rotation in degrees; auto-angles when crowded if `NULL`. |
 | `repel_labels`       | `TRUE`  | De-collide labels with ggrepel. |
@@ -178,13 +190,13 @@ optional.
 **Optional — layout & appearance**
 
 | Argument | Default | Description |
-|---|---|---|
+| :--- | :--- | :--- |
 | `cn_max`               | `NULL`  | Copy-number axis top (auto from data if `NULL`). |
 | `gap_frac`             | `0.06`  | Gap between loci as a fraction of total width. |
 | `offset_gene`          | `1.15`  | Gene-label height relative to max CN. |
-| `ymax_highlight_ratio` | `1.08`  | Height of amp/homdel shading relative to max CN. |
+| `ymax_highlight_ratio` | `1.08`  | Height of amp / homdel shading relative to max CN. |
 | `karyotype_rel_size`   | `0.048` | Ideogram height relative to the CN axis. |
-| `loh_position_ratio`   | `0.5`   | LOH/homdel bar position within the ideogram gap. |
+| `loh_position_ratio`   | `0.5`   | LOH / homdel bar position within the ideogram gap. |
 | `highlight_amp`        | `TRUE`  | Shade amplified segments. |
 | `highlight_hom_del`    | `TRUE`  | Shade homozygously deleted segments. |
 | `plot_width_custom`    | `NULL`  | Override output width (inches). |
@@ -193,7 +205,7 @@ optional.
 **Optional — output**
 
 | Argument | Default | Description |
-|---|---|---|
+| :--- | :--- | :--- |
 | `outdir`  | `NULL`  | Directory to write the PDF; if `NULL`, only the plot object is returned. |
 | `save`    | `TRUE`  | Write the PDF when `outdir` is supplied. |
 | `verbose` | `FALSE` | Print progress / diagnostics. |
@@ -201,9 +213,11 @@ optional.
 Returns the `ggplot` object (invisibly when a file is written); any written PDF
 path is attached as `attr(p, "path")`.
 
+---
+
 ## Status
 
-Early development (v0.0.0.9000). API may change.
+Early development (`v0.0.0.9000`) — the API may change.
 
 ## License
 

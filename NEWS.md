@@ -9,6 +9,17 @@
       correctly requires *both* flanks to be non-gained before calling an
       episome region.
 * `plot_sv_linear()`: linear allele-specific copy-number / SV "recon" plotter.
+    * **General CN/SV viewer, not amplification-only.** New `events` argument
+      (`"amp"`, `"gain"`, `"hetdel"`, `"homdel"`) chooses which copy-number events
+      auto-detection targets; explicit `chromosome`/`loci` plot any region
+      regardless of event type. Auto-detected events are **clustered** into
+      separate loci (`cluster_gap`) so scattered focal events become their own
+      panels. Thresholds exposed via `min_cn_ratio`/`gain_ratio`/`hetdel_ratio`/
+      `homdel_thresh`.
+    * `displayExon` (with `cds_gr`) re-introduced -- draws exon models for
+      in-window genes.
+    * Larger axis fonts and longer tick marks; ideogram 20% slimmer; a leading
+      `0.0` Mb tick at a locus start is no longer drawn.
     * **Unified onto a single concatenated x-axis** (faceting retired): draws one
       locus or many side-by-side, and structural variants interconnecting separate
       amplicons are drawn as arcs spanning the loci (previously impossible under

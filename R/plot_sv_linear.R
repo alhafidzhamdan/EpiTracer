@@ -3,8 +3,8 @@
 #' Produces a linear, allele-specific copy-number track for one or more
 #' chromosomes (or sub-chromosomal windows) of a single sample, overlaid with
 #' arcs for intra- and inter-chromosomal structural variants (SVs), a karyotype
-#' ideogram, LOH / homozygous-deletion bars, and gene labels. The plot is
-#' written to a PDF in `outdir`.
+#' ideogram, LOH / homozygous-deletion bars, and gene labels. The assembled
+#' `ggplot` object is returned, and optionally written to a PDF in `outdir`.
 #'
 #' Reference annotation that was previously hard-coded is now supplied via the
 #' `karyotype`, `gene_coord`, and `cds_gr` arguments so the function is
@@ -26,8 +26,9 @@
 #' @param gene_coord A data.frame of gene coordinates with columns
 #'   `chr`,`start`,`end`,`strand`,`gene`. A path to a headerless tab-separated
 #'   BED-like file with those five columns is also accepted.
-#' @param wgd_data A data.frame with columns `sample` and `Polyploidy`
-#'   (`"No"` = diploid, otherwise WGD) used to label the plot title.
+#' @param wgd_data A data.frame with a sample-identifier column (see
+#'   `wgd_sample_col`) and a `Polyploidy` column (`"No"` = diploid, otherwise
+#'   WGD) used to label the plot title.
 #' @param cnv_data A data.frame (or object coercible via `as.data.frame`) of
 #'   copy-number segments with columns `sample`, `seqnames`, `start`, `end`,
 #'   `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber`.
@@ -35,25 +36,38 @@
 #'   `start2`, `strand1`, `strand2`, `svclass`, `VF`, `JCN`, `sample`.
 #' @param cds_gr Optional [GenomicRanges::GRanges] of CDS/exon ranges (metadata
 #'   column `gene_name`) used only when `displayExon = TRUE` to draw exon models.
+#' @param wgd_sample_col Optional name of the sample-identifier column in
+#'   `wgd_data`. If `NULL` (default) the function uses `sample`, falling back to
+#'   `WGS_ID` if present.
 #' @param sec_axis_adj,offset_gene,ymax_highlight_ratio Numeric layout tuning
 #'   parameters (see Details of the original implementation).
 #' @param displayExon Logical; if `TRUE`, draw exon models (requires `cds_gr`).
-#' @param scale_ticks Numeric; x-axis tick spacing in bp (default `10e6`).
+#' @param scale_ticks Numeric x-axis tick spacing in bp. If `NULL` (default) a
+#'   sensible spacing is derived from the width of the widest panel.
 #' @param yend_left,yend_right,yend_right_line,loh_position_ratio Numeric layout
-#'   tuning parameters for axes and LOH bars.
+#'   tuning parameters for axes and LOH bars. `yend_left`/`yend_right` may be
+#'   `NULL` (default) to auto-scale the copy-number axis to the data.
+#' @param repel_labels Logical; if `TRUE` (default) use \pkg{ggrepel} to keep
+#'   gene labels from overlapping (falls back to plain labels if ggrepel is not
+#'   installed).
 #' @param plot_height_custom,plot_width_custom Optional numeric overrides for the
 #'   auto-selected PDF dimensions (inches).
 #' @param highlight_amp,highlight_hom_del Logical; shade amplified /
 #'   homozygously deleted segments.
 #' @param karyotype_rel_size Numeric; ideogram height relative to the CN axis.
-#' @param outdir Character; directory in which the PDF is written.
+#' @param outdir Optional directory in which to write the PDF. If `NULL`
+#'   (default) no file is written and only the plot object is returned.
+#' @param save Logical; if `TRUE` (default) and `outdir` is supplied, write the
+#'   PDF. Set `FALSE` to build the plot without writing a file.
+#' @param verbose Logical; if `TRUE`, print progress/diagnostic messages.
 #'
-#' @return Invisibly returns the path to the written PDF. Called for its side
-#'   effect of drawing `<outdir>/<sample>_<chrs>_linear_plot.pdf`.
+#' @return The assembled [ggplot2::ggplot] object (invisibly when a PDF is
+#'   written). The path of any written PDF is attached as attribute
+#'   `"path"`.
 #'
 #' @examples
 #' \dontrun{
-#' plot_sv_linear(
+#' p <- plot_sv_linear(
 #'   sample     = "DO12742T1",
 #'   chromosome = c("chr7", "chr12"),
 #'   karyotype  = "chr_info_hg38.rds",
@@ -63,6 +77,7 @@
 #'   sv_data    = sv_df,
 #'   outdir     = "plots"
 #' )
+#' p + ggplot2::labs(subtitle = "EGFR amplicon")   # compose further
 #' }
 #'
 #' @seealso [call_episomal_ecdna()]
@@ -84,29 +99,54 @@ plot_sv_linear <- function(sample,
                            cnv_data,
                            sv_data,
                            cds_gr = NULL,
+                           wgd_sample_col = NULL,
                            sec_axis_adj = 10,
                            offset_gene = 1.2,
                            ymax_highlight_ratio = 1.08,
                            displayExon = FALSE,
-                           scale_ticks = 10e6,
-                           yend_left = 50,
+                           scale_ticks = NULL,
+                           yend_left = NULL,
                            yend_right = 100,
                            yend_right_line = 2,
                            loh_position_ratio = 0.3,
+                           repel_labels = TRUE,
                            plot_height_custom = NULL,
                            plot_width_custom = NULL,
                            highlight_amp = TRUE,
                            highlight_hom_del = TRUE,
                            karyotype_rel_size = 0.05,
-                           outdir) {
+                           outdir = NULL,
+                           save = TRUE,
+                           verbose = FALSE) {
 
   #### Base functions ####
   chromosome_labeller <- function(chr, value) {
     chrm_name <- gsub("chr", "", chr)
     return(paste0("Chr ", chrm_name))
   }
+  ## Tick breaks that span the actual plotted window (respecting both ends),
+  ## so zoomed panels still get labelled ticks.
   scaler <- function(step) {
-    function(y) seq(0, ceiling(max(y)), by = step)
+    function(y) {
+      lo <- floor(min(y) / step) * step
+      hi <- ceiling(max(y) / step) * step
+      seq(lo, hi, by = step)
+    }
+  }
+  ## Choose a "nice" tick spacing (1/2/5 x 10^k) targeting ~n intervals.
+  nice_step <- function(span, n = 5) {
+    if (!is.finite(span) || span <= 0) return(10e6)
+    raw <- span / n
+    mag <- 10^floor(log10(raw))
+    frac <- raw / mag
+    mult <- if (frac < 1.5) 1 else if (frac < 3) 2 else if (frac < 7) 5 else 10
+    mult * mag
+  }
+  ## Round a value up to a "nice" multiple, for a tidy copy-number axis top.
+  nice_ceiling <- function(x) {
+    if (!is.finite(x) || x <= 0) return(1)
+    s <- nice_step(x, 2)
+    ceiling(x / s) * s
   }
 
   #### Build karyotype ####
@@ -144,21 +184,36 @@ plot_sv_linear <- function(sample,
     chr_selection <- data.frame(chr = chrs, start = rep(0, length(chrs)),
                                 end = rep(250000000, length(chrs)))
   } else {
-    chr_selection <- data.frame(chrs = chrs, start = chromosome_range[, 1],
+    ## NB: column must be `chr` (not `chrs`) to match every downstream
+    ## `chr_selection$chr` reference; the original script mis-named it, which
+    ## silently broke the `chromosome_range` (zoom) code path.
+    chr_selection <- data.frame(chr = chrs, start = chromosome_range[, 1],
                                 end = chromosome_range[, 2])
   }
 
-  print(this_sample)
-  print(chrs)
-  print(chr_selection)
+  if (verbose) {
+    message("sample: ", this_sample)
+    message("chromosomes: ", paste(chrs, collapse = ", "))
+  }
 
   #### Get wgd status ####
-  if (wgd_data %>% dplyr::filter(sample == this_sample) %>% .$Polyploidy == "No") {
+  ## Accept a WGD table keyed by `sample` (default) or `WGS_ID`, or a
+  ## user-specified column name.
+  wgd_data <- as.data.frame(wgd_data)
+  wgd_col <- wgd_sample_col
+  if (is.null(wgd_col)) {
+    wgd_col <- if ("sample" %in% names(wgd_data)) "sample"
+               else if ("WGS_ID" %in% names(wgd_data)) "WGS_ID"
+               else stop("wgd_data must contain a 'sample' or 'WGS_ID' column, ",
+                         "or set `wgd_sample_col`.")
+  }
+  wgd_row <- wgd_data[wgd_data[[wgd_col]] == this_sample, , drop = FALSE]
+  if (nrow(wgd_row) >= 1 && wgd_row$Polyploidy[1] == "No") {
     wgd_status_this_sample <- "Diploid"
   } else {
     wgd_status_this_sample <- "WGD"
   }
-  print(wgd_status_this_sample)
+  if (verbose) message("WGD status: ", wgd_status_this_sample)
 
   #### Define parameters ####
   cn_size <- 0.9
@@ -201,7 +256,7 @@ plot_sv_linear <- function(sample,
   #### Load CNV, SV and karyotype data: ####
   cnv <- cnv_data %>% dplyr::filter(sample == this_sample) %>%
     dplyr::rename(chr = seqnames) %>% as.data.frame()
-  print(cnv)
+  if (verbose) message("CN segments for sample: ", nrow(cnv))
 
   sv <- sv_data %>%
     dplyr::mutate(chrom1 = paste0("chr", chrom1), chrom2 = paste0("chr", chrom2)) %>%
@@ -211,7 +266,8 @@ plot_sv_linear <- function(sample,
                   strands, VF, JCN, sample) %>%
     dplyr::filter(sample == this_sample) %>%
     as.data.frame()
-  print(sv %>% dplyr::filter(strands == "TRA"))
+  if (verbose) message("Translocations (TRA) for sample: ",
+                       nrow(sv[sv$strands == "TRA", ]))
 
   ## Validate SVs with no width info (assume intrachromosomal):
   idx <- which(sv$pos1 == sv$pos2)
@@ -314,6 +370,13 @@ plot_sv_linear <- function(sample,
     }
   }
 
+  ## Auto x-axis tick spacing from the widest panel, unless the user set it.
+  if (is.null(scale_ticks)) {
+    widest <- max(chr_selection$end - chr_selection$start, na.rm = TRUE)
+    scale_ticks <- nice_step(widest)
+    if (verbose) message("Auto x-axis tick spacing: ", scale_ticks, " bp")
+  }
+
   ## TRAs + CNV/karyotype setup:
   if (interFlag) {
     idx1 <- which(sv$chr1 != sv$chr2 & sv$chr1 %in% chr_selection$chr)
@@ -386,7 +449,7 @@ plot_sv_linear <- function(sample,
                                    ymin = lower_limit_karyotype,
                                    ymax = upper_limit_karyotype,
                                    group = chr),
-                     fill = karyotype_data_now$color, color = "black", size = 0.2)
+                     fill = karyotype_data_now$color, color = "black", linewidth = 0.2)
 
   ## y-axis (secondary, read support) scaling:
   coeff <- ceiling(max(sv$VF / 1000)) * 1000 / sec_axis_adj
@@ -410,18 +473,18 @@ plot_sv_linear <- function(sample,
     geom_segment(aes(x = start, xend = end,
                      y = minorAlleleCopyNumber - minorAllele_offset,
                      yend = minorAlleleCopyNumber - minorAllele_offset, group = chr),
-                 data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ], colour = color_minor_cn, size = cn_size) +
+                 data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ], colour = color_minor_cn, linewidth = cn_size) +
     geom_segment(aes(x = start, y = majorAlleleCopyNumber, xend = end,
                      yend = majorAlleleCopyNumber, group = chr),
-                 data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ], colour = color_major_cn, size = cn_size) +
+                 data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ], colour = color_major_cn, linewidth = cn_size) +
     geom_segment(aes(x = start, y = -loh_position_ratio * max.cn, xend = end,
                      yend = -loh_position_ratio * max.cn, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ] %>% dplyr::filter(minorAlleleCopyNumber < 0.5),
-                 colour = color_loh, size = cn_size) +
+                 colour = color_loh, linewidth = cn_size) +
     geom_segment(aes(x = start, y = -loh_position_ratio * max.cn, xend = end,
                      yend = -loh_position_ratio * max.cn, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr, ] %>% dplyr::filter(copyNumber < 0.5),
-                 colour = color_homdel, size = cn_size) +
+                 colour = color_homdel, linewidth = cn_size) +
     facet_grid(. ~ factor(chr, levels = unique(chr_selection$chr)),
                scales = "free_x", space = "free_x", switch = "x",
                labeller = as_labeller(chromosome_labeller)) +
@@ -473,16 +536,16 @@ plot_sv_linear <- function(sample,
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
                        x = intraSV$pos1[i], xend = intraSV$pos2[i],
                        y = intraSV$VF[i] / coeff, yend = intraSV$VF[i] / coeff,
-                       curvature = intraSV$curve[i], size = size_sv_line, colour = intraSV$colour[i])
+                       curvature = intraSV$curve[i], linewidth = size_sv_line, colour = intraSV$colour[i])
           p <- p +
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
                        x = intraSV$pos1[i], xend = intraSV$pos1[i],
                        y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       size = size_sv_line, colour = intraSV$colour[i]) +
+                       linewidth = size_sv_line, colour = intraSV$colour[i]) +
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
                        x = intraSV$pos2[i], xend = intraSV$pos2[i],
                        y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       size = size_sv_line, colour = intraSV$colour[i])
+                       linewidth = size_sv_line, colour = intraSV$colour[i])
         }
 
         if (intraSV$pos1[i] >= min_coord & intraSV$pos1[i] < max_coord & intraSV$pos2[i] > max_coord) {
@@ -490,14 +553,14 @@ plot_sv_linear <- function(sample,
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
                        x = intraSV$pos1[i], xend = intraSV$pos1[i],
                        y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       size = size_sv_line, colour = intraSV$colour[i])
+                       linewidth = size_sv_line, colour = intraSV$colour[i])
           x_range <- (chr_selection$end[which(chr_selection$chr == intraSV$chr1[i])] -
                         chr_selection$start[which(chr_selection$chr == intraSV$chr1[i])]) * 0.01
           p <- p +
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
                        x = intraSV$pos1[i], xend = intraSV$pos1[i] - x_range,
                        y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, size = size_sv_line, colour = intraSV$colour[i])
+                       angle = 45, curvature = 0, linewidth = size_sv_line, colour = intraSV$colour[i])
         }
 
         if (intraSV$pos1[i] < min_coord & intraSV$pos2[i] <= max_coord & intraSV$pos2[i] > min_coord) {
@@ -505,14 +568,14 @@ plot_sv_linear <- function(sample,
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
                        x = intraSV$pos2[i], xend = intraSV$pos2[i],
                        y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       size = size_sv_line, colour = intraSV$colour[i])
+                       linewidth = size_sv_line, colour = intraSV$colour[i])
           x_range <- (chr_selection$end[which(chr_selection$chr == intraSV$chr1[i])] -
                         chr_selection$start[which(chr_selection$chr == intraSV$chr1[i])]) * 0.01
           p <- p +
             geom_curve(data = data.frame(cov = 1, chr = intraSV$chr2[i]),
                        x = intraSV$pos2[i], xend = intraSV$pos2[i] - x_range,
                        y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, size = size_sv_line, colour = intraSV$colour[i])
+                       angle = 45, curvature = 0, linewidth = size_sv_line, colour = intraSV$colour[i])
         }
       }
     }
@@ -575,17 +638,17 @@ plot_sv_linear <- function(sample,
             geom_curve(data = data.frame(cov = 1, chr = interSV$chr1[i]),
                        x = interSV$pos1[i], xend = interSV$pos1[i],
                        y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       size = size_interchr_line, colour = interSV$colour[i]) +
+                       linewidth = size_interchr_line, colour = interSV$colour[i]) +
             geom_curve(data = data.frame(cov = 1, chr = interSV$chr2[i]),
                        x = interSV$pos2[i], xend = interSV$pos2[i],
                        y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       size = size_interchr_line, colour = interSV$colour[i])
+                       linewidth = size_interchr_line, colour = interSV$colour[i])
           p <- p +
             geom_curve(data = data.frame(cov = 1, chr = chrs_now[1, 1]),
                        x = interSV$pos1[i], xend = offset,
                        y = interSV$VF[i] / coeff, yend = interSV$VF[i] / coeff,
                        curvature = interSV$curve[i],
-                       size = size_interchr_line, colour = interSV$colour[i])
+                       linewidth = size_interchr_line, colour = interSV$colour[i])
         }
 
         if (!in_range_chr1) {
@@ -593,14 +656,14 @@ plot_sv_linear <- function(sample,
             geom_curve(data = data.frame(cov = 1, chr = interSV$chr2[i]),
                        x = interSV$pos2[i], xend = interSV$pos2[i],
                        y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       size = size_interchr_line, colour = interSV$colour[i])
+                       linewidth = size_interchr_line, colour = interSV$colour[i])
           x_range <- (chr_selection$end[which(chr_selection$chr == interSV$chr1[i])] -
                         chr_selection$start[which(chr_selection$chr == interSV$chr1[i])]) * 0.01
           p <- p +
             geom_curve(data = data.frame(cov = 1, chr = interSV$chr2[i]),
                        x = interSV$pos2[i], xend = interSV$pos2[i] - x_range,
                        y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, size = size_interchr_line, colour = interSV$colour[i])
+                       angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV$colour[i])
           if (label_interchr_SV) {
             p <- p + geom_text(data = data.frame(cov = 1, chr = interSV$chr2[i]),
                                x = interSV$pos2[i] - x_range, y = interSV$VF[i] / coeff,
@@ -613,14 +676,14 @@ plot_sv_linear <- function(sample,
             geom_curve(data = data.frame(cov = 1, chr = interSV$chr1[i]),
                        x = interSV$pos1[i], xend = interSV$pos1[i],
                        y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       size = size_interchr_line, colour = interSV$colour[i])
+                       linewidth = size_interchr_line, colour = interSV$colour[i])
           x_range <- (chr_selection$end[which(chr_selection$chr == interSV$chr1[i])] -
                         chr_selection$start[which(chr_selection$chr == interSV$chr1[i])]) * 0.01
           p <- p +
             geom_curve(data = data.frame(cov = 1, chr = interSV$chr1[i]),
                        x = interSV$pos1[i], xend = interSV$pos1[i] - x_range,
                        y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, size = size_interchr_line, colour = interSV$colour[i])
+                       angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV$colour[i])
           if (label_interchr_SV) {
             p <- p + geom_text(data = data.frame(cov = 1, chr = interSV$chr1[i]),
                                x = interSV$pos1[i] - x_range, y = interSV$VF[i] / coeff,
@@ -645,14 +708,14 @@ plot_sv_linear <- function(sample,
               geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr2[i]),
                          x = interSV_other_chrs$pos2[i], xend = interSV_other_chrs$pos2[i],
                          y = 0, yend = interSV_other_chrs$VF[i] / coeff, curvature = 0,
-                         size = size_interchr_line, colour = interSV_other_chrs$colour[i])
+                         linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
             x_range <- (chr_selection$end[which(chr_selection$chr == interSV_other_chrs$chr2[i])] -
                           chr_selection$start[which(chr_selection$chr == interSV_other_chrs$chr2[i])]) * 0.01
             p <- p +
               geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr2[i]),
                          x = interSV_other_chrs$pos2[i], xend = interSV_other_chrs$pos2[i] - x_range,
                          y = 0, yend = -yend_outside_range,
-                         angle = 45, curvature = 0, size = size_interchr_line, colour = interSV_other_chrs$colour[i])
+                         angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
           }
         }
 
@@ -666,22 +729,24 @@ plot_sv_linear <- function(sample,
               geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr1[i]),
                          x = interSV_other_chrs$pos1[i], xend = interSV_other_chrs$pos1[i],
                          y = 0, yend = interSV_other_chrs$VF[i] / coeff, curvature = 0,
-                         size = size_interchr_line, colour = interSV_other_chrs$colour[i])
+                         linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
             x_range <- (chr_selection$end[which(chr_selection$chr == interSV_other_chrs$chr1[i])] -
                           chr_selection$start[which(chr_selection$chr == interSV_other_chrs$chr1[i])]) * 0.01
             p <- p +
               geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr1[i]),
                          x = interSV_other_chrs$pos1[i], xend = interSV_other_chrs$pos1[i] - x_range,
                          y = 0, yend = -yend_outside_range,
-                         angle = 45, curvature = 0, size = size_interchr_line, colour = interSV_other_chrs$colour[i])
+                         angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
           }
         }
       }
     }
   }
 
-  ## Gene labels:
+  ## Gene labels: collect all in-window genes into one data frame so labels can
+  ## be de-collided together (ggrepel) instead of overprinting.
   if (!is.null(genes)) {
+    gene_label_df <- data.frame()
     for (gene in genes) {
       gene_coord_now <- gene_coord[gene_coord$gene %in% gene, ]
       if (nrow(gene_coord_now) == 0) next
@@ -707,16 +772,31 @@ plot_sv_linear <- function(sample,
                                aes(xmin = min_coord, xmax = max_coord,
                                    ymin = (y * 0.93 + y * 0.96) / 2, ymax = (y * 0.93 + y * 0.96) / 2), color = "grey")
           } else {
-            dat_text <- data.frame(label = gene,
-                                   chr = factor(gene_coord_now$chr, levels = chr_selection$chr),
-                                   pos = (gene_coord_now$start + gene_coord_now$end) / 2,
-                                   y = max.cn * offset_gene)
-            p <- p + geom_text(data = dat_text, mapping = aes(x = pos, y = y, label = label),
-                               size = size_gene_label, fontface = "italic")
-            p <- p + geom_point(data = dat_text, mapping = aes(x = pos, y = y * 0.92), shape = 16,
-                                size = 1, colour = "black")
+            gene_label_df <- rbind(gene_label_df, data.frame(
+              label = gene,
+              chr = factor(gene_coord_now$chr, levels = chr_selection$chr),
+              pos = (gene_coord_now$start + gene_coord_now$end) / 2,
+              y = max.cn * offset_gene))
           }
         }
+      }
+    }
+
+    if (nrow(gene_label_df) > 0) {
+      ## Anchor points at the locus, then labels above.
+      p <- p + geom_point(data = gene_label_df, mapping = aes(x = pos, y = y * 0.92),
+                          shape = 16, size = 1, colour = "black")
+      use_repel <- repel_labels && requireNamespace("ggrepel", quietly = TRUE)
+      if (use_repel) {
+        p <- p + ggrepel::geom_text_repel(
+          data = gene_label_df, mapping = aes(x = pos, y = y, label = label),
+          size = size_gene_label, fontface = "italic",
+          direction = "x", segment.size = 0.2, segment.colour = "grey60",
+          min.segment.length = 0, box.padding = 0.15, max.overlaps = Inf,
+          seed = 1L)
+      } else {
+        p <- p + geom_text(data = gene_label_df, mapping = aes(x = pos, y = y, label = label),
+                           size = size_gene_label, fontface = "italic")
       }
     }
   }
@@ -725,7 +805,7 @@ plot_sv_linear <- function(sample,
   p <- p +
     geom_segment(aes(x = start, y = majorAlleleCopyNumber, xend = end, yend = majorAlleleCopyNumber, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[] & cnv.plot$copyNumber > 3 * cnv.plot$ploidy, ],
-                 colour = color_major_cn, size = cn_size - 0.3) +
+                 colour = color_major_cn, linewidth = cn_size - 0.3) +
     geom_point(aes(x = start, y = majorAlleleCopyNumber, group = chr),
                data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[] & cnv.plot$copyNumber > 3 * cnv.plot$ploidy, ],
                colour = color_major_cn, size = cn_size - 1) +
@@ -734,36 +814,66 @@ plot_sv_linear <- function(sample,
                colour = color_major_cn, size = cn_size - 1)
 
   ##### Tidy plot: ####
-  print(paste0("Max majorAlleleCopyNumber is ", ceiling(max(cnv.plot$majorAlleleCopyNumber))))
-  if (!is.null(intraSV) && nrow(intraSV) > 0) {
-    print(paste0("Max intraSV VF is ", max(intraSV$VF)))
+  if (verbose) {
+    message("Max majorAlleleCopyNumber: ", ceiling(max(cnv.plot$majorAlleleCopyNumber)))
+    if (!is.null(intraSV) && nrow(intraSV) > 0) message("Max intraSV VF: ", max(intraSV$VF))
   }
 
+  ## Copy-number (left) axis: breaks span the actual CN range so labels do not
+  ## bunch at the baseline for highly amplified samples. `yend_left` (when set)
+  ## overrides the auto axis top.
+  cn_axis_max <- if (!is.null(yend_left)) yend_left else nice_ceiling(max.cn)
+  cn_breaks   <- unique(c(0, cn_axis_max / 2, cn_axis_max))
+
+  ## Read-support (secondary, right) axis. Arcs sit at y = VF / coeff, so the
+  ## SVs occupy the CN axis up to `arc_top`. Place the read-support ticks at
+  ## real VF values (positioned via / coeff). When a focal amplicon dwarfs the
+  ## SV arcs, the secondary axis is uninformative and would collide, so omit it.
+  max_vf  <- if (nrow(sv) > 0) max(sv$VF, na.rm = TRUE) else 0
+  arc_top <- if (coeff > 0) max_vf / coeff else 0
+  show_read_support <- arc_top >= 0.12 * cn_axis_max
+
   p <- p +
-    geom_segment(aes(x = start, xend = start, y = 0, yend = yend_left, group = chr),
+    geom_segment(aes(x = start, xend = start, y = 0, yend = cn_axis_max, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[1], ] %>% dplyr::filter(start == min(start)),
-                 colour = "black", size = 0.4) +
+                 colour = "black", linewidth = 0.4) +
     geom_segment(aes(x = end, xend = end, y = 0, yend = yend_right_line, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[nrow(chr_selection)], ] %>% dplyr::filter(end == max(end)),
-                 colour = "black", size = 0.4)
+                 colour = "black", linewidth = 0.4)
 
-  if (ceiling(max(cnv.plot$majorAlleleCopyNumber)) < 4) {
-    y_right_breaks <- c(0, yend_right / 2, yend_right)
-    p <- p + scale_y_continuous(n.breaks = 4,
-                                sec.axis = sec_axis(trans = ~ . * coeff, breaks = y_right_breaks, name = "Read support"))
+  if (show_read_support) {
+    vf_step   <- nice_step(max_vf, 2)
+    vf_values <- seq(0, floor(max_vf / vf_step) * vf_step, by = vf_step)
+    p <- p + scale_y_continuous(
+      breaks = cn_breaks,
+      sec.axis = sec_axis(trans = ~ . * coeff, breaks = vf_values / coeff,
+                          labels = vf_values, name = "Read support"))
   } else {
-    y_left_breaks <- c(0, yend_left / 2, yend_left)
-    y_right_breaks <- c(0, yend_right / 2, yend_right)
-    p <- p + scale_y_continuous(breaks = y_left_breaks,
-                                sec.axis = sec_axis(trans = ~ . * coeff, breaks = y_right_breaks, name = "Read support"))
+    if (verbose) message("Omitting read-support axis (SV arcs are small relative ",
+                         "to the copy-number range at this locus).")
+    p <- p + scale_y_continuous(breaks = cn_breaks)
   }
 
   ##### Save plot: ####
-  if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
-  outfile <- file.path(outdir, paste0(this_sample, "_", paste(chr_selection$chr, collapse = "_"), "_linear_plot.pdf"))
-  grDevices::pdf(outfile, width = plot_width, height = plot_height, useDingbats = FALSE)
-  print(p)
-  grDevices::dev.off()
+  outfile <- NULL
+  if (!is.null(outdir) && save) {
+    if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
+    ## Encode the plotted region in the filename so a zoomed view does not
+    ## overwrite the full-chromosome PDF.
+    region_tag <- if (is.null(chromosome_range)) "" else
+      paste0("_", paste(sprintf("%s-%s",
+                                format(round(chr_selection$start), scientific = FALSE),
+                                format(round(chr_selection$end), scientific = FALSE)),
+                        collapse = "_"))
+    outfile <- file.path(outdir, paste0(this_sample, "_",
+                                        paste(chr_selection$chr, collapse = "_"),
+                                        region_tag, "_linear_plot.pdf"))
+    grDevices::pdf(outfile, width = plot_width, height = plot_height, useDingbats = FALSE)
+    print(p)
+    grDevices::dev.off()
+    if (verbose) message("Wrote ", outfile)
+  }
 
-  invisible(outfile)
+  attr(p, "path") <- outfile
+  if (!is.null(outfile)) invisible(p) else p
 }

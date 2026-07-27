@@ -1,8 +1,8 @@
-test_that("plot_sv_linear writes a non-empty PDF for a simple locus", {
+test_that("plot_sv_linear returns a ggplot and writes a non-empty PDF", {
   d <- make_plot_inputs()
   outdir <- withr::local_tempdir()
 
-  out <- suppressWarnings(suppressMessages(
+  p <- suppressWarnings(suppressMessages(
     plot_sv_linear(
       sample     = "S1",
       chromosome = "chr7",
@@ -15,8 +15,37 @@ test_that("plot_sv_linear writes a non-empty PDF for a simple locus", {
     )
   ))
 
+  expect_s3_class(p, "ggplot")
+  out <- attr(p, "path")
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 1000)
+})
+
+test_that("plot_sv_linear builds a plot without writing when outdir is NULL", {
+  d <- make_plot_inputs()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", chromosome = "chr7",
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      wgd_data = d$wgd_data, cnv_data = d$cnv_data, sv_data = d$sv_data
+    )
+  ))
+  expect_s3_class(p, "ggplot")
+  expect_null(attr(p, "path"))
+})
+
+test_that("wgd_data keyed by WGS_ID is accepted", {
+  d <- make_plot_inputs()
+  wgd_wgsid <- d$wgd_data
+  names(wgd_wgsid)[names(wgd_wgsid) == "sample"] <- "WGS_ID"
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", chromosome = "chr7",
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      wgd_data = wgd_wgsid, cnv_data = d$cnv_data, sv_data = d$sv_data
+    )
+  ))
+  expect_s3_class(p, "ggplot")
 })
 
 test_that("displayExon = TRUE requires cds_gr", {

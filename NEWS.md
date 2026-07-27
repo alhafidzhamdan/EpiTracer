@@ -31,7 +31,8 @@
     * The **read-support (SV) secondary axis is always shown** alongside the
       allele-specific copy-number axis, **sharing the same three tick positions**
       (0, half, full). Axis tops round to two significant figures (e.g. 132 -> 140,
-      1462 -> 1500) and the read-support axis carries a grey spine.
+      1462 -> 1500); both axis spines are black and stop at the baseline so the
+      ideogram gap stays clear.
     * **Performance:** SV arcs and breakpoint lines are now drawn as a handful
       of batched layers (grouped by curvature/linewidth via `scale_colour_identity`)
       instead of one ggplot layer per SV. A highly-rearranged amplicon with ~300

@@ -1,0 +1,41 @@
+Package: EpiTracer
+Title: Calling and Visualising Episomal Extrachromosomal DNA from WGS
+Version: 0.0.0.9000
+Authors@R:
+    person("Alhafidz", "Hamdan", , "alhafidz.hamdan@ed.ac.uk", role = c("aut", "cre"))
+Description: Tools for detecting episomal extrachromosomal
+    DNA (ecDNA) amplicons (ecDNAs formed by simple DNA excision events, instead of complex dsDNA breaks i.e. chromothripsis) from whole-genome sequencing data and for visualising
+    the structural rearrangements underlying focal amplifications. The episomal
+    ecDNA caller identifies duplication breakpoints at amplicon boundaries,
+    checks for excision scars, and classifies amplicons as episomal in origin.
+    The rearrangement plotter draws linear allele-specific copy-number and
+    structural-variant "recon" plots across one or more loci.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+biocViews:
+Depends:
+    R (>= 4.1)
+Imports:
+    data.table,
+    dplyr,
+    GenomicRanges,
+    ggplot2,
+    grid,
+    gUtils,
+    magrittr,
+    methods,
+    parallel,
+    regioneR,
+    scales,
+    stats,
+    grDevices
+Suggests:
+    testthat (>= 3.0.0),
+    withr
+Remotes:
+    mskilab/gUtils
+Config/testthat/edition: 3
+URL: https://github.com/alhafidzhamdan/EpiTracer
+BugReports: https://github.com/alhafidzhamdan/EpiTracer/issues

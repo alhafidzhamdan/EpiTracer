@@ -57,6 +57,11 @@
 #' @param gene_label_angle Optional numeric label rotation in degrees. If `NULL`
 #'   (default) labels are horizontal, switching to 45 degrees automatically when
 #'   genes are crowded within a panel so they stack legibly.
+#' @param interchrom_arcs Logical; if `TRUE` (default) draw the connecting arcs
+#'   between breakpoints of inter-chromosomal SVs. These arcs reach across panels
+#'   via a large offset that stretches the source panel under free-x faceting;
+#'   set `FALSE` for multi-chromosome plots to keep each panel bounded to its
+#'   locus (breakpoints are still marked, just not joined by an arc).
 #' @param plot_height_custom,plot_width_custom Optional numeric overrides for the
 #'   auto-selected PDF dimensions (inches).
 #' @param highlight_amp,highlight_hom_del Logical; shade amplified /
@@ -123,6 +128,7 @@ plot_sv_linear <- function(sample,
                            loh_position_ratio = 0.5,
                            repel_labels = TRUE,
                            gene_label_angle = NULL,
+                           interchrom_arcs = TRUE,
                            plot_height_custom = NULL,
                            plot_width_custom = NULL,
                            highlight_amp = TRUE,
@@ -661,7 +667,12 @@ plot_sv_linear <- function(sample,
         if (in_range_chr1 & in_range_chr2) {
           add_seg(interSV$chr1[i], interSV$pos1[i], interSV$pos1[i], 0, yv, col, size_interchr_line)
           add_seg(interSV$chr2[i], interSV$pos2[i], interSV$pos2[i], 0, yv, col, size_interchr_line)
-          add_arc(chrs_now[1, 1], interSV$pos1[i], offset, yv, yv, interSV$curve[i], col, size_interchr_line)
+          ## The connecting arc reaches across panels via a large `offset` x,
+          ## which stretches the source panel under free-x faceting. Skip it when
+          ## `interchrom_arcs = FALSE` to keep each panel bounded to its locus.
+          if (interchrom_arcs) {
+            add_arc(chrs_now[1, 1], interSV$pos1[i], offset, yv, yv, interSV$curve[i], col, size_interchr_line)
+          }
         }
 
         if (!in_range_chr1) {

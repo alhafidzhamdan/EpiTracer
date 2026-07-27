@@ -33,6 +33,10 @@
       (0, half, full). Axis tops round to two significant figures (e.g. 132 -> 140,
       1462 -> 1500); both axis spines are black and stop at the baseline so the
       ideogram gap stays clear.
+    * New `interchrom_arcs` argument. Inter-chromosomal connecting arcs reach
+      across panels via a large offset that stretches the source panel under
+      free-x faceting; set `interchrom_arcs = FALSE` for multi-chromosome plots
+      to keep each panel bounded to its locus (breakpoints still marked).
     * **Performance:** SV arcs and breakpoint lines are now drawn as a handful
       of batched layers (grouped by curvature/linewidth via `scale_colour_identity`)
       instead of one ggplot layer per SV. A highly-rearranged amplicon with ~300

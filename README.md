@@ -1,7 +1,6 @@
 # EpiTracer
 
 <!-- badges: start -->
-[![EpiTracer — extrachromosomal circular DNA from WGS](https://img.shields.io/badge/EpiTracer-ecDNA%20from%20WGS-6f42c1?style=for-the-badge&logo=r&logoColor=white&labelColor=2d0a4e)](https://github.com/alhafidzhamdan/EpiTracer)
 <!-- badges: end -->
 
 > **EpiTracer** — *calling and visualising extrachromosomal circular DNA
@@ -15,6 +14,19 @@ provides two functions:
 | :--- | :--- |
 | **`call_episomal_ecdna()`** | Flags ecDNA amplicons whose structure fits the **episome** model — a circle bounded by a duplication (DUP) breakpoint, excised from an otherwise non-amplified region, often leaving a deletion **"excision scar"**. |
 | **`plot_sv_linear()`** | Draws allele-specific copy number and structural variant arcs for one or many loci on a single concatenated axis — with karyotype ideograms, LOH / deletion bars and gene labels (PDF). Auto-detects amplicons and draws the SVs interconnecting them. |
+
+**Single locus** — an episomal *EGFR* ecDNA in `DO11441T1`: a boundary
+duplication (magenta arc reaching the top) with its **excision-scar** deletion
+(light-blue arc below the baseline), over an ~100-copy amplicon.
+
+![EGFR episomal ecDNA in DO11441T1](man/figures/README-DO11441T1-EGFR.png)
+
+**Multiple loci** — a multi-fragment co-amplification hub in `DUMC12T1`:
+*PDGFRA* (chr4), a chr9p amplicon and *CDK4* / *MDM2* (chr12) amplicons, auto-
+detected and drawn side-by-side on one axis with the structural variants
+interconnecting them.
+
+![Multi-chromosome amplicon hub in DUMC12T1](man/figures/README-DUMC12T1-multichrom.png)
 
 ---
 

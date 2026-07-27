@@ -9,6 +9,10 @@
       correctly requires *both* flanks to be non-gained before calling an
       episome region.
 * `plot_sv_linear()`: linear allele-specific copy-number / SV "recon" plotter.
+    * `wgd_data` is now **optional**; WGD status is annotated in the title only
+      when supplied. `karyotype` and `gene_coord` **default to bundled hg38
+      references** (`inst/extdata`), so a minimal call is
+      `plot_sv_linear(sample, cnv_data, sv_data)`.
     * New `flank_pct` option: extend each auto-detected (CN-status) window on both
       sides by a percentage of its width (default `10` = +/-10%). Replaces the
       earlier fractional `margin`.

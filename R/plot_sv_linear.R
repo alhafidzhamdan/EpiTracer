@@ -28,16 +28,16 @@
 #'   `minorAlleleCopyNumber`.
 #' @param sv_data A data.frame of SVs with columns `chrom1`, `start1`, `chrom2`,
 #'   `start2`, `strand1`, `strand2`, `svclass`, `VF`, `JCN`, `sample`.
-#' @param wgd_data A data.frame with a sample-identifier column (see
+#' @param wgd_data Optional data.frame with a sample-identifier column (see
 #'   `wgd_sample_col`) and a `Polyploidy` column (`"No"` = diploid, otherwise
-#'   WGD) used to label the plot title.
-#' @param karyotype A data.frame of ideogram bands (UCSC `cytoBand` / `chr_info`
-#'   style) with columns including chromosome, `start`, `end`, and `gieStain`;
-#'   the first column is treated as the chromosome name. A path to an `.rds`
-#'   holding such a data.frame is also accepted.
-#' @param gene_coord A data.frame of gene coordinates with columns
-#'   `chr`,`start`,`end`,`strand`,`gene`. A path to a headerless tab-separated
-#'   BED-like file with those five columns is also accepted.
+#'   WGD). If supplied, the sample's WGD status is annotated in the plot title;
+#'   if `NULL` (default) the title shows just the sample name.
+#' @param karyotype Ideogram bands (UCSC `cytoBand` / `chr_info` style), as a
+#'   data.frame (first column = chromosome; needs `start`, `end`, `gieStain`) or
+#'   an `.rds` path. Defaults to the bundled hg38 reference.
+#' @param gene_coord Gene coordinates as a data.frame with columns
+#'   `chr`,`start`,`end`,`strand`,`gene`, or a path to a headerless tab-separated
+#'   BED-like file with those columns. Defaults to the bundled hg38 reference.
 #' @param chromosome Optional character vector of chromosomes to display, e.g.
 #'   `c("chr7", "chr12")`.
 #' @param chromosome_range Optional two-column matrix/data.frame of `start`,`end`
@@ -129,9 +129,9 @@
 plot_sv_linear <- function(sample,
                            cnv_data,
                            sv_data,
-                           wgd_data,
-                           karyotype,
-                           gene_coord,
+                           wgd_data = NULL,
+                           karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
+                           gene_coord = system.file("extdata", "Homo_sapiens.GRCh38.93.gene.coord_strand_name.bed", package = "EpiTracer"),
                            chromosome = NULL,
                            chromosome_range = NULL,
                            loci = NULL,
@@ -166,7 +166,11 @@ plot_sv_linear <- function(sample,
   this_sample <- sample
 
   ## ---- Reference data -----------------------------------------------------
-  if (is.character(karyotype)) karyotype <- readRDS(karyotype)
+  if (is.character(karyotype)) {
+    if (!nzchar(karyotype) || !file.exists(karyotype))
+      stop("Karyotype reference not found. Pass `karyotype` (a data.frame or .rds path).")
+    karyotype <- readRDS(karyotype)
+  }
   karyotype <- as.data.frame(karyotype)
   names(karyotype)[1] <- "chr"
   karyotype$color[karyotype$gieStain == "gneg"]    <- "white"
@@ -178,6 +182,8 @@ plot_sv_linear <- function(sample,
   chr_len <- tapply(karyotype$end, karyotype$chr, max)
 
   if (is.character(gene_coord)) {
+    if (!nzchar(gene_coord) || !file.exists(gene_coord))
+      stop("Gene-coordinate reference not found. Pass `gene_coord` (a data.frame or BED path).")
     gene_coord <- utils::read.table(gene_coord, header = FALSE, sep = "\t")
   }
   gene_coord <- as.data.frame(gene_coord)
@@ -197,11 +203,15 @@ plot_sv_linear <- function(sample,
   cnv$chr <- as.character(cnv$seqnames)
   if (nrow(cnv) == 0) stop("No copy-number data for sample ", this_sample, ".")
 
-  wgd_data <- as.data.frame(wgd_data)
-  wgd_col <- if (!is.null(wgd_sample_col)) wgd_sample_col else
-    if ("sample" %in% names(wgd_data)) "sample" else "WGS_ID"
-  wrow <- wgd_data[wgd_data[[wgd_col]] == this_sample, , drop = FALSE]
-  wgd_status <- if (nrow(wrow) >= 1 && wrow$Polyploidy[1] == "No") "Diploid" else "WGD"
+  ## WGD annotation is optional: only shown in the title when `wgd_data` is given.
+  wgd_status <- NULL
+  if (!is.null(wgd_data)) {
+    wgd_data <- as.data.frame(wgd_data)
+    wgd_col <- if (!is.null(wgd_sample_col)) wgd_sample_col else
+      if ("sample" %in% names(wgd_data)) "sample" else "WGS_ID"
+    wrow <- wgd_data[wgd_data[[wgd_col]] == this_sample, , drop = FALSE]
+    wgd_status <- if (nrow(wrow) >= 1 && wrow$Polyploidy[1] == "No") "Diploid" else "WGD"
+  }
 
   ## ---- Resolve loci -------------------------------------------------------
   events <- match.arg(events, c("amp", "gain", "loh", "homdel"), several.ok = TRUE)
@@ -564,7 +574,7 @@ plot_sv_linear <- function(sample,
     geom_text(data = mb_df, aes(x = x, y = mb_label_y, label = lab), size = size_text / 2.1, vjust = 1) +
     geom_text(data = chr_lab, aes(x = gx, y = chr_label_y, label = chr),
               size = size_text / 1.78, vjust = 1, fontface = "bold") +
-    ggtitle(paste0(this_sample, " (", wgd_status, ")")) +
+    ggtitle(if (is.null(wgd_status)) this_sample else paste0(this_sample, " (", wgd_status, ")")) +
     labs(x = NULL, y = "Allele specific\ncopy number") +
     coord_cartesian(clip = "off", expand = FALSE) +
     scale_x_continuous(expand = expansion(mult = 0.01)) +

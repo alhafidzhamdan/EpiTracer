@@ -69,12 +69,11 @@ episomal <- call_episomal_ecdna(
   mc.cores        = 4
 )
 
-# A single focused locus:
+# A single focused locus (karyotype/gene_coord default to bundled hg38 refs;
+# wgd_data is optional — supply it to annotate WGD status in the title):
 plot_sv_linear(
   sample     = "DO11441T1",
-  cnv_data   = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
-  karyotype  = "chr_info_hg38.rds",           # ideogram bands
-  gene_coord = "gene.coord_strand_name.bed",  # gene coordinates
+  cnv_data   = cnv_df, sv_data = sv_df,
   chromosome = "chr7",
   chromosome_range = matrix(c(52e6, 56e6), nrow = 1),
   outdir     = "plots"
@@ -84,10 +83,8 @@ plot_sv_linear(
 plot_sv_linear(
   sample     = "DUMC12T1",
   cnv_data   = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
-  karyotype  = "chr_info_hg38.rds",
-  gene_coord = "gene.coord_strand_name.bed",
-  outdir     = "plots",                         # loci auto-detected; or loci = c("chr4:...", ...)
-  flank_pct  = 10                              # extend each auto-detected window by +/-10%
+  outdir     = "plots",   # loci auto-detected; or events = "homdel", loci = c("chr4:...", ...)
+  flank_pct  = 10         # extend each auto-detected window by +/-10%
 )
 ```
 

@@ -45,6 +45,39 @@ test_that("plot builds without writing when outdir is NULL", {
   expect_null(attr(p, "path"))
 })
 
+test_that("wgd_data is optional (title omits WGD status when not supplied)", {
+  d <- make_plot_inputs()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1)
+    )
+  ))
+  expect_s3_class(p, "ggplot")
+  expect_equal(p$labels$title, "S1")   # no "(Diploid)"/"(WGD)"
+})
+
+test_that("wgd_data annotates the title when supplied", {
+  d <- make_plot_inputs()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1)
+    )
+  ))
+  expect_match(p$labels$title, "\\(Diploid\\)")
+})
+
+test_that("karyotype and gene_coord default to the bundled hg38 references", {
+  d <- make_recon_inputs()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data)
+  ))
+  expect_s3_class(p, "ggplot")
+})
+
 test_that("wgd_data keyed by WGS_ID is accepted", {
   d <- make_plot_inputs()
   wgd_wgsid <- d$wgd_data

@@ -8,9 +8,10 @@ plot_sv_linear(
   sample,
   cnv_data,
   sv_data,
-  wgd_data,
-  karyotype,
-  gene_coord,
+  wgd_data = NULL,
+  karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
+  gene_coord = system.file("extdata",
+    "Homo_sapiens.GRCh38.93.gene.coord_strand_name.bed", package = "EpiTracer"),
   chromosome = NULL,
   chromosome_range = NULL,
   loci = NULL,
@@ -54,18 +55,18 @@ plot_sv_linear(
 \item{sv_data}{A data.frame of SVs with columns \code{chrom1}, \code{start1}, \code{chrom2},
 \code{start2}, \code{strand1}, \code{strand2}, \code{svclass}, \code{VF}, \code{JCN}, \code{sample}.}
 
-\item{wgd_data}{A data.frame with a sample-identifier column (see
+\item{wgd_data}{Optional data.frame with a sample-identifier column (see
 \code{wgd_sample_col}) and a \code{Polyploidy} column (\code{"No"} = diploid, otherwise
-WGD) used to label the plot title.}
+WGD). If supplied, the sample's WGD status is annotated in the plot title;
+if \code{NULL} (default) the title shows just the sample name.}
 
-\item{karyotype}{A data.frame of ideogram bands (UCSC \code{cytoBand} / \code{chr_info}
-style) with columns including chromosome, \code{start}, \code{end}, and \code{gieStain};
-the first column is treated as the chromosome name. A path to an \code{.rds}
-holding such a data.frame is also accepted.}
+\item{karyotype}{Ideogram bands (UCSC \code{cytoBand} / \code{chr_info} style), as a
+data.frame (first column = chromosome; needs \code{start}, \code{end}, \code{gieStain}) or
+an \code{.rds} path. Defaults to the bundled hg38 reference.}
 
-\item{gene_coord}{A data.frame of gene coordinates with columns
-\code{chr},\code{start},\code{end},\code{strand},\code{gene}. A path to a headerless tab-separated
-BED-like file with those five columns is also accepted.}
+\item{gene_coord}{Gene coordinates as a data.frame with columns
+\code{chr},\code{start},\code{end},\code{strand},\code{gene}, or a path to a headerless tab-separated
+BED-like file with those columns. Defaults to the bundled hg38 reference.}
 
 \item{chromosome}{Optional character vector of chromosomes to display, e.g.
 \code{c("chr7", "chr12")}.}

@@ -24,8 +24,9 @@ vignettes/*.pdf
 /cache/
 # macOS
 .DS_Store
-# package build artefacts
-/docs/
+# pkgdown site output (hand-written docs/*.md are tracked)
+/docs/*.html
+/docs/**/*.html
 # scratch outputs
 *.pdf
 

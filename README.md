@@ -1,9 +1,7 @@
-# EpiTracer <img src="https://img.shields.io/badge/status-experimental-orange.svg" align="right" alt="experimental"/>
+# EpiTracer
 
 <!-- badges: start -->
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-![R >= 4.1](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)
+[![EpiTracer — extrachromosomal circular DNA from WGS](https://img.shields.io/badge/EpiTracer-ecDNA%20from%20WGS-6f42c1?style=for-the-badge&logo=r&logoColor=white&labelColor=2d0a4e)](https://github.com/alhafidzhamdan/EpiTracer)
 <!-- badges: end -->
 
 > **EpiTracer** — *calling and visualising extrachromosomal circular DNA
@@ -36,12 +34,13 @@ BiocManager::install("alhafidzhamdan/EpiTracer")
 ## Data requirement
 
 > [!IMPORTANT]
-> **Copy-number (CNV) and structural variant (SV) inputs must come from
-> [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple)**, part
-> of the Hartwig Medical Foundation (HMF) pipeline. EpiTracer relies on PURPLE's
-> allele-specific copy-number segments and its SV / breakpoint output (variant
-> fraction, junction copy number, PURPLE copy number, …). Output from other
-> callers is not supported unless coerced to the columns below.
+> Copy-number variant (CNV) and structural variant (SV) inputs must come from
+> [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple), part
+> of the Hartwig Medical Foundation (HMF) pipeline. EpiTracer relies on accurate
+> copy-number aware SV calls, critical in nominating amplicons formed via simple
+> episomal exclusion events. Should they choose, users may opt to coerce the
+> appropriate required metadata derived from other SV and CNV callers, although
+> this is not the recommended option.
 
 `call_episomal_ecdna()` expects these PURPLE / HMF metadata columns:
 

@@ -75,6 +75,38 @@ install.packages("EpiTracer_0.0.0.9000.tar.gz", repos = NULL, type = "source")
 > The GitHub-based options require the repository to be pushed to
 > `github.com/alhafidzhamdan/EpiTracer` first.
 
+### Offline / GitHub-only environments
+
+On a firewalled host where CRAN/Bioconductor are unreachable but GitHub is
+whitelisted, how you install depends on whether the dependencies are already
+present (check e.g. `requireNamespace("GenomicRanges")`). The bundled hg38
+references mean no data download is needed at run time.
+
+**Dependencies already installed** (common on managed / HPC R installs) — pull
+just EpiTracer and `gUtils` from GitHub, without touching CRAN/Bioconductor:
+
+```r
+remotes::install_github("mskilab/gUtils",           dependencies = FALSE, upgrade = "never")
+remotes::install_github("alhafidzhamdan/EpiTracer", dependencies = FALSE, upgrade = "never")
+```
+
+**Fully air-gapped** — stage everything on a connected machine, transfer, then
+install locally. Either download the whole dependency tree:
+
+```r
+# on a machine with internet:
+pak::pkg_download("alhafidzhamdan/EpiTracer", dest_dir = "epitracer_pkgs", dependencies = TRUE)
+# copy epitracer_pkgs/ across, then on the offline host:
+install.packages(dir("epitracer_pkgs", full.names = TRUE), repos = NULL, type = "source")
+```
+
+…or install from a clone (dependencies must already be present):
+
+```sh
+git clone https://github.com/alhafidzhamdan/EpiTracer.git
+R CMD INSTALL EpiTracer
+```
+
 ## The episome heuristic
 
 For each amplicon, `call_episomal_ecdna()`:

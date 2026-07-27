@@ -94,9 +94,11 @@
 #'   is written and only the plot object is returned.
 #' @param save Logical; if `TRUE` (default) and `outdir` is supplied, write the
 #'   plot.
-#' @param format Character vector of output formats: any of `"pdf"` and `"png"`
-#'   (default both). The PNG is rendered from the plot object at `dpi`.
-#' @param dpi Numeric PNG resolution (default `300`).
+#' @param format Character vector of output formats: `"pdf"` (default) and/or
+#'   `"png"`. Pass `format = c("pdf", "png")` (or `"png"`) to also/only write a
+#'   PNG, rendered from the plot object at `dpi`.
+#' @param dpi Numeric PNG resolution, used only when `"png"` is in `format`
+#'   (default `300`).
 #' @param plot_width_custom,plot_height_custom Optional numeric overrides for the
 #'   output dimensions (inches).
 #' @param verbose Logical; print progress/diagnostic messages.
@@ -160,7 +162,7 @@ plot_sv_linear <- function(sample,
                            wgd_sample_col = NULL,
                            outdir = NULL,
                            save = TRUE,
-                           format = c("pdf", "png"),
+                           format = "pdf",
                            dpi = 300,
                            plot_width_custom = NULL,
                            plot_height_custom = NULL,
@@ -591,7 +593,7 @@ plot_sv_linear <- function(sample,
 
   outfile <- NULL
   if (!is.null(outdir) && save) {
-    format <- match.arg(format, several.ok = TRUE)
+    format <- match.arg(format, c("pdf", "png"), several.ok = TRUE)
     if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
     region_tag <- if (nrow(loci) == 1)
       sprintf("_%.0f-%.0f", round(loci$start[1]), round(loci$end[1])) else ""

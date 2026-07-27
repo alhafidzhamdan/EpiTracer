@@ -61,8 +61,7 @@
       of batched layers (grouped by curvature/linewidth via `scale_colour_identity`)
       instead of one ggplot layer per SV. A highly-rearranged amplicon with ~300
       SVs now renders in ~2 s instead of ~2 min, with identical output.
-    * Can now **write a high-resolution PNG** (rendered from the plot object at
-      `dpi`) in addition to (or instead of) the PDF, via `format` and `dpi`.
+    * Writes a **PDF by default** (`format = "pdf"`); pass `format = c("pdf", "png")` or `"png"` to also/only write a high-resolution PNG (`dpi`).
     * **LOH / homozygous-deletion bars** are placed in the empty band between
       the ideogram and the copy-number baseline (`loh_position_ratio` now a
       fraction of that gap), so they no longer overlap the ideogram.

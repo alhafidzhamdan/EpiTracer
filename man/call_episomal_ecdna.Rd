@@ -20,16 +20,17 @@ contain metadata columns \code{ID} (unique amplicon identifier) and \code{WGS_ID
 (sample identifier). Typically the AmpliconArchitect ecDNA amplicon
 catalogue.}
 
-\item{breakpoints_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of SV breakpoints with
-metadata columns \code{WGS_ID}, \code{event}, \code{svclass} (e.g. "DUP", "DEL"),
-\code{PURPLE_AF}, \code{PURPLE_JCN}, \code{VF}, \code{PURPLE_CN}, \code{insLen}, \code{HOMLEN}.}
+\item{breakpoints_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of PURPLE (HMF pipeline) SV
+breakpoints with metadata columns \code{WGS_ID}, \code{event}, \code{svclass} (e.g. "DUP",
+"DEL"), \code{PURPLE_AF}, \code{PURPLE_JCN}, \code{VF}, \code{PURPLE_CN}, \code{insLen}, \code{HOMLEN}.}
 
-\item{cnv_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of allele-specific copy-number
-segments with metadata columns \code{sample}, \code{copyNumber}, \code{ploidy},
-\code{majorAlleleCopyNumber}, \code{minorAlleleCopyNumber}.}
+\item{cnv_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of PURPLE (HMF pipeline)
+allele-specific copy-number segments with metadata columns \code{sample},
+\code{copyNumber}, \code{ploidy}, \code{majorAlleleCopyNumber}, \code{minorAlleleCopyNumber}.}
 
-\item{cancer_genes_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of cancer gene loci used to
-annotate breakpoints with overlapping oncogenes.}
+\item{cancer_genes_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of cancer gene loci with a
+\code{gene} (gene symbol) metadata column, used to annotate breakpoints with the
+overlapping oncogene.}
 
 \item{ext}{Integer; number of base pairs to extend each amplicon by when
 searching for boundary breakpoints (default \code{1e7}).}

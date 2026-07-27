@@ -17,8 +17,10 @@ test_that("plot_sv_linear returns a ggplot and writes a non-empty PDF", {
 
   expect_s3_class(p, "ggplot")
   out <- attr(p, "path")
-  expect_true(file.exists(out))
-  expect_gt(file.info(out)$size, 1000)
+  expect_true(all(file.exists(out)))
+  expect_true(any(grepl("\\.pdf$", out)))
+  expect_true(any(grepl("\\.png$", out)))
+  expect_true(all(file.info(out)$size > 1000))
 })
 
 test_that("plot_sv_linear builds a plot without writing when outdir is NULL", {

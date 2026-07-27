@@ -17,7 +17,7 @@ test_that("single focused locus (chromosome + range) returns a ggplot and writes
 })
 
 test_that("flank_pct widens the auto-detected window", {
-  d <- make_recon_inputs()
+  d <- make_multilocus_inputs()
   narrow <- suppressWarnings(suppressMessages(
     plot_sv_linear(sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data,
       wgd_data = d$wgd_data, karyotype = d$karyotype, gene_coord = d$gene_coord,
@@ -71,7 +71,7 @@ test_that("wgd_data annotates the title when supplied", {
 })
 
 test_that("karyotype and gene_coord default to the bundled hg38 references", {
-  d <- make_recon_inputs()
+  d <- make_multilocus_inputs()
   p <- suppressWarnings(suppressMessages(
     plot_sv_linear(sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data)
   ))
@@ -92,7 +92,7 @@ test_that("wgd_data keyed by WGS_ID is accepted", {
 })
 
 test_that("auto-detects amplified loci across chromosomes and connects them", {
-  d <- make_recon_inputs()
+  d <- make_multilocus_inputs()
   p <- suppressWarnings(suppressMessages(
     plot_sv_linear(
       sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
@@ -103,7 +103,7 @@ test_that("auto-detects amplified loci across chromosomes and connects them", {
 })
 
 test_that("explicit loci strings are accepted", {
-  d <- make_recon_inputs()
+  d <- make_multilocus_inputs()
   p <- suppressWarnings(suppressMessages(
     plot_sv_linear(
       sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
@@ -115,7 +115,7 @@ test_that("explicit loci strings are accepted", {
 })
 
 test_that("events = 'homdel' errors when no homozygous deletion is present", {
-  d <- make_recon_inputs()   # amplified loci only, no homdel
+  d <- make_multilocus_inputs()   # amplified loci only, no homdel
   expect_error(
     suppressWarnings(suppressMessages(
       plot_sv_linear(
@@ -157,7 +157,7 @@ test_that("displayExon = TRUE without cds_gr errors", {
 })
 
 test_that("auto-detection errors when no amplification is present", {
-  d <- make_recon_inputs()
+  d <- make_multilocus_inputs()
   d$cnv_data$copyNumber <- 2
   d$cnv_data$majorAlleleCopyNumber <- 1
   expect_error(

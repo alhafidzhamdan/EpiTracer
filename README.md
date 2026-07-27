@@ -22,6 +22,11 @@ data — click a tool for its full documentation:
 > episomal exclusion events. Should they choose, users may opt to coerce the
 > appropriate required metadata derived from other SV and CNV callers, although
 > this is not the recommended option.
+>
+> `call_episomal_ecdna()` additionally **requires** the focal amplicon calls from
+> [AmpliconArchitect](https://github.com/AmpliconSuite/AmpliconArchitect) — these
+> are compulsory, as the caller classifies each AmpliconArchitect amplicon in
+> turn.
 
 ## Installation
 

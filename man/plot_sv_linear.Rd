@@ -19,7 +19,7 @@ plot_sv_linear(
   margin = 0.15,
   min_cn_ratio = 3,
   gain_ratio = 1.4,
-  hetdel_ratio = 0.75,
+  loh_thresh = 0.5,
   homdel_thresh = 0.5,
   min_amp_width = 1e+05,
   gap_frac = 0.06,
@@ -81,10 +81,12 @@ Takes precedence over \code{chromosome}/\code{chromosome_range}.}
 
 \item{events}{Character vector of copy-number event types to target when
 auto-detecting loci (used only when neither \code{loci} nor \code{chromosome_range} is
-given). Any of \code{"amp"} (amplification), \code{"gain"}, \code{"hetdel"} (heterozygous /
-single-copy loss) and \code{"homdel"} (homozygous deletion); default \code{"amp"}.
-When explicit loci are supplied the whole region is plotted regardless of
-event type -- the function is a general CN/SV viewer, not amplification-only.}
+given). Any of: \code{"amp"} (amplification, \code{copyNumber > min_cn_ratio * ploidy}),
+\code{"gain"} (\verb{> gain_ratio * ploidy} but not amplified), \code{"loh"}
+(\code{minorAlleleCopyNumber < loh_thresh}), \code{"homdel"} (homozygous deletion,
+\code{copyNumber < homdel_thresh}). Default \code{"amp"}. When explicit loci are
+supplied the whole region is plotted regardless of event type -- the
+function is a general CN/SV viewer, not amplification-only.}
 
 \item{cluster_gap}{Numeric; when auto-detecting, consecutive event segments
 more than this many bp apart start a new locus, so scattered focal events
@@ -99,9 +101,8 @@ both sides (default \code{0.15}).}
 \item{gain_ratio}{Numeric; gain threshold as a multiple of ploidy (default
 \code{1.4}); a "gain" is \verb{> gain_ratio * ploidy} but not amplified.}
 
-\item{hetdel_ratio}{Numeric; heterozygous-deletion upper threshold as a
-multiple of ploidy (default \code{0.75}); a "hetdel" is \verb{< hetdel_ratio * ploidy}
-but not a homozygous deletion.}
+\item{loh_thresh}{Numeric; LOH minor-allele threshold
+(\code{minorAlleleCopyNumber < loh_thresh}, default \code{0.5}).}
 
 \item{homdel_thresh}{Numeric; homozygous-deletion copy-number threshold
 (\code{copyNumber < homdel_thresh}, default \code{0.5}).}

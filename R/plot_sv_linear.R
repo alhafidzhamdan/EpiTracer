@@ -47,10 +47,12 @@
 #'   Takes precedence over `chromosome`/`chromosome_range`.
 #' @param events Character vector of copy-number event types to target when
 #'   auto-detecting loci (used only when neither `loci` nor `chromosome_range` is
-#'   given). Any of `"amp"` (amplification), `"gain"`, `"hetdel"` (heterozygous /
-#'   single-copy loss) and `"homdel"` (homozygous deletion); default `"amp"`.
-#'   When explicit loci are supplied the whole region is plotted regardless of
-#'   event type -- the function is a general CN/SV viewer, not amplification-only.
+#'   given). Any of: `"amp"` (amplification, `copyNumber > min_cn_ratio * ploidy`),
+#'   `"gain"` (`> gain_ratio * ploidy` but not amplified), `"loh"`
+#'   (`minorAlleleCopyNumber < loh_thresh`), `"homdel"` (homozygous deletion,
+#'   `copyNumber < homdel_thresh`). Default `"amp"`. When explicit loci are
+#'   supplied the whole region is plotted regardless of event type -- the
+#'   function is a general CN/SV viewer, not amplification-only.
 #' @param cluster_gap Numeric; when auto-detecting, consecutive event segments
 #'   more than this many bp apart start a new locus, so scattered focal events
 #'   become separate panels instead of one whole-chromosome span (default `5e6`).
@@ -60,9 +62,8 @@
 #'   (`copyNumber > min_cn_ratio * ploidy`, default `3`).
 #' @param gain_ratio Numeric; gain threshold as a multiple of ploidy (default
 #'   `1.4`); a "gain" is `> gain_ratio * ploidy` but not amplified.
-#' @param hetdel_ratio Numeric; heterozygous-deletion upper threshold as a
-#'   multiple of ploidy (default `0.75`); a "hetdel" is `< hetdel_ratio * ploidy`
-#'   but not a homozygous deletion.
+#' @param loh_thresh Numeric; LOH minor-allele threshold
+#'   (`minorAlleleCopyNumber < loh_thresh`, default `0.5`).
 #' @param homdel_thresh Numeric; homozygous-deletion copy-number threshold
 #'   (`copyNumber < homdel_thresh`, default `0.5`).
 #' @param min_amp_width Numeric; drop auto-detected loci whose total event span
@@ -140,7 +141,7 @@ plot_sv_linear <- function(sample,
                            margin = 0.15,
                            min_cn_ratio = 3,
                            gain_ratio = 1.4,
-                           hetdel_ratio = 0.75,
+                           loh_thresh = 0.5,
                            homdel_thresh = 0.5,
                            min_amp_width = 1e5,
                            gap_frac = 0.06,
@@ -206,15 +207,18 @@ plot_sv_linear <- function(sample,
   wgd_status <- if (nrow(wrow) >= 1 && wrow$Polyploidy[1] == "No") "Diploid" else "WGD"
 
   ## ---- Resolve loci -------------------------------------------------------
-  events <- match.arg(events, c("amp", "gain", "hetdel", "homdel"), several.ok = TRUE)
+  events <- match.arg(events, c("amp", "gain", "loh", "homdel"), several.ok = TRUE)
   ## Copy-number event predicate over a set of segments:
+  ##   amp    : copyNumber > min_cn_ratio * ploidy
+  ##   gain   : copyNumber > gain_ratio  * ploidy, but not amplified
+  ##   loh    : minorAlleleCopyNumber < loh_thresh
+  ##   homdel : copyNumber < homdel_thresh
   is_event <- function(d, ploidy) {
     keep <- rep(FALSE, nrow(d))
     if ("amp"    %in% events) keep <- keep | (d$copyNumber > min_cn_ratio * ploidy)
     if ("gain"   %in% events) keep <- keep | (d$copyNumber > gain_ratio * ploidy &
                                               d$copyNumber <= min_cn_ratio * ploidy)
-    if ("hetdel" %in% events) keep <- keep | (d$copyNumber < hetdel_ratio * ploidy &
-                                              d$copyNumber >= homdel_thresh)
+    if ("loh"    %in% events) keep <- keep | (d$minorAlleleCopyNumber < loh_thresh)
     if ("homdel" %in% events) keep <- keep | (d$copyNumber < homdel_thresh)
     keep
   }
@@ -467,6 +471,8 @@ plot_sv_linear <- function(sample,
     cds$chr <- if (all(grepl("^chr", cds$seqnames))) as.character(cds$seqnames)
                else paste0("chr", cds$seqnames)
     yb <- max.cn * offset_gene
+    ## Minimum rendered exon width so short exons remain visible at genomic scale:
+    min_ex_w <- total_w * 0.0015
     ex_df <- data.frame(); body_df <- data.frame(); lab_df <- data.frame()
     for (i in seq_len(nrow(loci))) {
       for (gn in intersect(genes, cds$gene_name[cds$chr == loci$chr[i]])) {
@@ -475,6 +481,11 @@ plot_sv_linear <- function(sample,
         if (nrow(ex) == 0) next
         gxs <- loci$offset[i] + (pmax(ex$start, loci$start[i]) - loci$start[i])
         gxe <- loci$offset[i] + (pmin(ex$end,   loci$end[i])   - loci$start[i])
+        ## widen exons narrower than min_ex_w symmetrically about their centre:
+        short <- (gxe - gxs) < min_ex_w
+        mid <- (gxs + gxe) / 2
+        gxs[short] <- mid[short] - min_ex_w / 2
+        gxe[short] <- mid[short] + min_ex_w / 2
         ex_df   <- rbind(ex_df, data.frame(gxs = gxs, gxe = gxe))
         body_df <- rbind(body_df, data.frame(gxs = min(gxs), gxe = max(gxe)))
         lab_df  <- rbind(lab_df, data.frame(gx = (min(gxs) + max(gxe)) / 2, gene = gn))
@@ -482,11 +493,11 @@ plot_sv_linear <- function(sample,
     }
     if (nrow(ex_df) > 0) {
       p <- p +
-        geom_segment(data = body_df, aes(x = gxs, xend = gxe, y = yb * 0.95, yend = yb * 0.95),
-                     colour = "grey40", linewidth = 0.3) +
-        geom_rect(data = ex_df, aes(xmin = gxs, xmax = gxe, ymin = yb * 0.92, ymax = yb * 0.98),
-                  fill = "grey30", colour = NA) +
-        geom_text(data = lab_df, aes(x = gx, y = yb * 1.07, label = gene),
+        geom_segment(data = body_df, aes(x = gxs, xend = gxe, y = yb * 0.945, yend = yb * 0.945),
+                     colour = "grey40", linewidth = 0.4) +
+        geom_rect(data = ex_df, aes(xmin = gxs, xmax = gxe, ymin = yb * 0.90, ymax = yb * 0.99),
+                  fill = "grey25", colour = "grey15", linewidth = 0.1) +
+        geom_text(data = lab_df, aes(x = gx, y = yb * 1.08, label = gene),
                   size = size_gene_label, fontface = "italic")
     }
   } else {
@@ -546,7 +557,7 @@ plot_sv_linear <- function(sample,
                  colour = "black", linewidth = 0.4) +
     geom_text(data = mb_df, aes(x = x, y = mb_label_y, label = lab), size = size_text / 2.1, vjust = 1) +
     geom_text(data = chr_lab, aes(x = gx, y = chr_label_y, label = chr),
-              size = size_text / 1.6, vjust = 1, fontface = "bold") +
+              size = size_text / 1.78, vjust = 1, fontface = "bold") +
     ggtitle(paste0(this_sample, " (", wgd_status, ")")) +
     labs(x = NULL, y = "Allele specific\ncopy number") +
     coord_cartesian(clip = "off", expand = FALSE) +

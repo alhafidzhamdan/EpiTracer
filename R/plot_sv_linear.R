@@ -553,62 +553,53 @@ plot_sv_linear <- function(sample,
                        labels = scales::number_format(scale = 1 / xscale),
                        breaks = scaler(scale_ticks))
 
+  ## --- Structural-variant arcs --------------------------------------------
+  ## Accumulate all curved arcs and straight breakpoint/diagonal lines into two
+  ## data frames, then draw them as a handful of batched layers grouped by
+  ## curvature/linewidth. Drawing one geom_curve per SV is prohibitively slow for
+  ## highly-rearranged amplicons (hundreds of SVs -> hundreds of ggplot layers).
+  arc_rows <- list(); seg_rows <- list()
+  add_arc <- function(chr, x, xend, y, yend, curvature, colour, lwd) {
+    arc_rows[[length(arc_rows) + 1L]] <<- data.frame(
+      chr = chr, x = x, xend = xend, y = y, yend = yend,
+      curvature = curvature, colour = colour, lwd = lwd, stringsAsFactors = FALSE)
+  }
+  add_seg <- function(chr, x, xend, y, yend, colour, lwd) {
+    seg_rows[[length(seg_rows) + 1L]] <<- data.frame(
+      chr = chr, x = x, xend = xend, y = y, yend = yend,
+      colour = colour, lwd = lwd, stringsAsFactors = FALSE)
+  }
+
   ## Intrachromosomal SVs:
-  if (!is.null(intraSV)) {
-    if (nrow(intraSV) >= 1) {
-      for (i in 1:nrow(intraSV)) {
-        max_coord <- max(cnv.plot[cnv.plot$chr == intraSV$chr1[i], "end"])
-        min_coord <- min(cnv.plot[cnv.plot$chr == intraSV$chr1[i], "start"])
+  if (!is.null(intraSV) && nrow(intraSV) >= 1) {
+    ## Flip curvature sign for DEL / head-to-head inversions (arcs bow upward):
+    flip <- which(intraSV$strands %in% c("DEL", "h2hINV", "+-", "--"))
+    intraSV$curve[flip] <- abs(intraSV$curve[flip])
 
-        intraSV$curve[which(intraSV$strands %in% c("DEL", "h2hINV", "+-", "--"))] <-
-          abs(intraSV$curve[which(intraSV$strands %in% c("DEL", "h2hINV", "+-", "--"))])
+    for (i in 1:nrow(intraSV)) {
+      max_coord <- max(cnv.plot[cnv.plot$chr == intraSV$chr1[i], "end"])
+      min_coord <- min(cnv.plot[cnv.plot$chr == intraSV$chr1[i], "start"])
+      yv <- intraSV$VF[i] / coeff
+      col <- intraSV$colour[i]
 
-        if (intraSV$pos1[i] >= min_coord & intraSV$pos2[i] <= max_coord) {
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
-                       x = intraSV$pos1[i], xend = intraSV$pos2[i],
-                       y = intraSV$VF[i] / coeff, yend = intraSV$VF[i] / coeff,
-                       curvature = intraSV$curve[i], linewidth = size_sv_line, colour = intraSV$colour[i])
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
-                       x = intraSV$pos1[i], xend = intraSV$pos1[i],
-                       y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_sv_line, colour = intraSV$colour[i]) +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
-                       x = intraSV$pos2[i], xend = intraSV$pos2[i],
-                       y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_sv_line, colour = intraSV$colour[i])
-        }
+      if (intraSV$pos1[i] >= min_coord & intraSV$pos2[i] <= max_coord) {
+        add_arc(intraSV$chr1[i], intraSV$pos1[i], intraSV$pos2[i], yv, yv, intraSV$curve[i], col, size_sv_line)
+        add_seg(intraSV$chr1[i], intraSV$pos1[i], intraSV$pos1[i], 0, yv, col, size_sv_line)
+        add_seg(intraSV$chr1[i], intraSV$pos2[i], intraSV$pos2[i], 0, yv, col, size_sv_line)
+      }
 
-        if (intraSV$pos1[i] >= min_coord & intraSV$pos1[i] < max_coord & intraSV$pos2[i] > max_coord) {
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
-                       x = intraSV$pos1[i], xend = intraSV$pos1[i],
-                       y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_sv_line, colour = intraSV$colour[i])
-          x_range <- (chr_selection$end[which(chr_selection$chr == intraSV$chr1[i])] -
-                        chr_selection$start[which(chr_selection$chr == intraSV$chr1[i])]) * 0.01
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
-                       x = intraSV$pos1[i], xend = intraSV$pos1[i] - x_range,
-                       y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, linewidth = size_sv_line, colour = intraSV$colour[i])
-        }
+      if (intraSV$pos1[i] >= min_coord & intraSV$pos1[i] < max_coord & intraSV$pos2[i] > max_coord) {
+        add_seg(intraSV$chr1[i], intraSV$pos1[i], intraSV$pos1[i], 0, yv, col, size_sv_line)
+        x_range <- (chr_selection$end[which(chr_selection$chr == intraSV$chr1[i])] -
+                      chr_selection$start[which(chr_selection$chr == intraSV$chr1[i])]) * 0.01
+        add_seg(intraSV$chr1[i], intraSV$pos1[i], intraSV$pos1[i] - x_range, 0, -yend_outside_range, col, size_sv_line)
+      }
 
-        if (intraSV$pos1[i] < min_coord & intraSV$pos2[i] <= max_coord & intraSV$pos2[i] > min_coord) {
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr1[i]),
-                       x = intraSV$pos2[i], xend = intraSV$pos2[i],
-                       y = 0, yend = intraSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_sv_line, colour = intraSV$colour[i])
-          x_range <- (chr_selection$end[which(chr_selection$chr == intraSV$chr1[i])] -
-                        chr_selection$start[which(chr_selection$chr == intraSV$chr1[i])]) * 0.01
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = intraSV$chr2[i]),
-                       x = intraSV$pos2[i], xend = intraSV$pos2[i] - x_range,
-                       y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, linewidth = size_sv_line, colour = intraSV$colour[i])
-        }
+      if (intraSV$pos1[i] < min_coord & intraSV$pos2[i] <= max_coord & intraSV$pos2[i] > min_coord) {
+        add_seg(intraSV$chr1[i], intraSV$pos2[i], intraSV$pos2[i], 0, yv, col, size_sv_line)
+        x_range <- (chr_selection$end[which(chr_selection$chr == intraSV$chr1[i])] -
+                      chr_selection$start[which(chr_selection$chr == intraSV$chr1[i])]) * 0.01
+        add_seg(intraSV$chr2[i], intraSV$pos2[i], intraSV$pos2[i] - x_range, 0, -yend_outside_range, col, size_sv_line)
       }
     }
   }
@@ -664,62 +655,36 @@ plot_sv_linear <- function(sample,
         max_pos_chr2 <- max(cnv.plot[cnv.plot$chr == chrs_now[1, 2], "end"])
         in_range_chr1 <- (interSV$pos1[i] > min_pos_chr1 & interSV$pos1[i] < max_pos_chr1)
         in_range_chr2 <- (interSV$pos2[i] > min_pos_chr2 & interSV$pos2[i] < max_pos_chr2)
+        yv <- interSV$VF[i] / coeff
+        col <- interSV$colour[i]
 
         if (in_range_chr1 & in_range_chr2) {
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = interSV$chr1[i]),
-                       x = interSV$pos1[i], xend = interSV$pos1[i],
-                       y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_interchr_line, colour = interSV$colour[i]) +
-            geom_curve(data = data.frame(cov = 1, chr = interSV$chr2[i]),
-                       x = interSV$pos2[i], xend = interSV$pos2[i],
-                       y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_interchr_line, colour = interSV$colour[i])
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = chrs_now[1, 1]),
-                       x = interSV$pos1[i], xend = offset,
-                       y = interSV$VF[i] / coeff, yend = interSV$VF[i] / coeff,
-                       curvature = interSV$curve[i],
-                       linewidth = size_interchr_line, colour = interSV$colour[i])
+          add_seg(interSV$chr1[i], interSV$pos1[i], interSV$pos1[i], 0, yv, col, size_interchr_line)
+          add_seg(interSV$chr2[i], interSV$pos2[i], interSV$pos2[i], 0, yv, col, size_interchr_line)
+          add_arc(chrs_now[1, 1], interSV$pos1[i], offset, yv, yv, interSV$curve[i], col, size_interchr_line)
         }
 
         if (!in_range_chr1) {
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = interSV$chr2[i]),
-                       x = interSV$pos2[i], xend = interSV$pos2[i],
-                       y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_interchr_line, colour = interSV$colour[i])
+          add_seg(interSV$chr2[i], interSV$pos2[i], interSV$pos2[i], 0, yv, col, size_interchr_line)
           x_range <- (chr_selection$end[which(chr_selection$chr == interSV$chr1[i])] -
                         chr_selection$start[which(chr_selection$chr == interSV$chr1[i])]) * 0.01
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = interSV$chr2[i]),
-                       x = interSV$pos2[i], xend = interSV$pos2[i] - x_range,
-                       y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV$colour[i])
+          add_seg(interSV$chr2[i], interSV$pos2[i], interSV$pos2[i] - x_range, 0, -yend_outside_range, col, size_interchr_line)
           if (label_interchr_SV) {
             p <- p + geom_text(data = data.frame(cov = 1, chr = interSV$chr2[i]),
-                               x = interSV$pos2[i] - x_range, y = interSV$VF[i] / coeff,
-                               size = size_text / .pt, colour = interSV$colour[i], label = interSV$chr1[i])
+                               x = interSV$pos2[i] - x_range, y = yv,
+                               size = size_text / .pt, colour = col, label = interSV$chr1[i])
           }
         }
 
         if (!in_range_chr2) {
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = interSV$chr1[i]),
-                       x = interSV$pos1[i], xend = interSV$pos1[i],
-                       y = 0, yend = interSV$VF[i] / coeff, curvature = 0,
-                       linewidth = size_interchr_line, colour = interSV$colour[i])
+          add_seg(interSV$chr1[i], interSV$pos1[i], interSV$pos1[i], 0, yv, col, size_interchr_line)
           x_range <- (chr_selection$end[which(chr_selection$chr == interSV$chr1[i])] -
                         chr_selection$start[which(chr_selection$chr == interSV$chr1[i])]) * 0.01
-          p <- p +
-            geom_curve(data = data.frame(cov = 1, chr = interSV$chr1[i]),
-                       x = interSV$pos1[i], xend = interSV$pos1[i] - x_range,
-                       y = 0, yend = -yend_outside_range,
-                       angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV$colour[i])
+          add_seg(interSV$chr1[i], interSV$pos1[i], interSV$pos1[i] - x_range, 0, -yend_outside_range, col, size_interchr_line)
           if (label_interchr_SV) {
             p <- p + geom_text(data = data.frame(cov = 1, chr = interSV$chr1[i]),
-                               x = interSV$pos1[i] - x_range, y = interSV$VF[i] / coeff,
-                               size = size_text / .pt, colour = interSV$colour[i], label = interSV$chr2[i])
+                               x = interSV$pos1[i] - x_range, y = yv,
+                               size = size_text / .pt, colour = col, label = interSV$chr2[i])
           }
         }
       }
@@ -727,52 +692,63 @@ plot_sv_linear <- function(sample,
   }
 
   ## Interchromosomal SVs to other chromosomes:
-  if (interFlag) {
-    if (exists("interSV_other_chrs")) {
-      for (i in 1:nrow(interSV_other_chrs)) {
-        chr1_in <- (interSV_other_chrs$chr1[i] %in% chr_selection$chr)
-        if (!chr1_in) {
-          min_pos_chr2 <- min(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr2[i], "start"])
-          max_pos_chr2 <- max(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr2[i], "end"])
-          in_range_chr2 <- (interSV_other_chrs$pos2[i] > min_pos_chr2 & interSV_other_chrs$pos2[i] < max_pos_chr2)
-          if (in_range_chr2) {
-            p <- p +
-              geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr2[i]),
-                         x = interSV_other_chrs$pos2[i], xend = interSV_other_chrs$pos2[i],
-                         y = 0, yend = interSV_other_chrs$VF[i] / coeff, curvature = 0,
-                         linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
-            x_range <- (chr_selection$end[which(chr_selection$chr == interSV_other_chrs$chr2[i])] -
-                          chr_selection$start[which(chr_selection$chr == interSV_other_chrs$chr2[i])]) * 0.01
-            p <- p +
-              geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr2[i]),
-                         x = interSV_other_chrs$pos2[i], xend = interSV_other_chrs$pos2[i] - x_range,
-                         y = 0, yend = -yend_outside_range,
-                         angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
-          }
-        }
+  if (interFlag && exists("interSV_other_chrs")) {
+    for (i in 1:nrow(interSV_other_chrs)) {
+      yv <- interSV_other_chrs$VF[i] / coeff
+      col <- interSV_other_chrs$colour[i]
 
-        chr2_in <- (interSV_other_chrs$chr2[i] %in% chr_selection$chr)
-        if (!chr2_in) {
-          min_pos_chr1 <- min(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr1[i], "start"])
-          max_pos_chr1 <- max(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr1[i], "end"])
-          in_range_chr1 <- (interSV_other_chrs$pos1[i] > min_pos_chr1 & interSV_other_chrs$pos1[i] < max_pos_chr1)
-          if (in_range_chr1) {
-            p <- p +
-              geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr1[i]),
-                         x = interSV_other_chrs$pos1[i], xend = interSV_other_chrs$pos1[i],
-                         y = 0, yend = interSV_other_chrs$VF[i] / coeff, curvature = 0,
-                         linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
-            x_range <- (chr_selection$end[which(chr_selection$chr == interSV_other_chrs$chr1[i])] -
-                          chr_selection$start[which(chr_selection$chr == interSV_other_chrs$chr1[i])]) * 0.01
-            p <- p +
-              geom_curve(data = data.frame(cov = 1, chr = interSV_other_chrs$chr1[i]),
-                         x = interSV_other_chrs$pos1[i], xend = interSV_other_chrs$pos1[i] - x_range,
-                         y = 0, yend = -yend_outside_range,
-                         angle = 45, curvature = 0, linewidth = size_interchr_line, colour = interSV_other_chrs$colour[i])
-          }
+      chr1_in <- (interSV_other_chrs$chr1[i] %in% chr_selection$chr)
+      if (!chr1_in) {
+        min_pos_chr2 <- min(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr2[i], "start"])
+        max_pos_chr2 <- max(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr2[i], "end"])
+        in_range_chr2 <- (interSV_other_chrs$pos2[i] > min_pos_chr2 & interSV_other_chrs$pos2[i] < max_pos_chr2)
+        if (in_range_chr2) {
+          add_seg(interSV_other_chrs$chr2[i], interSV_other_chrs$pos2[i], interSV_other_chrs$pos2[i], 0, yv, col, size_interchr_line)
+          x_range <- (chr_selection$end[which(chr_selection$chr == interSV_other_chrs$chr2[i])] -
+                        chr_selection$start[which(chr_selection$chr == interSV_other_chrs$chr2[i])]) * 0.01
+          add_seg(interSV_other_chrs$chr2[i], interSV_other_chrs$pos2[i], interSV_other_chrs$pos2[i] - x_range, 0, -yend_outside_range, col, size_interchr_line)
+        }
+      }
+
+      chr2_in <- (interSV_other_chrs$chr2[i] %in% chr_selection$chr)
+      if (!chr2_in) {
+        min_pos_chr1 <- min(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr1[i], "start"])
+        max_pos_chr1 <- max(cnv.plot[cnv.plot$chr == interSV_other_chrs$chr1[i], "end"])
+        in_range_chr1 <- (interSV_other_chrs$pos1[i] > min_pos_chr1 & interSV_other_chrs$pos1[i] < max_pos_chr1)
+        if (in_range_chr1) {
+          add_seg(interSV_other_chrs$chr1[i], interSV_other_chrs$pos1[i], interSV_other_chrs$pos1[i], 0, yv, col, size_interchr_line)
+          x_range <- (chr_selection$end[which(chr_selection$chr == interSV_other_chrs$chr1[i])] -
+                        chr_selection$start[which(chr_selection$chr == interSV_other_chrs$chr1[i])]) * 0.01
+          add_seg(interSV_other_chrs$chr1[i], interSV_other_chrs$pos1[i], interSV_other_chrs$pos1[i] - x_range, 0, -yend_outside_range, col, size_interchr_line)
         }
       }
     }
+  }
+
+  ## Emit batched SV layers: a few geom_curve layers (one per curvature x
+  ## linewidth) + a few geom_segment layers (one per linewidth), instead of one
+  ## layer per SV. Colours are literal hex values via scale_colour_identity().
+  if (length(arc_rows) > 0) {
+    arc_df <- as.data.frame(data.table::rbindlist(arc_rows))
+    arc_df$grp <- paste(arc_df$curvature, arc_df$lwd, sep = "_")
+    for (g in unique(arc_df$grp)) {
+      d <- arc_df[arc_df$grp == g, , drop = FALSE]
+      p <- p + geom_curve(data = d,
+                          mapping = aes(x = x, xend = xend, y = y, yend = yend, colour = colour),
+                          curvature = d$curvature[1], linewidth = d$lwd[1])
+    }
+  }
+  if (length(seg_rows) > 0) {
+    seg_df <- as.data.frame(data.table::rbindlist(seg_rows))
+    for (lw in unique(seg_df$lwd)) {
+      d <- seg_df[seg_df$lwd == lw, , drop = FALSE]
+      p <- p + geom_segment(data = d,
+                            mapping = aes(x = x, xend = xend, y = y, yend = yend, colour = colour),
+                            linewidth = lw)
+    }
+  }
+  if (length(arc_rows) > 0 || length(seg_rows) > 0) {
+    p <- p + scale_colour_identity()
   }
 
   ## Gene labels: collect all in-window genes into one data frame so labels can

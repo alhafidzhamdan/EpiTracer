@@ -32,6 +32,10 @@
       allele-specific copy-number axis, **sharing the same three tick positions**
       (0, half, full). Axis tops round to two significant figures (e.g. 132 -> 140,
       1462 -> 1500) and the read-support axis carries a grey spine.
+    * **Performance:** SV arcs and breakpoint lines are now drawn as a handful
+      of batched layers (grouped by curvature/linewidth via `scale_colour_identity`)
+      instead of one ggplot layer per SV. A highly-rearranged amplicon with ~300
+      SVs now renders in ~2 s instead of ~2 min, with identical output.
     * Can now **write a high-resolution PNG** (rendered from the plot object at
       `dpi`) in addition to (or instead of) the PDF, via `format` and `dpi`.
     * **LOH / homozygous-deletion bars** are placed in the empty band between

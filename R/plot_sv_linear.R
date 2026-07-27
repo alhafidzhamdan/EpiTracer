@@ -1,4 +1,4 @@
-#' Linear copy-number and structural-variant "recon" plot
+#' Linear copy-number and structural-rearrangement plot
 #'
 #' Draws allele-specific copy number, structural-variant arcs, karyotype
 #' ideograms and gene labels for one or more loci laid out side-by-side on a

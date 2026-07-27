@@ -51,8 +51,8 @@ make_episome_inputs <- function(flank_cn = 2) {
 }
 
 ## Two amplified loci on different chromosomes joined by an inter-chromosomal
-## TRA, for the concatenated-axis recon plot.
-make_recon_inputs <- function() {
+## TRA, for the concatenated-axis multi-locus plot.
+make_multilocus_inputs <- function() {
   karyotype <- data.frame(
     chrom    = c("chr7", "chr7", "chr12", "chr12"),
     start    = c(0, 50e6, 0, 50e6),

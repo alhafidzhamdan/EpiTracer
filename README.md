@@ -3,9 +3,11 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-**EpiTracer** detects **episomal (breakage-independent) extrachromosomal DNA
-(ecDNA)** from whole-genome sequencing (WGS) data and visualises the structural
-rearrangements underlying focal amplifications.
+**EpiTracer: Calling and visualising extrachromosomal circular DNA amplicons
+likely generated from simple excision events.**
+
+It detects such amplicons from whole-genome sequencing (WGS) data and visualises
+the structural rearrangements underlying focal amplifications.
 
 The package currently provides two functions:
 
@@ -15,8 +17,8 @@ The package currently provides two functions:
   *episome* model of formation: a circular amplicon bounded by a duplication
   (DUP) breakpoint, arising from an otherwise non-amplified chromosomal region,
   often leaving a deletion "excision scar" at the origin locus.
-- **`plot_sv_linear()`** — a linear allele-specific copy-number / structural-
-  variant "recon" plotter. It draws one or more loci side-by-side on a single
+- **`plot_sv_linear()`** — a linear allele-specific copy-number and structural-
+  rearrangement plotter. It draws one or more loci side-by-side on a single
   concatenated x-axis with CN tracks, SV arcs, karyotype ideograms, LOH /
   homozygous-deletion bars, and gene labels (saved as PDF). Point it at a
   single focused locus (`chromosome` + `chromosome_range`), give explicit
@@ -26,10 +28,9 @@ The package currently provides two functions:
 
 ## Installation
 
-EpiTracer is not on CRAN — it depends on Bioconductor packages
-(`GenomicRanges`, `regioneR`) and on [`gUtils`](https://github.com/mskilab/gUtils)
-(GitHub-only). Install it with `BiocManager`, which resolves the Bioconductor,
-GitHub and `Remotes:` dependencies:
+Install with `BiocManager`, which resolves the Bioconductor
+(`GenomicRanges`, `regioneR`), GitHub ([`gUtils`](https://github.com/mskilab/gUtils))
+and `Remotes:` dependencies:
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
@@ -82,9 +83,18 @@ plot_sv_linear(
 )
 ```
 
+## Data requirement
+
+**Copy-number (CNV) and structural-variant (SV) data must come from
+[PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple), part of
+the Hartwig Medical Foundation (HMF) pipeline.** EpiTracer relies on PURPLE's
+allele-specific copy-number segments and its SV/breakpoint output (variant
+fraction, junction copy number, PURPLE copy number, etc.); other callers'
+outputs are not supported unless coerced to the columns below.
+
 ## Input format
 
-`call_episomal_ecdna()` expects PURPLE/HMF-style metadata columns:
+`call_episomal_ecdna()` expects these PURPLE/HMF metadata columns:
 
 | Object            | Required metadata |
 |-------------------|-------------------|
@@ -92,6 +102,9 @@ plot_sv_linear(
 | `breakpoints_gr`  | `WGS_ID`, `event`, `svclass`, `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN` |
 | `cnv_gr`          | `sample`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber` |
 | `cancer_genes_gr` | any (used for overlap annotation) |
+
+`plot_sv_linear()` uses PURPLE CNV segments (`cnv_data`) and PURPLE SV/BEDPE
+breakpoints (`sv_data`) for the same sample.
 
 ## Status
 

@@ -8,7 +8,7 @@
       `after_dist_boundary_not_gained` to itself (always `TRUE`). It now
       correctly requires *both* flanks to be non-gained before calling an
       episome region.
-* `plot_sv_linear()`: linear allele-specific copy-number / SV "recon" plotter.
+* `plot_sv_linear()`: linear allele-specific copy-number and structural-rearrangement plotter.
     * `wgd_data` is now **optional**; WGD status is annotated in the title only
       when supplied. `karyotype` and `gene_coord` **default to small bundled hg38
       references** (`inst/extdata`: a ~7 kB ideogram and a ~1 kB oncogene-panel
@@ -33,8 +33,8 @@
     * **Unified onto a single concatenated x-axis** (faceting retired): draws one
       locus or many side-by-side, and structural variants interconnecting separate
       amplicons are drawn as arcs spanning the loci (previously impossible under
-      faceting -- see the interim `plot_amplicon_recon()`, now merged in and
-      removed). Loci come from `chromosome`+`chromosome_range`, explicit `loci`, or
+      faceting -- see the interim multi-locus plotting function, now merged in
+      and removed). Loci come from `chromosome`+`chromosome_range`, explicit `loci`, or
       are **auto-detected** from amplified segments (`copyNumber > min_cn_ratio x
       ploidy`, padded by `margin`) when neither is given.
     * Removed faceting-only arguments (`scale_ticks`, `yend_left`/`yend_right`,

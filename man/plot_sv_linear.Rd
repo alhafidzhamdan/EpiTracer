@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_sv_linear.R
 \name{plot_sv_linear}
 \alias{plot_sv_linear}
-\title{Linear copy-number and structural-variant "recon" plot}
+\title{Linear copy-number and structural-rearrangement plot}
 \usage{
 plot_sv_linear(
   sample,

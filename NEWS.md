@@ -28,3 +28,14 @@
     * **Polish:** gene labels are de-collided with \pkg{ggrepel} (optional,
       `repel_labels`); line geoms use `linewidth` (no more ggplot2 deprecation
       warnings); debug output is gated behind `verbose`.
+    * The **read-support (SV) secondary axis is always shown** alongside the
+      allele-specific copy-number axis: SV arcs are scaled to the copy-number
+      axis height so both axes stay legible at any amplification level, and the
+      read-support ticks show real variant-fraction values.
+    * **LOH / homozygous-deletion bars** are placed in the empty band between
+      the ideogram and the copy-number baseline (`loh_position_ratio` now a
+      fraction of that gap), so they no longer overlap the ideogram.
+    * Gene labels **angle automatically (45 deg) when crowded** within a panel
+      and stay horizontal otherwise; overridable via `gene_label_angle`. When no
+      genes are specified, all default oncogenes falling in the plotted window
+      are shown.

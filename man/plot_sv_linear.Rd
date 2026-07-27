@@ -24,8 +24,9 @@ plot_sv_linear(
   yend_left = NULL,
   yend_right = 100,
   yend_right_line = 2,
-  loh_position_ratio = 0.3,
+  loh_position_ratio = 0.5,
   repel_labels = TRUE,
+  gene_label_angle = NULL,
   plot_height_custom = NULL,
   plot_width_custom = NULL,
   highlight_amp = TRUE,
@@ -85,13 +86,22 @@ parameters (see Details of the original implementation).}
 \item{scale_ticks}{Numeric x-axis tick spacing in bp. If \code{NULL} (default) a
 sensible spacing is derived from the width of the widest panel.}
 
-\item{yend_left, yend_right, yend_right_line, loh_position_ratio}{Numeric layout
-tuning parameters for axes and LOH bars. \code{yend_left}/\code{yend_right} may be
-\code{NULL} (default) to auto-scale the copy-number axis to the data.}
+\item{yend_left, yend_right, yend_right_line}{Numeric layout tuning parameters
+for the axes. \code{yend_left} may be \code{NULL} (default) to auto-scale the
+copy-number axis top to the data.}
+
+\item{loh_position_ratio}{Numeric in \verb{(0, 1)}; vertical position of the LOH /
+homozygous-deletion bars as a fraction of the gap between the main-plot
+baseline and the ideogram (0.5 = midway, the default), so the bars sit in
+the empty band between the ideogram and the copy-number track.}
 
 \item{repel_labels}{Logical; if \code{TRUE} (default) use \pkg{ggrepel} to keep
 gene labels from overlapping (falls back to plain labels if ggrepel is not
 installed).}
+
+\item{gene_label_angle}{Optional numeric label rotation in degrees. If \code{NULL}
+(default) labels are horizontal, switching to 45 degrees automatically when
+genes are crowded within a panel so they stack legibly.}
 
 \item{plot_height_custom, plot_width_custom}{Optional numeric overrides for the
 auto-selected PDF dimensions (inches).}

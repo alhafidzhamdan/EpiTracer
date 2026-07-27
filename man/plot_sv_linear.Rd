@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_sv_linear.R
 \name{plot_sv_linear}
 \alias{plot_sv_linear}
-\title{Linear copy-number and structural-rearrangement plot}
+\title{Linear copy-number and structural rearrangement plot}
 \usage{
 plot_sv_linear(
   sample,
@@ -159,7 +159,7 @@ The assembled \link[ggplot2:ggplot]{ggplot2::ggplot} object (invisibly when a fi
 written); written paths are attached as attribute \code{"path"}.
 }
 \description{
-Draws allele-specific copy number, structural-variant arcs, karyotype
+Draws allele-specific copy number, structural variant arcs, karyotype
 ideograms and gene labels for one or more loci laid out side-by-side on a
 single concatenated x-axis. Because all loci share one coordinate system, the
 structural variants that interconnect separate amplicons (e.g. the junctions

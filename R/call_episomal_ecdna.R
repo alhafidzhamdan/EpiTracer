@@ -1,7 +1,7 @@
 #' Classify a single ecDNA amplicon as episomal or not
 #'
 #' Internal worker called once per amplicon by [call_episomal_ecdna()]. It
-#' annotates the structural-variant breakpoints falling within (or just
+#' annotates the structural variant breakpoints falling within (or just
 #' outside) an ecDNA amplicon, then applies the episome heuristic:
 #' \enumerate{
 #'   \item find duplication (DUP) breakpoints that sit at the amplicon
@@ -250,7 +250,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'
 #' Each amplicon in `ecdna_gr` is processed independently (optionally in
 #' parallel). Within each amplicon the function annotates the flanking
-#' structural-variant breakpoints with oncogene and allele-specific copy-number
+#' structural variant breakpoints with oncogene and allele-specific copy-number
 #' context, then applies the heuristic described in
 #' [classify_amplicon_episomal()].
 #'

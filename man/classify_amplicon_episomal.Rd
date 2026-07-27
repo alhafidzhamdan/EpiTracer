@@ -32,7 +32,7 @@ no breakpoints in range.
 }
 \description{
 Internal worker called once per amplicon by \code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}. It
-annotates the structural-variant breakpoints falling within (or just
+annotates the structural variant breakpoints falling within (or just
 outside) an ecDNA amplicon, then applies the episome heuristic:
 \enumerate{
 \item find duplication (DUP) breakpoints that sit at the amplicon

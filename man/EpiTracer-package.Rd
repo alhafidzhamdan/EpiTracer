@@ -6,7 +6,7 @@
 \alias{EpiTracer-package}
 \title{EpiTracer: Calling and Visualising Episomal Extrachromosomal DNA from WGS}
 \description{
-Tools for detecting episomal extrachromosomal DNA (ecDNA) amplicons (ecDNAs formed by simple DNA excision events, instead of complex dsDNA breaks i.e. chromothripsis) from whole-genome sequencing data and for visualising the structural rearrangements underlying focal amplifications. The episomal ecDNA caller identifies duplication breakpoints at amplicon boundaries, checks for excision scars, and classifies amplicons as episomal in origin. The rearrangement plotter draws linear allele-specific copy-number and structural-rearrangement plots across one or more loci. Copy-number and structural-variant inputs are expected from PURPLE (Hartwig Medical Foundation pipeline).
+Tools for detecting episomal extrachromosomal DNA (ecDNA) amplicons (ecDNAs formed by simple DNA excision events, instead of complex dsDNA breaks i.e. chromothripsis) from whole-genome sequencing data and for visualising the structural rearrangements underlying focal amplifications. The episomal ecDNA caller identifies duplication breakpoints at amplicon boundaries, checks for excision scars, and classifies amplicons as episomal in origin. The rearrangement plotter draws linear allele-specific copy-number and structural rearrangement plots across one or more loci. Copy-number and structural variant inputs are expected from PURPLE (Hartwig Medical Foundation pipeline).
 }
 \seealso{
 Useful links:

@@ -1,6 +1,6 @@
-#' Linear copy-number and structural-rearrangement plot
+#' Linear copy-number and structural rearrangement plot
 #'
-#' Draws allele-specific copy number, structural-variant arcs, karyotype
+#' Draws allele-specific copy number, structural variant arcs, karyotype
 #' ideograms and gene labels for one or more loci laid out side-by-side on a
 #' single concatenated x-axis. Because all loci share one coordinate system, the
 #' structural variants that interconnect separate amplicons (e.g. the junctions

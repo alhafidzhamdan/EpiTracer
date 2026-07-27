@@ -9,8 +9,8 @@ Description: Tools for detecting episomal extrachromosomal
     ecDNA caller identifies duplication breakpoints at amplicon boundaries,
     checks for excision scars, and classifies amplicons as episomal in origin.
     The rearrangement plotter draws linear allele-specific copy-number and
-    structural-rearrangement plots across one or more loci. Copy-number and
-    structural-variant inputs are expected from PURPLE (Hartwig Medical
+    structural rearrangement plots across one or more loci. Copy-number and
+    structural variant inputs are expected from PURPLE (Hartwig Medical
     Foundation pipeline).
 License: MIT + file LICENSE
 Encoding: UTF-8

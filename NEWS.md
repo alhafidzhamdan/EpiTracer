@@ -8,7 +8,7 @@
       `after_dist_boundary_not_gained` to itself (always `TRUE`). It now
       correctly requires *both* flanks to be non-gained before calling an
       episome region.
-* `plot_sv_linear()`: linear allele-specific copy-number and structural-rearrangement plotter.
+* `plot_sv_linear()`: linear allele-specific copy-number and structural rearrangement plotter.
     * `wgd_data` is now **optional**; WGD status is annotated in the title only
       when supplied. `karyotype` and `gene_coord` **default to small bundled hg38
       references** (`inst/extdata`: a ~7 kB ideogram and a ~1 kB oncogene-panel

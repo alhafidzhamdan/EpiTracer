@@ -55,7 +55,7 @@ region, and often leaving a deletion "excision scar" at the origin locus.
 \details{
 Each amplicon in \code{ecdna_gr} is processed independently (optionally in
 parallel). Within each amplicon the function annotates the flanking
-structural-variant breakpoints with oncogene and allele-specific copy-number
+structural variant breakpoints with oncogene and allele-specific copy-number
 context, then applies the heuristic described in
 \code{\link[=classify_amplicon_episomal]{classify_amplicon_episomal()}}.
 }

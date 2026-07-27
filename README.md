@@ -12,12 +12,12 @@ the structural rearrangements underlying focal amplifications.
 The package currently provides two functions:
 
 - **`call_episomal_ecdna()`** — an episomal ecDNA caller. For each ecDNA
-  amplicon it locates the structural-variant breakpoints at the amplicon
+  amplicon it locates the structural variant breakpoints at the amplicon
   boundaries and flags amplicons whose structure is consistent with the
   *episome* model of formation: a circular amplicon bounded by a duplication
   (DUP) breakpoint, arising from an otherwise non-amplified chromosomal region,
   often leaving a deletion "excision scar" at the origin locus.
-- **`plot_sv_linear()`** — a linear allele-specific copy-number and structural-
+- **`plot_sv_linear()`** — a linear allele-specific copy-number and structural
   rearrangement plotter. It draws one or more loci side-by-side on a single
   concatenated x-axis with CN tracks, SV arcs, karyotype ideograms, LOH /
   homozygous-deletion bars, and gene labels (saved as PDF). Point it at a
@@ -85,7 +85,7 @@ plot_sv_linear(
 
 ## Data requirement
 
-**Copy-number (CNV) and structural-variant (SV) data must come from
+**Copy-number (CNV) and structural variant (SV) data must come from
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple), part of
 the Hartwig Medical Foundation (HMF) pipeline.** EpiTracer relies on PURPLE's
 allele-specific copy-number segments and its SV/breakpoint output (variant
@@ -105,6 +105,101 @@ outputs are not supported unless coerced to the columns below.
 
 `plot_sv_linear()` uses PURPLE CNV segments (`cnv_data`) and PURPLE SV/BEDPE
 breakpoints (`sv_data`) for the same sample.
+
+## Arguments
+
+### `call_episomal_ecdna()`
+
+Detects episomal ecDNA amplicons. **Required** arguments have no default.
+
+| Argument | Required | Default | Description |
+|---|:---:|---|---|
+| `ecdna_gr`        | **yes** | — | GRanges of ecDNA amplicon regions; needs `ID`, `WGS_ID`. |
+| `breakpoints_gr`  | **yes** | — | GRanges of PURPLE SV breakpoints (see *Input format*). |
+| `cnv_gr`          | **yes** | — | GRanges of PURPLE allele-specific CN segments. |
+| `cancer_genes_gr` | **yes** | — | GRanges of cancer-gene loci, for oncogene annotation. |
+| `ext`             | no | `1e7`   | bp to extend each amplicon by when searching for boundary SVs. |
+| `mc.cores`        | no | `1`     | Cores for parallel processing across amplicons. |
+| `verbose`         | no | `FALSE` | Print per-amplicon progress. |
+
+### `plot_sv_linear()`
+
+Only `sample`, `cnv_data` and `sv_data` are **required**; everything else is
+optional.
+
+**Required**
+
+| Argument | Description |
+|---|---|
+| `sample`   | Sample identifier (matched in `cnv_data` / `sv_data`). |
+| `cnv_data` | PURPLE CN segments: `sample`, `seqnames`, `start`, `end`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber`. |
+| `sv_data`  | PURPLE SVs/BEDPE: `chrom1`, `start1`, `chrom2`, `start2`, `strand1`, `strand2`, `svclass`, `VF`, `JCN`, `sample`. |
+
+**Optional — references & sample metadata**
+
+| Argument | Default | Description |
+|---|---|---|
+| `wgd_data`       | `NULL` | WGD table (`Polyploidy` column); annotates WGD status in the title when supplied. |
+| `karyotype`      | bundled hg38 | Ideogram bands (data.frame or `.rds` path). |
+| `gene_coord`     | bundled hg38 oncogenes | Gene coordinates (data.frame or BED path). |
+| `wgd_sample_col` | `NULL` | Sample-id column in `wgd_data` (`sample`, else `WGS_ID`). |
+
+**Optional — which loci to plot**
+
+| Argument | Default | Description |
+|---|---|---|
+| `chromosome`       | `NULL`  | Chromosome(s) to display. |
+| `chromosome_range` | `NULL`  | Two-column start/end window(s), one row per `chromosome`. |
+| `loci`             | `NULL`  | Explicit loci: data.frame (`chr`,`start`,`end`) or `"chr:start-end"` strings; overrides `chromosome`. |
+| `events`           | `"amp"` | Auto-detect target(s): `"amp"`, `"gain"`, `"loh"`, `"homdel"`. |
+| `cluster_gap`      | `5e6`   | Events more than this many bp apart become separate loci. |
+| `flank_pct`        | `10`    | Extend each auto-detected window by ±X% of its width. |
+| `min_amp_width`    | `1e5`   | Drop auto-detected loci with total event span below this (bp). |
+
+**Optional — event thresholds**
+
+| Argument | Default | Description |
+|---|---|---|
+| `min_cn_ratio`  | `3`   | Amplification: `copyNumber > min_cn_ratio × ploidy`. |
+| `gain_ratio`    | `1.4` | Gain: `> gain_ratio × ploidy`, but not amplified. |
+| `loh_thresh`    | `0.5` | LOH: `minorAlleleCopyNumber < loh_thresh`. |
+| `homdel_thresh` | `0.5` | Homozygous deletion: `copyNumber < homdel_thresh`. |
+
+**Optional — gene labels**
+
+| Argument | Default | Description |
+|---|---|---|
+| `genes_to_highlight` | `NULL`  | Gene symbols to label (default oncogene panel if `NULL`). |
+| `gene_label_angle`   | `NULL`  | Label rotation in degrees; auto-angles when crowded if `NULL`. |
+| `repel_labels`       | `TRUE`  | De-collide labels with ggrepel. |
+| `displayExon`        | `FALSE` | Draw exon models (requires `cds_gr`). |
+| `cds_gr`             | `NULL`  | GRanges of CDS/exon ranges (`gene_name`), for `displayExon`. |
+
+**Optional — layout & appearance**
+
+| Argument | Default | Description |
+|---|---|---|
+| `cn_max`               | `NULL`  | Copy-number axis top (auto from data if `NULL`). |
+| `gap_frac`             | `0.06`  | Gap between loci as a fraction of total width. |
+| `offset_gene`          | `1.15`  | Gene-label height relative to max CN. |
+| `ymax_highlight_ratio` | `1.08`  | Height of amp/homdel shading relative to max CN. |
+| `karyotype_rel_size`   | `0.048` | Ideogram height relative to the CN axis. |
+| `loh_position_ratio`   | `0.5`   | LOH/homdel bar position within the ideogram gap. |
+| `highlight_amp`        | `TRUE`  | Shade amplified segments. |
+| `highlight_hom_del`    | `TRUE`  | Shade homozygously deleted segments. |
+| `plot_width_custom`    | `NULL`  | Override output width (inches). |
+| `plot_height_custom`   | `NULL`  | Override output height (inches). |
+
+**Optional — output**
+
+| Argument | Default | Description |
+|---|---|---|
+| `outdir`  | `NULL`  | Directory to write the PDF; if `NULL`, only the plot object is returned. |
+| `save`    | `TRUE`  | Write the PDF when `outdir` is supplied. |
+| `verbose` | `FALSE` | Print progress / diagnostics. |
+
+Returns the `ggplot` object (invisibly when a file is written); any written PDF
+path is attached as `attr(p, "path")`.
 
 ## Status
 

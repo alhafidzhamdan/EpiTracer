@@ -10,9 +10,12 @@
       episome region.
 * `plot_sv_linear()`: linear allele-specific copy-number / SV "recon" plotter.
     * `wgd_data` is now **optional**; WGD status is annotated in the title only
-      when supplied. `karyotype` and `gene_coord` **default to bundled hg38
-      references** (`inst/extdata`), so a minimal call is
-      `plot_sv_linear(sample, cnv_data, sv_data)`.
+      when supplied. `karyotype` and `gene_coord` **default to small bundled hg38
+      references** (`inst/extdata`: a ~7 kB ideogram and a ~1 kB oncogene-panel
+      coordinate table), so a minimal call is
+      `plot_sv_linear(sample, cnv_data, sv_data)`. The bundled gene table covers
+      only the default oncogene panel; supply your own `gene_coord` for other
+      genes or genome builds. (Kept small to stay distribution/CRAN-friendly.)
     * New `flank_pct` option: extend each auto-detected (CN-status) window on both
       sides by a percentage of its width (default `10` = +/-10%). Replaces the
       earlier fractional `margin`.

@@ -10,8 +10,7 @@ plot_sv_linear(
   sv_data,
   wgd_data = NULL,
   karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
-  gene_coord = system.file("extdata",
-    "Homo_sapiens.GRCh38.93.gene.coord_strand_name.bed", package = "EpiTracer"),
+  gene_coord = system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
   chromosome = NULL,
   chromosome_range = NULL,
   loci = NULL,
@@ -66,7 +65,9 @@ an \code{.rds} path. Defaults to the bundled hg38 reference.}
 
 \item{gene_coord}{Gene coordinates as a data.frame with columns
 \code{chr},\code{start},\code{end},\code{strand},\code{gene}, or a path to a headerless tab-separated
-BED-like file with those columns. Defaults to the bundled hg38 reference.}
+BED-like file with those columns. Defaults to a small bundled hg38 table
+covering the default oncogene panel; supply your own for other genes or
+genome builds.}
 
 \item{chromosome}{Optional character vector of chromosomes to display, e.g.
 \code{c("chr7", "chr12")}.}

@@ -54,14 +54,17 @@ BiocManager::install("alhafidzhamdan/EpiTracer")
 > appropriate required metadata derived from other SV and CNV callers, although
 > this is not the recommended option.
 
-`call_episomal_ecdna()` expects these PURPLE / HMF metadata columns:
+`call_episomal_ecdna()` expects ecDNA amplicon regions from
+[**AmpliconArchitect**](https://github.com/AmpliconSuite/AmpliconArchitect) and
+SV / copy-number data from [**PURPLE**](https://github.com/hartwigmedical/hmftools/tree/master/purple)
+(HMF pipeline), each a `GRanges` with these metadata columns:
 
-| Object | Required columns |
+| Object (source) | Required metadata columns |
 | :--- | :--- |
-| `ecdna_gr`        | `ID`, `WGS_ID` |
-| `breakpoints_gr`  | `WGS_ID`, `event`, `svclass`, `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN` |
-| `cnv_gr`          | `sample`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber` |
-| `cancer_genes_gr` | any (used for overlap annotation) |
+| `ecdna_gr` (AmpliconArchitect) | `ID`, `WGS_ID` |
+| `breakpoints_gr` (PURPLE) | `WGS_ID`, `event`, `svclass`, `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN` |
+| `cnv_gr` (PURPLE) | `sample`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber` |
+| `cancer_genes_gr` | `gene` (gene symbol; annotates overlapping breakpoints with the oncogene) |
 
 `plot_sv_linear()` uses PURPLE CNV segments (`cnv_data`) and PURPLE SV / BEDPE
 breakpoints (`sv_data`) for the same sample.
@@ -129,10 +132,10 @@ Detects episomal ecDNA amplicons. Only the four GRanges inputs are **required**.
 
 | Argument | Description |
 | :--- | :--- |
-| `ecdna_gr`        | ecDNA amplicon regions (GRanges); needs `ID`, `WGS_ID`. |
-| `breakpoints_gr`  | PURPLE SV breakpoints (GRanges); see *Data requirement*. |
-| `cnv_gr`          | PURPLE allele-specific CN segments (GRanges). |
-| `cancer_genes_gr` | Cancer-gene loci (GRanges), for oncogene annotation. |
+| `ecdna_gr`        | ecDNA amplicon regions from **AmpliconArchitect** (GRanges); needs `ID`, `WGS_ID`. |
+| `breakpoints_gr`  | **PURPLE** SV breakpoints (GRanges); see *Data requirement*. |
+| `cnv_gr`          | **PURPLE** allele-specific CN segments (GRanges). |
+| `cancer_genes_gr` | Cancer-gene loci (GRanges) with a `gene` column; annotates breakpoints with the overlapping oncogene. |
 
 **Optional**
 

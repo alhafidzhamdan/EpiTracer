@@ -258,14 +258,15 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'   contain metadata columns `ID` (unique amplicon identifier) and `WGS_ID`
 #'   (sample identifier). Typically the AmpliconArchitect ecDNA amplicon
 #'   catalogue.
-#' @param breakpoints_gr A [GenomicRanges::GRanges] of SV breakpoints with
-#'   metadata columns `WGS_ID`, `event`, `svclass` (e.g. "DUP", "DEL"),
-#'   `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN`.
-#' @param cnv_gr A [GenomicRanges::GRanges] of allele-specific copy-number
-#'   segments with metadata columns `sample`, `copyNumber`, `ploidy`,
-#'   `majorAlleleCopyNumber`, `minorAlleleCopyNumber`.
-#' @param cancer_genes_gr A [GenomicRanges::GRanges] of cancer gene loci used to
-#'   annotate breakpoints with overlapping oncogenes.
+#' @param breakpoints_gr A [GenomicRanges::GRanges] of PURPLE (HMF pipeline) SV
+#'   breakpoints with metadata columns `WGS_ID`, `event`, `svclass` (e.g. "DUP",
+#'   "DEL"), `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN`.
+#' @param cnv_gr A [GenomicRanges::GRanges] of PURPLE (HMF pipeline)
+#'   allele-specific copy-number segments with metadata columns `sample`,
+#'   `copyNumber`, `ploidy`, `majorAlleleCopyNumber`, `minorAlleleCopyNumber`.
+#' @param cancer_genes_gr A [GenomicRanges::GRanges] of cancer gene loci with a
+#'   `gene` (gene symbol) metadata column, used to annotate breakpoints with the
+#'   overlapping oncogene.
 #' @param ext Integer; number of base pairs to extend each amplicon by when
 #'   searching for boundary breakpoints (default `1e7`).
 #' @param mc.cores Integer; number of cores for [parallel::mclapply()]

@@ -537,6 +537,10 @@ plot_sv_linear <- function(sample,
   mb_label_y  <- lower_limit_karyotype - 1.6 * unit_y
   chr_label_y <- lower_limit_karyotype - 3.0 * unit_y
 
+  ## Minimum spacing (in gx units) between Mb tick labels so they never overlap
+  ## on narrow panels; derived from the output width so labels stay legible.
+  plot_width_est <- if (!is.null(plot_width_custom)) plot_width_custom else max(5, 2.2 * nrow(loci) + 1)
+  min_tick_gap <- 0.62 * total_w / plot_width_est
   tick_df <- data.frame(); mb_df <- data.frame()
   for (i in seq_len(nrow(loci))) {
     ticks <- pretty(c(loci$start[i], loci$end[i]), n = 3)
@@ -544,6 +548,10 @@ plot_sv_linear <- function(sample,
     ticks <- ticks[ticks != 0]                          # drop a "0.0" at a locus start
     if (length(ticks) == 0) next
     gxt <- loci$offset[i] + (ticks - loci$start[i])
+    ## greedily thin ticks that are closer than min_tick_gap:
+    keep <- rep(FALSE, length(gxt)); last <- -Inf
+    for (j in seq_along(gxt)) if (gxt[j] - last >= min_tick_gap) { keep[j] <- TRUE; last <- gxt[j] }
+    gxt <- gxt[keep]; ticks <- ticks[keep]
     tick_df <- rbind(tick_df, data.frame(x = gxt))
     mb_df <- rbind(mb_df, data.frame(x = gxt, lab = formatC(ticks / 1e6, format = "f", digits = 1)))
   }

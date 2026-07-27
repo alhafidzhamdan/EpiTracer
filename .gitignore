@@ -1,0 +1,30 @@
+# History files
+.Rhistory
+.Rapp.history
+# Session Data files
+.RData
+.RDataTmp
+# User-specific files
+.Ruserdata
+# Example code in package build process
+*-Ex.R
+# Output files from R CMD build / check
+/*.tar.gz
+/*.Rcheck/
+# RStudio files
+.Rproj.user/
+*.Rproj
+# produced vignettes
+vignettes/*.html
+vignettes/*.pdf
+# OAuth2 tokens
+.httr-oauth
+# knitr / rmarkdown temp
+*_cache/
+/cache/
+# macOS
+.DS_Store
+# package build artefacts
+/docs/
+# scratch outputs
+*.pdf

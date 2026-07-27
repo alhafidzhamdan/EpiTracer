@@ -12,8 +12,24 @@ test_that("single focused locus (chromosome + range) returns a ggplot and writes
   expect_s3_class(p, "ggplot")
   out <- attr(p, "path")
   expect_true(any(grepl("\\.pdf$", out)))
-  expect_true(any(grepl("\\.png$", out)))
+  expect_false(any(grepl("\\.png$", out)))   # PDF-only by default
   expect_true(all(file.exists(out)))
+})
+
+test_that("format = c('pdf','png') writes both", {
+  d <- make_plot_inputs()
+  outdir <- withr::local_tempdir()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+      outdir = outdir, format = c("pdf", "png"), dpi = 150
+    )
+  ))
+  out <- attr(p, "path")
+  expect_true(any(grepl("\\.pdf$", out)))
+  expect_true(any(grepl("\\.png$", out)))
 })
 
 test_that("plot builds without writing when outdir is NULL", {

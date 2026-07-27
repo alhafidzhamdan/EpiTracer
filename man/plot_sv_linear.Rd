@@ -38,7 +38,7 @@ plot_sv_linear(
   wgd_sample_col = NULL,
   outdir = NULL,
   save = TRUE,
-  format = c("pdf", "png"),
+  format = "pdf",
   dpi = 300,
   plot_width_custom = NULL,
   plot_height_custom = NULL,
@@ -147,10 +147,12 @@ is written and only the plot object is returned.}
 \item{save}{Logical; if \code{TRUE} (default) and \code{outdir} is supplied, write the
 plot.}
 
-\item{format}{Character vector of output formats: any of \code{"pdf"} and \code{"png"}
-(default both). The PNG is rendered from the plot object at \code{dpi}.}
+\item{format}{Character vector of output formats: \code{"pdf"} (default) and/or
+\code{"png"}. Pass \code{format = c("pdf", "png")} (or \code{"png"}) to also/only write a
+PNG, rendered from the plot object at \code{dpi}.}
 
-\item{dpi}{Numeric PNG resolution (default \code{300}).}
+\item{dpi}{Numeric PNG resolution, used only when \code{"png"} is in \code{format}
+(default \code{300}).}
 
 \item{plot_width_custom, plot_height_custom}{Optional numeric overrides for the
 output dimensions (inches).}

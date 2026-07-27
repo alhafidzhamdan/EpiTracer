@@ -248,11 +248,11 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #' duplication breakpoint, arising from an otherwise non-amplified chromosomal
 #' region, and often leaving a deletion "excision scar" at the origin locus.
 #'
-#' Each amplicon in `ecdna_gr` is processed independently (optionally in
-#' parallel). Within each amplicon the function annotates the flanking
-#' structural variant breakpoints with oncogene and allele-specific copy-number
-#' context, then applies the heuristic described in
-#' [classify_amplicon_episomal()].
+#' Each amplicon called by AmpliconArchitect (supplied in `ecdna_gr`, a
+#' compulsory input) is processed independently (optionally in parallel). Within
+#' each amplicon the function annotates the flanking structural variant
+#' breakpoints with oncogene and allele-specific copy-number context, then
+#' applies the heuristic described in [classify_amplicon_episomal()].
 #'
 #' @param ecdna_gr A [GenomicRanges::GRanges] of ecDNA amplicon regions. Must
 #'   contain metadata columns `ID` (unique amplicon identifier) and `WGS_ID`

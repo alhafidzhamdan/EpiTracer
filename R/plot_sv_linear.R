@@ -884,9 +884,8 @@ plot_sv_linear <- function(sample,
     ## Encode the plotted region in the filename so a zoomed view does not
     ## overwrite the full-chromosome file.
     region_tag <- if (is.null(chromosome_range)) "" else
-      paste0("_", paste(sprintf("%s-%s",
-                                format(round(chr_selection$start), scientific = FALSE),
-                                format(round(chr_selection$end), scientific = FALSE)),
+      paste0("_", paste(sprintf("%.0f-%.0f",
+                                round(chr_selection$start), round(chr_selection$end)),
                         collapse = "_"))
     stem <- file.path(outdir, paste0(this_sample, "_",
                                      paste(chr_selection$chr, collapse = "_"),

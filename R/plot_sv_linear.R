@@ -526,8 +526,9 @@ plot_sv_linear <- function(sample,
       plot.title = element_text(size = size_title + 1, colour = "black", margin = unit(c(0, 0, 0.5, 0), "cm"), hjust = 0.5),
       axis.text.y.left = element_text(size = size_text + 2, colour = "black"),
       axis.text.y.right = element_text(size = size_text + 2, colour = "black"),
-      ## Grey spine + ticks for the read-support (right) axis:
-      axis.line.y.right = element_line(colour = "grey50", linewidth = 0.4),
+      ## Grey ticks for the read-support (right) axis. The spine itself is drawn
+      ## as a geom_segment spanning only 0..axis-top (below), so it does not
+      ## extend down through the ideogram gap the way a full-height axis line would.
       axis.ticks.y.right = element_line(colour = "grey50", linewidth = 0.4),
       panel.background = element_blank(),
       strip.background = element_blank(),
@@ -880,9 +881,9 @@ plot_sv_linear <- function(sample,
     geom_segment(aes(x = start, xend = start, y = 0, yend = cn_axis_max, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[1], ] %>% dplyr::filter(start == min(start)),
                  colour = "black", linewidth = 0.4) +
-    geom_segment(aes(x = end, xend = end, y = 0, yend = yend_right_line, group = chr),
+    geom_segment(aes(x = end, xend = end, y = 0, yend = cn_axis_max, group = chr),
                  data = cnv.plot[cnv.plot$chr %in% chr_selection$chr[nrow(chr_selection)], ] %>% dplyr::filter(end == max(end)),
-                 colour = "black", linewidth = 0.4)
+                 colour = "grey50", linewidth = 0.4)
 
   ## Read-support (secondary, right) axis, always shown alongside the CN axis and
   ## sharing its three tick positions (0, half, full). `breaks` are in

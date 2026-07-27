@@ -15,21 +15,25 @@ plot_sv_linear(
   cnv_data,
   sv_data,
   cds_gr = NULL,
+  wgd_sample_col = NULL,
   sec_axis_adj = 10,
   offset_gene = 1.2,
   ymax_highlight_ratio = 1.08,
   displayExon = FALSE,
-  scale_ticks = 1e+07,
-  yend_left = 50,
+  scale_ticks = NULL,
+  yend_left = NULL,
   yend_right = 100,
   yend_right_line = 2,
   loh_position_ratio = 0.3,
+  repel_labels = TRUE,
   plot_height_custom = NULL,
   plot_width_custom = NULL,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
   karyotype_rel_size = 0.05,
-  outdir
+  outdir = NULL,
+  save = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -55,8 +59,9 @@ A file path to an \code{.rds} holding such a data.frame is also accepted.}
 \code{chr},\code{start},\code{end},\code{strand},\code{gene}. A path to a headerless tab-separated
 BED-like file with those five columns is also accepted.}
 
-\item{wgd_data}{A data.frame with columns \code{sample} and \code{Polyploidy}
-(\code{"No"} = diploid, otherwise WGD) used to label the plot title.}
+\item{wgd_data}{A data.frame with a sample-identifier column (see
+\code{wgd_sample_col}) and a \code{Polyploidy} column (\code{"No"} = diploid, otherwise
+WGD) used to label the plot title.}
 
 \item{cnv_data}{A data.frame (or object coercible via \code{as.data.frame}) of
 copy-number segments with columns \code{sample}, \code{seqnames}, \code{start}, \code{end},
@@ -68,15 +73,25 @@ copy-number segments with columns \code{sample}, \code{seqnames}, \code{start}, 
 \item{cds_gr}{Optional \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of CDS/exon ranges (metadata
 column \code{gene_name}) used only when \code{displayExon = TRUE} to draw exon models.}
 
+\item{wgd_sample_col}{Optional name of the sample-identifier column in
+\code{wgd_data}. If \code{NULL} (default) the function uses \code{sample}, falling back to
+\code{WGS_ID} if present.}
+
 \item{sec_axis_adj, offset_gene, ymax_highlight_ratio}{Numeric layout tuning
 parameters (see Details of the original implementation).}
 
 \item{displayExon}{Logical; if \code{TRUE}, draw exon models (requires \code{cds_gr}).}
 
-\item{scale_ticks}{Numeric; x-axis tick spacing in bp (default \code{10e6}).}
+\item{scale_ticks}{Numeric x-axis tick spacing in bp. If \code{NULL} (default) a
+sensible spacing is derived from the width of the widest panel.}
 
 \item{yend_left, yend_right, yend_right_line, loh_position_ratio}{Numeric layout
-tuning parameters for axes and LOH bars.}
+tuning parameters for axes and LOH bars. \code{yend_left}/\code{yend_right} may be
+\code{NULL} (default) to auto-scale the copy-number axis to the data.}
+
+\item{repel_labels}{Logical; if \code{TRUE} (default) use \pkg{ggrepel} to keep
+gene labels from overlapping (falls back to plain labels if ggrepel is not
+installed).}
 
 \item{plot_height_custom, plot_width_custom}{Optional numeric overrides for the
 auto-selected PDF dimensions (inches).}
@@ -86,18 +101,25 @@ homozygously deleted segments.}
 
 \item{karyotype_rel_size}{Numeric; ideogram height relative to the CN axis.}
 
-\item{outdir}{Character; directory in which the PDF is written.}
+\item{outdir}{Optional directory in which to write the PDF. If \code{NULL}
+(default) no file is written and only the plot object is returned.}
+
+\item{save}{Logical; if \code{TRUE} (default) and \code{outdir} is supplied, write the
+PDF. Set \code{FALSE} to build the plot without writing a file.}
+
+\item{verbose}{Logical; if \code{TRUE}, print progress/diagnostic messages.}
 }
 \value{
-Invisibly returns the path to the written PDF. Called for its side
-effect of drawing \verb{<outdir>/<sample>_<chrs>_linear_plot.pdf}.
+The assembled \link[ggplot2:ggplot]{ggplot2::ggplot} object (invisibly when a PDF is
+written). The path of any written PDF is attached as attribute
+\code{"path"}.
 }
 \description{
 Produces a linear, allele-specific copy-number track for one or more
 chromosomes (or sub-chromosomal windows) of a single sample, overlaid with
 arcs for intra- and inter-chromosomal structural variants (SVs), a karyotype
-ideogram, LOH / homozygous-deletion bars, and gene labels. The plot is
-written to a PDF in \code{outdir}.
+ideogram, LOH / homozygous-deletion bars, and gene labels. The assembled
+\code{ggplot} object is returned, and optionally written to a PDF in \code{outdir}.
 }
 \details{
 Reference annotation that was previously hard-coded is now supplied via the
@@ -106,7 +128,7 @@ self-contained.
 }
 \examples{
 \dontrun{
-plot_sv_linear(
+p <- plot_sv_linear(
   sample     = "DO12742T1",
   chromosome = c("chr7", "chr12"),
   karyotype  = "chr_info_hg38.rds",
@@ -116,6 +138,7 @@ plot_sv_linear(
   sv_data    = sv_df,
   outdir     = "plots"
 )
+p + ggplot2::labs(subtitle = "EGFR amplicon")   # compose further
 }
 
 }

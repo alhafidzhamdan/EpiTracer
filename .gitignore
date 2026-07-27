@@ -28,3 +28,7 @@ vignettes/*.pdf
 /docs/
 # scratch outputs
 *.pdf
+
+# large dev data / references (bundle a small subset later)
+example_data/
+references/

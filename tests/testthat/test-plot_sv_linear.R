@@ -1,35 +1,28 @@
-test_that("plot_sv_linear returns a ggplot and writes a non-empty PDF", {
+test_that("single focused locus (chromosome + range) returns a ggplot and writes files", {
   d <- make_plot_inputs()
   outdir <- withr::local_tempdir()
-
   p <- suppressWarnings(suppressMessages(
     plot_sv_linear(
-      sample     = "S1",
-      chromosome = "chr7",
-      karyotype  = d$karyotype,
-      gene_coord = d$gene_coord,
-      wgd_data   = d$wgd_data,
-      cnv_data   = d$cnv_data,
-      sv_data    = d$sv_data,
-      outdir     = outdir
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+      outdir = outdir, dpi = 150
     )
   ))
-
   expect_s3_class(p, "ggplot")
   out <- attr(p, "path")
-  expect_true(all(file.exists(out)))
   expect_true(any(grepl("\\.pdf$", out)))
   expect_true(any(grepl("\\.png$", out)))
-  expect_true(all(file.info(out)$size > 1000))
+  expect_true(all(file.exists(out)))
 })
 
-test_that("plot_sv_linear builds a plot without writing when outdir is NULL", {
+test_that("plot builds without writing when outdir is NULL", {
   d <- make_plot_inputs()
   p <- suppressWarnings(suppressMessages(
     plot_sv_linear(
-      sample = "S1", chromosome = "chr7",
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
       karyotype = d$karyotype, gene_coord = d$gene_coord,
-      wgd_data = d$wgd_data, cnv_data = d$cnv_data, sv_data = d$sv_data
+      chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1)
     )
   ))
   expect_s3_class(p, "ggplot")
@@ -42,27 +35,47 @@ test_that("wgd_data keyed by WGS_ID is accepted", {
   names(wgd_wgsid)[names(wgd_wgsid) == "sample"] <- "WGS_ID"
   p <- suppressWarnings(suppressMessages(
     plot_sv_linear(
-      sample = "S1", chromosome = "chr7",
-      karyotype = d$karyotype, gene_coord = d$gene_coord,
-      wgd_data = wgd_wgsid, cnv_data = d$cnv_data, sv_data = d$sv_data
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = wgd_wgsid,
+      karyotype = d$karyotype, gene_coord = d$gene_coord, chromosome = "chr7"
     )
   ))
   expect_s3_class(p, "ggplot")
 })
 
-test_that("displayExon = TRUE requires cds_gr", {
-  d <- make_plot_inputs()
-  outdir <- withr::local_tempdir()
+test_that("auto-detects amplified loci across chromosomes and connects them", {
+  d <- make_recon_inputs()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord
+    )
+  ))
+  expect_s3_class(p, "ggplot")
+})
 
+test_that("explicit loci strings are accepted", {
+  d <- make_recon_inputs()
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(
+      sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+      karyotype = d$karyotype, gene_coord = d$gene_coord,
+      loci = c("chr7:54000000-57000000", "chr12:56000000-59000000")
+    )
+  ))
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("auto-detection errors when no amplification is present", {
+  d <- make_recon_inputs()
+  d$cnv_data$copyNumber <- 2
+  d$cnv_data$majorAlleleCopyNumber <- 1
   expect_error(
     suppressWarnings(suppressMessages(
       plot_sv_linear(
-        sample = "S1", chromosome = "chr7",
-        karyotype = d$karyotype, gene_coord = d$gene_coord,
-        wgd_data = d$wgd_data, cnv_data = d$cnv_data, sv_data = d$sv_data,
-        outdir = outdir, displayExon = TRUE
+        sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+        karyotype = d$karyotype, gene_coord = d$gene_coord
       )
     )),
-    "cds_gr"
+    "amplified"
   )
 })

@@ -7,7 +7,7 @@
 (ecDNA)** from whole-genome sequencing (WGS) data and visualises the structural
 rearrangements underlying focal amplifications.
 
-The package currently provides three functions:
+The package currently provides two functions:
 
 - **`call_episomal_ecdna()`** — an episomal ecDNA caller. For each ecDNA
   amplicon it locates the structural-variant breakpoints at the amplicon
@@ -15,13 +15,14 @@ The package currently provides three functions:
   *episome* model of formation: a circular amplicon bounded by a duplication
   (DUP) breakpoint, arising from an otherwise non-amplified chromosomal region,
   often leaving a deletion "excision scar" at the origin locus.
-- **`plot_amplicon_recon()`** — a multi-locus amplicon plot on a single
-  concatenated axis: focuses each amplified locus, lays them side-by-side, and
-  draws the structural variants interconnecting separate amplicons (multi-fragment
-  / hub ecDNA junctions), with per-locus ideograms.
 - **`plot_sv_linear()`** — a linear allele-specific copy-number / structural-
-  variant "recon" plotter for one or more loci, drawing CN tracks, SV arcs, a
-  karyotype ideogram, LOH / homozygous-deletion bars, and gene labels to PDF.
+  variant "recon" plotter. It draws one or more loci side-by-side on a single
+  concatenated x-axis with CN tracks, SV arcs, karyotype ideograms, LOH /
+  homozygous-deletion bars, and gene labels (PDF + high-res PNG). Point it at a
+  single focused locus (`chromosome` + `chromosome_range`), give explicit
+  `loci`, or let it **auto-detect every amplified locus** in the sample — the
+  structural variants interconnecting separate amplicons (multi-fragment / hub
+  ecDNA junctions) are drawn as arcs spanning the loci.
 
 ## Installation
 
@@ -68,15 +69,24 @@ episomal <- call_episomal_ecdna(
   mc.cores        = 4
 )
 
+# A single focused locus:
 plot_sv_linear(
-  sample     = "DO12742T1",
-  chromosome = c("chr7", "chr12"),
+  sample     = "DO11441T1",
+  cnv_data   = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
   karyotype  = "chr_info_hg38.rds",           # ideogram bands
   gene_coord = "gene.coord_strand_name.bed",  # gene coordinates
-  wgd_data   = wgd_df,
-  cnv_data   = cnv_df,
-  sv_data    = sv_df,
+  chromosome = "chr7",
+  chromosome_range = matrix(c(52e6, 56e6), nrow = 1),
   outdir     = "plots"
+)
+
+# Every amplified locus, interconnected (multi-fragment ecDNA hub) — auto-detected:
+plot_sv_linear(
+  sample     = "DUMC12T1",
+  cnv_data   = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
+  karyotype  = "chr_info_hg38.rds",
+  gene_coord = "gene.coord_strand_name.bed",
+  outdir     = "plots"                          # loci auto-detected; or loci = c("chr4:...", ...)
 )
 ```
 

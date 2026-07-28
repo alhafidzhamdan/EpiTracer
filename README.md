@@ -44,4 +44,4 @@ Early development (`v0.0.0.9000`) — the API may change.
 
 ## License
 
-MIT © Alhafidz Hamdan
+Released under the [MIT License](LICENSE). © 2026 Alhafidz Hamdan.

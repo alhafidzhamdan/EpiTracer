@@ -262,7 +262,7 @@ plot_sv_linear <- function(sample,
       agg$end   <- pmin(chr_len[agg$chr], round(agg$end + flank))
     }
     if (is.null(chroms)) {
-      if (nrow(agg) == 0) stop("No ", paste(events, collapse = "/"), " loci found for ",
+      if (nrow(agg) == 0) stop("No amplified (", paste(events, collapse = "/"), ") loci found for ",
                                this_sample, " (>= ", min_amp_width,
                                " bp). Specify `chromosome` or `loci`.")
       res <- agg[order(suppressWarnings(as.integer(gsub("chr", "", agg$chr))), agg$chr, agg$start),

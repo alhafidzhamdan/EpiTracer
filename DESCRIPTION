@@ -34,7 +34,9 @@ Imports:
     stats,
     grDevices
 Suggests:
+    Ckmeans.1d.dp,
     ggrepel,
+    patchwork,
     testthat (>= 3.0.0),
     withr
 Remotes:

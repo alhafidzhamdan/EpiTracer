@@ -28,6 +28,21 @@ whole-genome sequencing (WGS) data — click a tool for its full documentation:
 > derived from other SV and CNV callers, although this is not the recommended
 > option.
 
+## Visualising rearrangements
+
+Both plotters draw allele-specific copy number and structural-variant arcs on a
+shared, concatenated-locus axis. `plot_sv_reconstruction()` goes further and
+**reconstructs a focal amplicon wave by wave**, stacking one panel per
+read-support (`VF`) stratum (highest support on top). Below, *MDM4* (chr1),
+*PDGFRA* (chr4) and *CDK4* (chr12) are co-amplified and stitched together by
+inter-chromosomal junctions (orange arcs) in `HMF000570T2`:
+
+![Multi-oncogene co-amplification reconstructed in HMF000570T2](man/figures/README-HMF000570T2-reconstruction.png)
+
+See [`plot_sv_linear()`](docs/plot_sv_linear.md) for the single-panel viewer and
+[`plot_sv_reconstruction()`](docs/plot_sv_reconstruction.md) for the stacked,
+wave-by-wave reconstruction.
+
 ## Installation
 
 Install with `BiocManager`, which resolves the Bioconductor

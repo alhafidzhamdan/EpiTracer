@@ -79,3 +79,26 @@
       and stay horizontal otherwise; overridable via `gene_label_angle`. When no
       genes are specified, all default oncogenes falling in the plotted window
       are shown.
+* `plot_sv_reconstruction()`: new companion plotter that stratifies a locus's
+  structural variants by read support (`VF`) and stacks one panel per stratum,
+  reconstructing how a focal amplicon is built up wave by wave (top = highest
+  read support = earliest / highest-copy events).
+    * The single highest-`VF` junction is isolated into a **"Max VF"** top
+      panel; the remaining junctions are clustered on `log(VF)` into **"Cluster
+      1..X"** panels (highest first). Stratification is controlled by
+      `k` / `max_k` / `vf_breaks` / `isolate_founder` / `founder_offscale` /
+      `vf_scale`.
+    * `cn_display = "reconstruct"` (default) rebuilds the major-allele copy
+      number cumulatively per wave — the flat founder baseline subdivides as each
+      stratum's breakpoints are added, down to the full observed profile;
+      `"actual"` instead shows the observed segments near each stratum's
+      breakpoints (`cn_near_flank`).
+    * **LOH / homozygous-deletion** segments are reconstructed on the same
+      timeline: each is introduced by the earliest deletion junction spanning it,
+      or shown from the top panel down when no deletion explains it.
+    * Optional exon models (`displayExon` / `cds_gr`) flag intragenic loss such
+      as EGFRvIII; dashed guides mark every reconstructed copy-number transition
+      (`cn_border_lines` / `cn_border_min_step`).
+    * Returns a **patchwork** object (per-junction stratum assignment attached as
+      `attr(p, "strata")`); requires **patchwork**, and `k = "auto"` uses
+      **Ckmeans.1d.dp** when installed.

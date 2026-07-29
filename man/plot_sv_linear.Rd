@@ -42,6 +42,11 @@ plot_sv_linear(
   snv_type_col = NULL,
   vaf_col = "allelic_freq",
   snv_cn_col = "variant_cn",
+  snv_timing = FALSE,
+  snv_timing_pre_frac = 0.5,
+  snv_timing_post_mcn = 1.5,
+  snv_timing_colours = c(`Pre-amplification` = "#d1495b", `Post-amplification` =
+    "#1d3557", Unknown = "grey70"),
   snv_rel_height = 0.4,
   snv_point_size = 0.7,
   snv_alpha = 0.6,
@@ -187,7 +192,26 @@ used when \code{snv_y = "vaf"}. Values outside \verb{[0, vaf_max]} are treated a
 artefacts and dropped.}
 
 \item{snv_cn_col}{Name of the SNV copy-number column in \code{snv_data} (default
-\code{variant_cn}), used when \code{snv_y = "cn"}.}
+\code{variant_cn}), used when \code{snv_y = "cn"} and for \code{snv_timing}.}
+
+\item{snv_timing}{Logical; if \code{TRUE}, classify each SNV by its timing relative
+to the focal amplification and colour the points accordingly, with a legend
+collected to the right of the figure. Uses the mutation copy number
+(\code{snv_cn_col}) against the amplified-allele copy number (\code{major_cn}) at the
+site (also needs \code{minor_cn}): a site is amplified when
+\code{major_cn + minor_cn > min_cn_ratio * ploidy}; within it, an SNV is
+"Pre-amplification" when its copy number is \verb{>= snv_timing_pre_frac * major_cn}
+(and \verb{>= 2}), "Post-amplification" when it is \verb{<= snv_timing_post_mcn}, and
+"Unknown" otherwise or when the site is not amplified. Works with any \code{snv_y}.}
+
+\item{snv_timing_pre_frac}{Numeric; fraction of the amplified-allele copy number
+an SNV's copy number must reach to be called pre-amplification (default \code{0.5}).}
+
+\item{snv_timing_post_mcn}{Numeric; SNV copy-number at or below which a variant
+in an amplified site is called post-amplification (default \code{1.5}).}
+
+\item{snv_timing_colours}{Named character vector of point colours for the
+\code{"Pre-amplification"}, \code{"Post-amplification"} and \code{"Unknown"} classes.}
 
 \item{snv_rel_height}{Numeric; height of the SNV panel relative to the CN/SV
 panel (default \code{0.4}).}

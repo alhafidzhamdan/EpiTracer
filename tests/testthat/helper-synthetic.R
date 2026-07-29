@@ -110,3 +110,22 @@ make_plot_inputs <- function() {
   list(karyotype = karyotype, gene_coord = gene_coord, wgd_data = wgd_data,
        cnv_data = cnv_data, sv_data = sv_data)
 }
+
+## Synthetic small mutations for the optional SNV panel of plot_sv_linear().
+## Uses the SNV column convention (`sampleID` sample, `allelic_freq` VAF, `type`
+## mutation class). Five S1 SNVs inside the chr7 window (one with an artefactual
+## VAF > 1), one S1 indel in-window (must be excluded), and an off-target SNV for
+## a different sample (must be filtered out). With SNV-only + first-per-chromosome
+## (intermutation-distance) handling, both `snv_y` modes yield 4 plotted points.
+make_snv_inputs <- function() {
+  data.frame(
+    sampleID     = c(rep("S1", 6), "OTHER"),
+    seqnames     = "chr7",
+    start        = c(54.2e6, 55.10e6, 55.20e6, 55.25e6, 55.30e6, 55.40e6, 55.15e6),
+    allelic_freq = c(0.30,   0.95,    0.42,    5.0,      0.18,    0.60,    0.5),  # 5.0 = artefact
+    variant_cn   = c(2,      1,       3,       1,        8,       1,       1),
+    type         = c("SNV",  "SNV",   "SNV",   "SNV",    "SNV",   "Indel", "SNV"),
+    ref          = "A", mut = "G",
+    stringsAsFactors = FALSE
+  )
+}

@@ -28,6 +28,30 @@
       `homdel_thresh`.
     * `displayExon` (with `cds_gr`) re-introduced -- draws exon models for
       in-window genes.
+    * **Optional SNV panel.** Supply `snv_data` (a `data.frame`/`GRanges` of small
+      mutations with a sample column, `snv_sample_col`, default `sampleID`) to
+      stack a second mutation track directly beneath the CN/SV panel, sharing the
+      same concatenated genomic x-axis so mutations line up under the copy number
+      and rearrangements they sit within. The karyotype ideogram moves to the base
+      of this bottom panel and carries the shared Mb/chromosome axis. Only
+      single-nucleotide variants are shown -- indels/MNVs are excluded via a
+      mutation-type column (`snv_type_col`, default `type`, keeping `"SNV"`) or,
+      failing that, inferred from single-base `ref`/`mut`. The y-axis is set by
+      `snv_y`:
+        * `"imd"` (default) -- **intermutation distance**: a rainfall plot of the
+          bp distance to the previous SNV on the same chromosome (log10 axis).
+          Distances are computed across all of the sample's SNVs per chromosome
+          before restricting to the plotted loci, so window-edge mutations keep
+          their true neighbour distance.
+        * `"vaf"` -- variant-allele frequency (`vaf_col`, default `allelic_freq`);
+          values outside `[0, vaf_max]` (default `1`) are dropped as artefacts.
+        * `"cn"` -- SNV copy number / mutation copy number (`snv_cn_col`, default
+          `variant_cn`); in an amplicon this times each SNV against the
+          amplification (pre-amplification mutations reach high copy number).
+      The two panels are combined with \pkg{patchwork} and returned/saved as one
+      figure; styling via `snv_rel_height`/`snv_point_size`/`snv_alpha`/`snv_colour`.
+      When `snv_data = NULL` (default) behaviour is unchanged and a plain `ggplot`
+      is returned.
     * Larger axis fonts and longer tick marks; ideogram 20% slimmer; a leading
       `0.0` Mb tick at a locus start is no longer drawn.
     * **Unified onto a single concatenated x-axis** (faceting retired): draws one

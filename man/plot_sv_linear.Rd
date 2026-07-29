@@ -36,6 +36,17 @@ plot_sv_linear(
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
   wgd_sample_col = NULL,
+  snv_data = NULL,
+  snv_sample_col = NULL,
+  snv_y = c("imd", "vaf", "cn"),
+  snv_type_col = NULL,
+  vaf_col = "allelic_freq",
+  snv_cn_col = "variant_cn",
+  snv_rel_height = 0.4,
+  snv_point_size = 0.7,
+  snv_alpha = 0.6,
+  snv_colour = "#1d3557",
+  vaf_max = 1,
   outdir = NULL,
   save = TRUE,
   plot_width_custom = NULL,
@@ -142,6 +153,50 @@ deleted segments.}
 
 \item{wgd_sample_col}{Optional name of the sample column in \code{wgd_data}
 (default: \code{sample}, falling back to \code{WGS_ID}).}
+
+\item{snv_data}{Optional SNV/SSM table as a \code{data.frame} or
+\link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} with (at least) \code{seqnames}/\code{start} position columns,
+a sample-identifier column (see \code{snv_sample_col}) and, for \code{snv_y = "vaf"}, a
+variant-allele-frequency column (see \code{vaf_col}). When supplied, a second SNV
+panel (intermutation-distance rainfall by default, or VAF; see \code{snv_y}) is
+drawn directly beneath the copy-number / SV panel, sharing the same
+concatenated genomic x-axis, and the two are returned/saved as one stacked
+figure (requires the \pkg{patchwork} package). When \code{NULL} (default) only the
+CN/SV panel is drawn and behaviour is unchanged.}
+
+\item{snv_sample_col}{Optional name of the sample column in \code{snv_data}
+(default: \code{sampleID}, falling back to \code{sample}).}
+
+\item{snv_y}{What the SNV panel's y-axis shows: \code{"imd"} (default) plots the
+intermutation distance -- the bp distance to the previous SNV on the same
+chromosome, a rainfall plot, on a log10 axis; \code{"vaf"} plots the
+variant-allele frequency; \code{"cn"} plots the SNV copy number (mutation copy
+number, see \code{snv_cn_col}) -- in an amplicon this times each SNV against the
+amplification. Only single-nucleotide variants are used in every case (indels
+/ MNVs are excluded, see \code{snv_type_col}); intermutation distances are computed
+across all of the sample's SNVs per chromosome before restricting to the
+plotted loci, so window-edge mutations keep their true neighbour distance.}
+
+\item{snv_type_col}{Optional name of a mutation-type column in \code{snv_data} used
+to keep SNVs only (rows where the value is \code{"SNV"}). Defaults to \code{type} when
+present; if no such column exists, SNVs are inferred from single-base
+\code{ref}/\code{mut} columns.}
+
+\item{vaf_col}{Name of the VAF column in \code{snv_data} (default \code{allelic_freq}),
+used when \code{snv_y = "vaf"}. Values outside \verb{[0, vaf_max]} are treated as
+artefacts and dropped.}
+
+\item{snv_cn_col}{Name of the SNV copy-number column in \code{snv_data} (default
+\code{variant_cn}), used when \code{snv_y = "cn"}.}
+
+\item{snv_rel_height}{Numeric; height of the SNV panel relative to the CN/SV
+panel (default \code{0.4}).}
+
+\item{snv_point_size, snv_alpha, snv_colour}{Point size, alpha and colour for the
+SNV VAF scatter (defaults \code{0.7}, \code{0.6}, \code{"#1d3557"}).}
+
+\item{vaf_max}{Numeric top of the VAF axis; also the upper bound of the plausible
+VAF window used to drop artefactual values (default \code{1}).}
 
 \item{outdir}{Optional directory in which to write the plot. If \code{NULL} no file
 is written and only the plot object is returned.}

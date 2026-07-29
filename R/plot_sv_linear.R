@@ -94,6 +94,56 @@
 #'   deleted segments.
 #' @param wgd_sample_col Optional name of the sample column in `wgd_data`
 #'   (default: `sample`, falling back to `WGS_ID`).
+#' @param snv_data Optional SNV/SSM table as a `data.frame` or
+#'   [GenomicRanges::GRanges] with (at least) `seqnames`/`start` position columns,
+#'   a sample-identifier column (see `snv_sample_col`) and, for `snv_y = "vaf"`, a
+#'   variant-allele-frequency column (see `vaf_col`). When supplied, a second SNV
+#'   panel (intermutation-distance rainfall by default, or VAF; see `snv_y`) is
+#'   drawn directly beneath the copy-number / SV panel, sharing the same
+#'   concatenated genomic x-axis, and the two are returned/saved as one stacked
+#'   figure (requires the \pkg{patchwork} package). When `NULL` (default) only the
+#'   CN/SV panel is drawn and behaviour is unchanged.
+#' @param snv_sample_col Optional name of the sample column in `snv_data`
+#'   (default: `sampleID`, falling back to `sample`).
+#' @param snv_y What the SNV panel's y-axis shows: `"imd"` (default) plots the
+#'   intermutation distance -- the bp distance to the previous SNV on the same
+#'   chromosome, a rainfall plot, on a log10 axis; `"vaf"` plots the
+#'   variant-allele frequency; `"cn"` plots the SNV copy number (mutation copy
+#'   number, see `snv_cn_col`) -- in an amplicon this times each SNV against the
+#'   amplification. Only single-nucleotide variants are used in every case (indels
+#'   / MNVs are excluded, see `snv_type_col`); intermutation distances are computed
+#'   across all of the sample's SNVs per chromosome before restricting to the
+#'   plotted loci, so window-edge mutations keep their true neighbour distance.
+#' @param snv_type_col Optional name of a mutation-type column in `snv_data` used
+#'   to keep SNVs only (rows where the value is `"SNV"`). Defaults to `type` when
+#'   present; if no such column exists, SNVs are inferred from single-base
+#'   `ref`/`mut` columns.
+#' @param vaf_col Name of the VAF column in `snv_data` (default `allelic_freq`),
+#'   used when `snv_y = "vaf"`. Values outside `[0, vaf_max]` are treated as
+#'   artefacts and dropped.
+#' @param snv_cn_col Name of the SNV copy-number column in `snv_data` (default
+#'   `variant_cn`), used when `snv_y = "cn"` and for `snv_timing`.
+#' @param snv_timing Logical; if `TRUE`, classify each SNV by its timing relative
+#'   to the focal amplification and colour the points accordingly, with a legend
+#'   collected to the right of the figure. Uses the mutation copy number
+#'   (`snv_cn_col`) against the amplified-allele copy number (`major_cn`) at the
+#'   site (also needs `minor_cn`): a site is amplified when
+#'   `major_cn + minor_cn > min_cn_ratio * ploidy`; within it, an SNV is
+#'   "Pre-amplification" when its copy number is `>= snv_timing_pre_frac * major_cn`
+#'   (and `>= 2`), "Post-amplification" when it is `<= snv_timing_post_mcn`, and
+#'   "Unknown" otherwise or when the site is not amplified. Works with any `snv_y`.
+#' @param snv_timing_pre_frac Numeric; fraction of the amplified-allele copy number
+#'   an SNV's copy number must reach to be called pre-amplification (default `0.5`).
+#' @param snv_timing_post_mcn Numeric; SNV copy-number at or below which a variant
+#'   in an amplified site is called post-amplification (default `1.5`).
+#' @param snv_timing_colours Named character vector of point colours for the
+#'   `"Pre-amplification"`, `"Post-amplification"` and `"Unknown"` classes.
+#' @param snv_rel_height Numeric; height of the SNV panel relative to the CN/SV
+#'   panel (default `0.4`).
+#' @param snv_point_size,snv_alpha,snv_colour Point size, alpha and colour for the
+#'   SNV VAF scatter (defaults `0.7`, `0.6`, `"#1d3557"`).
+#' @param vaf_max Numeric top of the VAF axis; also the upper bound of the plausible
+#'   VAF window used to drop artefactual values (default `1`).
 #' @param outdir Optional directory in which to write the plot. If `NULL` no file
 #'   is written and only the plot object is returned.
 #' @param save Logical; if `TRUE` (default) and `outdir` is supplied, write the
@@ -159,6 +209,23 @@ plot_sv_linear <- function(sample,
                            highlight_amp = TRUE,
                            highlight_hom_del = TRUE,
                            wgd_sample_col = NULL,
+                           snv_data = NULL,
+                           snv_sample_col = NULL,
+                           snv_y = c("imd", "vaf", "cn"),
+                           snv_type_col = NULL,
+                           vaf_col = "allelic_freq",
+                           snv_cn_col = "variant_cn",
+                           snv_timing = FALSE,
+                           snv_timing_pre_frac = 0.5,
+                           snv_timing_post_mcn = 1.5,
+                           snv_timing_colours = c("Pre-amplification"  = "#d1495b",
+                                                  "Post-amplification" = "#1d3557",
+                                                  "Unknown"            = "grey70"),
+                           snv_rel_height = 0.4,
+                           snv_point_size = 0.7,
+                           snv_alpha = 0.6,
+                           snv_colour = "#1d3557",
+                           vaf_max = 1,
                            outdir = NULL,
                            save = TRUE,
                            plot_width_custom = NULL,
@@ -166,6 +233,12 @@ plot_sv_linear <- function(sample,
                            verbose = FALSE) {
 
   this_sample <- sample
+
+  ## Whether a second (SNV VAF) panel is drawn beneath the CN/SV panel. When it
+  ## is, the karyotype ideogram is dropped from the CN panel (the inter-panel gap
+  ## stays clean) and the shared genomic axis (Mb ticks + chromosome names) is
+  ## moved to the bottom of the SNV panel, labelling the figure once at the base.
+  has_snv <- !is.null(snv_data)
 
   ## ---- Reference data -----------------------------------------------------
   if (is.character(karyotype)) {
@@ -395,7 +468,7 @@ plot_sv_linear <- function(sample,
     d$gx_end   <- loci$offset[i] + (d$end   - loci$start[i])
     d
   }))
-  if (!is.null(ideo) && nrow(ideo) > 0)
+  if (!has_snv && !is.null(ideo) && nrow(ideo) > 0)
     p <- p + geom_rect(data = ideo, aes(xmin = gx_start, xmax = gx_end,
              ymin = lower_limit_karyotype, ymax = upper_limit_karyotype),
              fill = ideo$color, colour = "black", linewidth = 0.2)
@@ -521,15 +594,20 @@ plot_sv_linear <- function(sample,
     }))
     if (!is.null(gl) && nrow(gl) > 0) {
       gl$y <- max.cn * offset_gene
-      if (is.null(gene_label_angle)) {
-        gp <- sort(gl$gx); gene_label_angle <- if (length(gp) > 1 && min(diff(gp)) < 0.05 * total_w) 45 else 0
-      }
+      ## "Crowded" = at least two gene labels closer than 5% of the plotted width.
+      ## When crowded, labels are angled and ggrepel draws a leader line back to
+      ## each point; when the labels are nicely separated, the leader lines are
+      ## suppressed (min.segment.length = Inf) as they only add clutter.
+      gp <- sort(gl$gx)
+      crowded <- length(gp) > 1 && min(diff(gp)) < 0.05 * total_w
+      if (is.null(gene_label_angle)) gene_label_angle <- if (crowded) 45 else 0
       p <- p + geom_point(data = gl, aes(x = gx, y = y * 0.94), shape = 16, size = 1, colour = "black")
       if (repel_labels && requireNamespace("ggrepel", quietly = TRUE)) {
         p <- p + ggrepel::geom_text_repel(data = gl, aes(x = gx, y = y, label = gene),
           size = size_gene_label, fontface = "italic", angle = gene_label_angle, hjust = 0,
           direction = "both", nudge_y = max.cn * 0.12, ylim = c(max.cn * 1.02, NA),
-          segment.size = 0.2, segment.colour = "grey60", min.segment.length = 0,
+          segment.size = 0.2, segment.colour = "grey60",
+          min.segment.length = if (crowded) 0 else Inf,
           box.padding = 0.25, max.overlaps = Inf, seed = 1L)
       } else {
         p <- p + geom_text(data = gl, aes(x = gx, y = y, label = gene),
@@ -566,16 +644,26 @@ plot_sv_linear <- function(sample,
   chr_lab <- data.frame(gx = loci$gx_mid, chr = gsub("chr", "Chr ", loci$chr))
   cn_breaks <- unique(c(0, cn_axis_max / 2, cn_axis_max))
 
+  ## Reusable genomic-axis decoration: draws the Mb tick marks, Mb labels and
+  ## chromosome names below `y_base` (in that panel's own y units, `y_unit`).
+  draw_genomic_axis <- function(gg, y_base, y_unit) {
+    gg +
+      geom_segment(data = tick_df, aes(x = x, xend = x, y = y_base, yend = y_base - 0.7 * y_unit),
+                   colour = "black", linewidth = 0.4) +
+      geom_text(data = mb_df, aes(x = x, y = y_base - 1.6 * y_unit, label = lab),
+                size = size_text / 2.1, vjust = 1) +
+      geom_text(data = chr_lab, aes(x = gx, y = y_base - 3.0 * y_unit, label = chr),
+                size = size_text / 1.78, vjust = 1, fontface = "bold")
+  }
+
   p <- p +
     geom_segment(data = data.frame(x = loci$gx_start[1]),
                  aes(x = x, xend = x, y = 0, yend = cn_axis_max), colour = "black", linewidth = 0.4) +
     geom_segment(data = data.frame(x = loci$gx_end[nrow(loci)]),
-                 aes(x = x, xend = x, y = 0, yend = cn_axis_max), colour = "black", linewidth = 0.4) +
-    geom_segment(data = tick_df, aes(x = x, xend = x, y = tick_y0, yend = tick_y1),
-                 colour = "black", linewidth = 0.4) +
-    geom_text(data = mb_df, aes(x = x, y = mb_label_y, label = lab), size = size_text / 2.1, vjust = 1) +
-    geom_text(data = chr_lab, aes(x = gx, y = chr_label_y, label = chr),
-              size = size_text / 1.78, vjust = 1, fontface = "bold") +
+                 aes(x = x, xend = x, y = 0, yend = cn_axis_max), colour = "black", linewidth = 0.4)
+  ## The CN panel carries the genomic axis only when there is no SNV panel below.
+  if (!has_snv) p <- draw_genomic_axis(p, y_base = lower_limit_karyotype, y_unit = unit_y)
+  p <- p +
     ggtitle(if (is.null(wgd_status)) this_sample else paste0(this_sample, " (", wgd_status, ")")) +
     labs(x = NULL, y = "Allele specific\ncopy number") +
     coord_cartesian(clip = "off", expand = FALSE) +
@@ -592,7 +680,9 @@ plot_sv_linear <- function(sample,
       axis.ticks.length.y = unit(0.2, "cm"),           # longer y tick marks
       panel.background = element_blank(), plot.background = element_blank(), panel.grid = element_blank(),
       plot.title = element_text(hjust = 0.5, size = size_text + 4),
-      plot.margin = unit(c(.3, .5, 1.3, .2), "cm")
+      ## Drop the tall bottom margin when the SNV panel (which now carries the
+      ## genomic axis labels) sits below.
+      plot.margin = unit(c(.3, .5, if (has_snv) .1 else 1.3, .2), "cm")
     )
 
   if (max_vf > 0) {
@@ -603,9 +693,199 @@ plot_sv_linear <- function(sample,
     p <- p + scale_y_continuous(breaks = cn_breaks)
   }
 
+  ## ---- SNV panel ----------------------------------------------------------
+  ## A second track of the sample's small mutations, sharing the CN/SV panel's
+  ## concatenated genomic x-axis (same `loci` offsets + `locus_idx`), so mutations
+  ## line up beneath the copy-number and rearrangement they sit within. The y-axis
+  ## is either the intermutation distance ("imd", a rainfall plot -- the default)
+  ## or the variant-allele frequency ("vaf").
+  plot_obj <- p
+  if (has_snv) {
+    if (!requireNamespace("patchwork", quietly = TRUE))
+      stop("Drawing the SNV panel requires the 'patchwork' package; install it or set snv_data = NULL.")
+    snv_y <- match.arg(snv_y, c("imd", "vaf", "cn"))
+    snv <- as.data.frame(snv_data)
+    scol <- if (!is.null(snv_sample_col)) snv_sample_col else
+      if ("sampleID" %in% names(snv)) "sampleID" else "sample"
+    if (!scol %in% names(snv)) stop("SNV sample column '", scol, "' not found in `snv_data`.")
+    snv <- snv[snv[[scol]] == this_sample, , drop = FALSE]
+    ## Keep single-nucleotide variants only (exclude indels / MNVs): use the
+    ## mutation-type column when present, else infer from single-base ref/alt.
+    tcol <- if (!is.null(snv_type_col)) snv_type_col else if ("type" %in% names(snv)) "type" else NA
+    n_all <- nrow(snv)
+    if (!is.na(tcol) && tcol %in% names(snv)) {
+      snv <- snv[toupper(as.character(snv[[tcol]])) == "SNV", , drop = FALSE]
+    } else if (all(c("ref", "mut") %in% names(snv))) {
+      snv <- snv[nchar(as.character(snv$ref)) == 1 & nchar(as.character(snv$mut)) == 1, , drop = FALSE]
+    }
+    snv$chr <- as.character(snv$seqnames)
+    snv$pos <- as.integer(snv$start)
+
+    ## Optional amplification-timing classification of each SNV, from its mutation
+    ## copy number `m` (snv_cn_col) relative to the amplified-allele copy number
+    ## (`major_cn`) at that site:
+    ##   pre-amplification  -- on (nearly) all amplified copies: m >= pre_frac*major
+    ##                         and m >= 2 (so it predates the amplification);
+    ##   post-amplification -- on a single copy: m <= post_mcn (arose afterwards);
+    ##   unknown            -- site not amplified (major+minor <= min_cn_ratio*ploidy)
+    ##                         or an intermediate m (ambiguous stepwise timing).
+    ## Computed here, before any y-mode row filtering, so the label rides along.
+    if (snv_timing) {
+      need <- c(snv_cn_col, "major_cn", "minor_cn")
+      miss <- need[!need %in% names(snv)]
+      if (length(miss))
+        stop("snv_timing = TRUE needs column(s) not in `snv_data`: ", paste(miss, collapse = ", "))
+      m_cn  <- suppressWarnings(as.numeric(snv[[snv_cn_col]]))
+      maj   <- suppressWarnings(as.numeric(snv$major_cn))
+      minr  <- suppressWarnings(as.numeric(snv$minor_cn))
+      amp   <- is.finite(maj) & is.finite(minr) & (maj + minr) > min_cn_ratio * ploidy
+      pre   <- amp & is.finite(m_cn) & is.finite(maj) & m_cn >= 2 & m_cn >= snv_timing_pre_frac * maj
+      post  <- amp & !pre & is.finite(m_cn) & m_cn <= snv_timing_post_mcn
+      cls <- rep("Unknown", nrow(snv))
+      cls[pre]  <- "Pre-amplification"
+      cls[post] <- "Post-amplification"
+      ## Level order (and hence legend order) follows the colour vector.
+      snv$timing <- factor(cls, levels = names(snv_timing_colours))
+    }
+
+    if (snv_y == "imd") {
+      ## Intermutation distance: distance (bp) to the previous SNV on the same
+      ## chromosome, computed across ALL of this sample's SNVs (not just in-window
+      ## ones), so window-edge mutations get their true neighbour distance. Plotted
+      ## as log10 on a linear axis, which keeps the below-panel ideogram/axis (drawn
+      ## at negative y) valid -- a genuine log scale cannot render y <= 0.
+      snv <- snv[order(snv$chr, snv$pos), , drop = FALSE]
+      snv$imd <- stats::ave(snv$pos, snv$chr, FUN = function(z) c(NA, diff(z)))
+      snv$yv  <- log10(snv$imd)
+      snv <- snv[is.finite(snv$yv), , drop = FALSE]   # drop first-per-chr + imd <= 0
+      y_title <- "Intermutation\ndistance (bp)"
+    } else if (snv_y == "cn") {
+      ## SNV copy number: the number of tumour genome copies carrying the mutation
+      ## (mutation copy number). In an amplicon this times each SNV against the
+      ## amplification -- pre-amplification mutations ride up to high copy number,
+      ## post-amplification ones stay near 1.
+      if (!snv_cn_col %in% names(snv)) stop("SNV copy-number column '", snv_cn_col,
+                                            "' not found in `snv_data`.")
+      snv$yv <- suppressWarnings(as.numeric(snv[[snv_cn_col]]))
+      snv <- snv[is.finite(snv$yv) & snv$yv >= 0, , drop = FALSE]
+      y_title <- "SNV copy\nnumber"
+    } else {
+      if (!vaf_col %in% names(snv)) stop("VAF column '", vaf_col, "' not found in `snv_data`.")
+      snv$yv <- suppressWarnings(as.numeric(snv[[vaf_col]]))
+      snv <- snv[snv$yv >= 0 & snv$yv <= vaf_max, , drop = FALSE]   # drop VAF artefacts
+      y_title <- "SNV VAF"
+    }
+
+    ## Restrict to the plotted loci and map to the shared x coordinate.
+    snv$li <- locus_idx(snv$chr, snv$pos)
+    snv <- snv[!is.na(snv$li), , drop = FALSE]
+    snv$gx <- loci$offset[snv$li] + (snv$pos - loci$start[snv$li])
+    if (verbose) {
+      message(sprintf("SNVs in loci: %d of %d small mutations for %s (y = %s)",
+                      nrow(snv), n_all, this_sample, snv_y))
+      if (snv_timing && nrow(snv))
+        message("  timing: ", paste(sprintf("%s=%d", names(table(snv$timing)),
+                                            as.integer(table(snv$timing))), collapse = ", "))
+    }
+
+    ## y-axis geometry (`y_top`, breaks, labels) per mode.
+    if (snv_y == "imd") {
+      y_top <- max(8, if (nrow(snv)) ceiling(max(snv$yv)) else 8)   # log10 bp; >= 100 Mb headroom
+      y_breaks <- seq(0, y_top, by = 2)
+      y_labels <- vapply(10^y_breaks, function(x)
+        if (x < 1e3) formatC(x, format = "d")
+        else if (x < 1e6) paste0(x / 1e3, "kb")
+        else if (x < 1e9) paste0(x / 1e6, "Mb")
+        else paste0(x / 1e9, "Gb"), character(1))
+    } else if (snv_y == "cn") {
+      y_top <- nice_ceiling(if (nrow(snv)) max(snv$yv) else 1)
+      y_breaks <- unique(c(0, y_top / 2, y_top))
+      y_labels <- ggplot2::waiver()
+    } else {
+      y_top <- vaf_max
+      y_breaks <- unique(c(0, vaf_max / 2, vaf_max))
+      y_labels <- ggplot2::waiver()
+    }
+
+    y_unit <- y_top * 0.07
+    ## Karyotype ideogram strip beneath the SNV panel: as the bottom-most track it
+    ## carries the shared genomic axis (Mb ticks + chromosome names) directly below
+    ## it, mirroring how the ideogram sat at the CN panel's base in the no-SNV case.
+    ## A clear gap (`0.9 * y_unit`) separates the panel's x-axis (y = 0) from the
+    ## ideogram so it does not sit flush against the bottom of the plot.
+    ideo_top    <- -0.9 * y_unit
+    ideo_bottom <- ideo_top - y_top * karyotype_rel_size
+    p_snv <- ggplot()
+    ## Faint amplified-region shading, matching the top panel, for visual anchor.
+    amp_shade <- cn_plot[cn_plot$copyNumber > 3 * cn_plot$ploidy, , drop = FALSE]
+    if (nrow(amp_shade) > 0)
+      p_snv <- p_snv + geom_rect(data = amp_shade, aes(xmin = gx_start, xmax = gx_end,
+        ymin = 0, ymax = y_top), fill = "#d92a05", alpha = 0.1)
+    if (nrow(snv) > 0) {
+      if (snv_timing) {
+        ## Colour by amplification-timing class, with a legend (collected to the
+        ## right of the stacked figure below, so panel widths stay aligned). A
+        ## zero-size, fully transparent seed point per class guarantees every class
+        ## appears in the legend even when a class has no SNVs in view.
+        seed <- data.frame(gx = loci$gx_start[1], yv = 0,
+                           timing = factor(names(snv_timing_colours),
+                                           levels = names(snv_timing_colours)))
+        p_snv <- p_snv +
+          geom_point(data = seed, aes(x = gx, y = yv, colour = timing),
+                     size = 0, alpha = 0, na.rm = TRUE) +
+          geom_point(data = snv, aes(x = gx, y = yv, colour = timing),
+                     size = snv_point_size, alpha = snv_alpha, stroke = 0) +
+          scale_colour_manual(name = "SNV timing", values = snv_timing_colours, drop = FALSE,
+                              guide = guide_legend(override.aes = list(size = 2, alpha = 1)))
+      } else {
+        p_snv <- p_snv + geom_point(data = snv, aes(x = gx, y = yv),
+          colour = snv_colour, size = snv_point_size, alpha = snv_alpha, stroke = 0)
+      }
+    }
+    p_snv <- p_snv +
+      geom_segment(data = data.frame(x = loci$gx_start[1]),
+                   aes(x = x, xend = x, y = 0, yend = y_top), colour = "black", linewidth = 0.4) +
+      geom_segment(data = data.frame(x = loci$gx_end[nrow(loci)]),
+                   aes(x = x, xend = x, y = 0, yend = y_top), colour = "black", linewidth = 0.4)
+    if (!is.null(ideo) && nrow(ideo) > 0)
+      p_snv <- p_snv + geom_rect(data = ideo, aes(xmin = gx_start, xmax = gx_end,
+        ymin = ideo_bottom, ymax = ideo_top), fill = ideo$color, colour = "black", linewidth = 0.2)
+    p_snv <- draw_genomic_axis(p_snv, y_base = ideo_bottom, y_unit = y_unit)
+    p_snv <- p_snv +
+      labs(x = NULL, y = y_title) +
+      ## Fix the y-range with coord (not scale limits) so the genomic-axis labels
+      ## drawn just below 0 are kept and rendered into the bottom margin
+      ## (clip = "off"); scale `limits` would drop them before clipping applies.
+      coord_cartesian(ylim = c(0, y_top), clip = "off", expand = FALSE) +
+      scale_x_continuous(expand = expansion(mult = 0.01)) +
+      scale_y_continuous(breaks = y_breaks, labels = y_labels) +
+      theme(
+        text = element_text(size = size_text, colour = "black"),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.line.x = element_blank(),
+        axis.text.y = element_text(size = size_text + 3, colour = "black"),
+        axis.title.y = element_text(size = size_text + 4, colour = "black"),
+        axis.ticks.y = element_line(colour = "black", linewidth = 0.4),
+        axis.ticks.length.y = unit(0.2, "cm"),
+        panel.background = element_blank(), plot.background = element_blank(), panel.grid = element_blank(),
+        plot.margin = unit(c(.1, .5, 1.8, .2), "cm")
+      )
+    plot_obj <- patchwork::wrap_plots(p, p_snv, ncol = 1, heights = c(1, snv_rel_height),
+                                      guides = if (snv_timing) "collect" else "keep")
+    if (snv_timing)
+      ## Collect the timing legend to the right of the whole figure (not inside the
+      ## SNV panel), so both panels keep the same plotting width and stay aligned.
+      plot_obj <- plot_obj & theme(legend.position = "right",
+                                   legend.title = element_text(size = size_text + 2, colour = "black"),
+                                   legend.text  = element_text(size = size_text + 1, colour = "black"),
+                                   legend.key = element_blank())
+  }
+
   ## ---- Size + save --------------------------------------------------------
   plot_width  <- if (!is.null(plot_width_custom)) plot_width_custom else max(5, 2.2 * nrow(loci) + 1)
   plot_height <- if (!is.null(plot_height_custom)) plot_height_custom else 3.0
+  ## Grow the canvas to accommodate the stacked SNV panel (unless overridden).
+  if (has_snv && is.null(plot_height_custom))
+    plot_height <- plot_height * (1 + snv_rel_height) + 0.3
 
   outfile <- NULL
   if (!is.null(outdir) && save) {
@@ -615,9 +895,9 @@ plot_sv_linear <- function(sample,
     outfile <- file.path(outdir, paste0(this_sample, "_", paste(loci$chr, collapse = "_"),
                                         region_tag, "_linear_plot.pdf"))
     grDevices::pdf(outfile, width = plot_width, height = plot_height, useDingbats = FALSE)
-    print(p); grDevices::dev.off()
+    print(plot_obj); grDevices::dev.off()
     if (verbose) message("Wrote ", outfile)
   }
-  attr(p, "path") <- outfile
-  if (!is.null(outfile)) invisible(p) else p
+  attr(plot_obj, "path") <- outfile
+  if (!is.null(outfile)) invisible(plot_obj) else plot_obj
 }

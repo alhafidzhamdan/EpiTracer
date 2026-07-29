@@ -98,7 +98,7 @@ arguments below are specific to (or most relevant for) the reconstruction plot.
 | Argument | Default | Description |
 | :--- | :--- | :--- |
 | `vf_col`           | `"VF"`     | Read-support column in `sv_data` (a raw count, clustered on the log scale). |
-| `k`                | `3`        | Number of VF strata; an integer forces it, `"auto"` picks it (Ckmeans.1d.dp BIC, else a WSS elbow capped at `max_k`). |
+| `k`                | `"auto"`   | Number of VF strata; `"auto"` (default) picks it (Ckmeans.1d.dp BIC, else a WSS elbow capped at `max_k`), an integer forces it. |
 | `max_k`            | `4`        | Upper bound on strata when `k = "auto"`. |
 | `vf_breaks`        | `NULL`     | Explicit `VF` cut points (upper edges), e.g. `c(200, 80)`; overrides `k`. |
 | `min_vf`           | `1`        | Drop junctions with `VF` below this before clustering. |

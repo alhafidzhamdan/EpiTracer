@@ -24,7 +24,7 @@ plot_sv_reconstruction(
   min_amp_width = 1e+05,
   gap_frac = 0.06,
   vf_col = "VF",
-  k = 3,
+  k = "auto",
   max_k = 4,
   vf_breaks = NULL,
   min_vf = 1,
@@ -132,11 +132,11 @@ width (default \code{0.06}).}
 
 \item{vf_col}{Name of the read-support column in \code{sv_data} (default \code{"VF"}).}
 
-\item{k}{Number of \code{VF} strata. An integer forces that many; \code{"auto"} chooses
-the number of clusters automatically (via \pkg{Ckmeans.1d.dp} BIC when
-available, otherwise a within-cluster-sum-of-squares elbow capped at
-\code{max_k}). Default \code{3}. Reduced automatically when a sample has fewer
-distinct \code{VF} values than \code{k}.}
+\item{k}{Number of \code{VF} strata. \code{"auto"} (default) chooses the number of
+clusters automatically (via \pkg{Ckmeans.1d.dp} BIC when available, otherwise
+a within-cluster-sum-of-squares elbow capped at \code{max_k}); an integer forces
+that many. Reduced automatically when a sample has fewer distinct \code{VF} values
+than \code{k}.}
 
 \item{max_k}{Upper bound on the number of strata when \code{k = "auto"} (default
 \code{4}).}

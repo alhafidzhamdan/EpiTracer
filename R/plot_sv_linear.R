@@ -6,6 +6,16 @@
 #' structural variants that interconnect separate amplicons (e.g. the junctions
 #' of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.
 #'
+#' Optionally, supplying `snv_data` adds a second panel of the sample's small
+#' mutations directly beneath the copy-number / SV panel, sharing the same
+#' concatenated genomic x-axis so each mutation lines up with the copy number
+#' and rearrangements it sits within. Its y-axis shows the intermutation
+#' distance (a rainfall plot, the default), the variant-allele frequency, or the
+#' SNV (mutation) copy number (see `snv_y`), and the points can be coloured by
+#' their timing relative to the focal amplification (`snv_timing`). The two
+#' panels are returned and saved as one stacked figure (requires \pkg{patchwork});
+#' see the `snv_*` parameters for the full set of controls.
+#'
 #' The loci to display are resolved in this order:
 #' \enumerate{
 #'   \item `loci` if supplied (explicit windows);

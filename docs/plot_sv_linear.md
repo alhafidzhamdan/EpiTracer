@@ -15,6 +15,15 @@ Although developed alongside the caller, it is **not ecDNA-specific**: use it to
 visualise any CNV / SV landscape at a single locus, across whole chromosomes, or
 genome-wide.
 
+Optionally, supplying `snv_data` adds a **second SNV panel** directly beneath
+the CN / SV panel, sharing the same concatenated genomic x-axis so each mutation
+lines up with the copy number and rearrangements it sits within. Its y-axis
+shows the intermutation distance (a rainfall plot, the default), the
+variant-allele frequency, or the SNV (mutation) copy number (`snv_y`), and the
+points can be coloured by their timing relative to the focal amplification
+(`snv_timing`). The two panels are saved as one stacked figure (requires the
+[patchwork](https://patchwork.data-imaginist.com) package).
+
 ## Example plots
 
 **Single locus** — an episomal *EGFR* ecDNA in `DO11441T1`: a boundary
@@ -57,6 +66,18 @@ plot_sv_linear(
   cnv_data  = cnv_df, sv_data = sv_df, wgd_data = wgd_df,
   outdir    = "plots",   # loci auto-detected; or events = "homdel", loci = c("chr4:...", ...)
   flank_pct = 10         # extend each auto-detected window by ±10%
+)
+
+# With a stacked SNV panel beneath the CN/SV plot (rainfall by default;
+# snv_y = "vaf" or "cn"; add snv_timing = TRUE to colour by amplification timing):
+plot_sv_linear(
+  sample     = "DO11441T1",
+  cnv_data   = cnv_df, sv_data = sv_df,
+  chromosome = "chr7",
+  chromosome_range = matrix(c(52e6, 56e6), nrow = 1),
+  snv_data   = snv_df,   # needs seqnames/start, a sample column, and a VAF column for snv_y = "vaf"
+  snv_y      = "imd",
+  outdir     = "plots"
 )
 ```
 
@@ -112,6 +133,29 @@ optional.
 | `repel_labels`       | `TRUE`  | De-collide labels with ggrepel. |
 | `displayExon`        | `FALSE` | Draw exon models (requires `cds_gr`). |
 | `cds_gr`             | `NULL`  | GRanges of CDS/exon ranges (`gene_name`), for `displayExon`. |
+
+**Optional — SNV panel**
+
+Supply `snv_data` to add the stacked SNV panel; all other `snv_*` arguments are
+ignored when `snv_data` is `NULL`.
+
+| Argument | Default | Description |
+| :--- | :--- | :--- |
+| `snv_data`            | `NULL`          | SNV/SSM table (data.frame or GRanges) with `seqnames`/`start`, a sample column, and (for `snv_y = "vaf"`) a VAF column. Enables the panel. |
+| `snv_sample_col`      | `NULL`          | Sample-id column in `snv_data` (`sampleID`, else `sample`). |
+| `snv_y`               | `"imd"`         | Panel y-axis: `"imd"` (intermutation distance / rainfall), `"vaf"`, or `"cn"` (mutation copy number). |
+| `snv_type_col`        | `NULL`          | Mutation-type column, used to keep SNVs only (`type`; else inferred from single-base `ref`/`mut`). |
+| `vaf_col`             | `"allelic_freq"`| VAF column, used when `snv_y = "vaf"`. |
+| `snv_cn_col`          | `"variant_cn"`  | SNV copy-number column, used when `snv_y = "cn"` and for `snv_timing`. |
+| `vaf_max`             | `1`             | Top of the VAF axis; also the upper bound for dropping artefactual VAFs. |
+| `snv_timing`          | `FALSE`         | Colour SNVs by timing relative to the amplification (pre- / post- / unknown); needs `snv_cn_col`, `major_cn`, `minor_cn`. |
+| `snv_timing_pre_frac` | `0.5`           | Fraction of the amplified-allele CN an SNV must reach to be called pre-amplification. |
+| `snv_timing_post_mcn` | `1.5`           | SNV copy-number at or below which a variant in an amplified site is called post-amplification. |
+| `snv_timing_colours`  | 3 colours       | Point colours for the `Pre-amplification` / `Post-amplification` / `Unknown` classes. |
+| `snv_rel_height`      | `0.4`           | SNV panel height relative to the CN/SV panel. |
+| `snv_point_size`      | `0.7`           | SNV point size. |
+| `snv_alpha`           | `0.6`           | SNV point alpha. |
+| `snv_colour`          | `"#1d3557"`     | SNV point colour (when not timing-coloured). |
 
 **Optional — layout & appearance**
 

@@ -23,11 +23,11 @@
 #'
 #' @inheritParams plot_sv_linear
 #' @param vf_col Name of the read-support column in `sv_data` (default `"VF"`).
-#' @param k Number of `VF` strata. An integer forces that many; `"auto"` chooses
-#'   the number of clusters automatically (via \pkg{Ckmeans.1d.dp} BIC when
-#'   available, otherwise a within-cluster-sum-of-squares elbow capped at
-#'   `max_k`). Default `3`. Reduced automatically when a sample has fewer
-#'   distinct `VF` values than `k`.
+#' @param k Number of `VF` strata. `"auto"` (default) chooses the number of
+#'   clusters automatically (via \pkg{Ckmeans.1d.dp} BIC when available, otherwise
+#'   a within-cluster-sum-of-squares elbow capped at `max_k`); an integer forces
+#'   that many. Reduced automatically when a sample has fewer distinct `VF` values
+#'   than `k`.
 #' @param max_k Upper bound on the number of strata when `k = "auto"` (default
 #'   `4`).
 #' @param vf_breaks Optional numeric vector of explicit `VF` cut points (upper
@@ -141,7 +141,7 @@ plot_sv_reconstruction <- function(sample,
                           min_amp_width = 1e5,
                           gap_frac = 0.06,
                           vf_col = "VF",
-                          k = 3,
+                          k = "auto",
                           max_k = 4,
                           vf_breaks = NULL,
                           min_vf = 1,

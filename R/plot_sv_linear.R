@@ -554,14 +554,17 @@ plot_sv_linear <- function(sample,
     colour = color_major_cn, linewidth = cn_size - 0.3)
 
   ## Gene labels (in-window). `displayExon` draws exon models; otherwise a
-  ## point + de-collided ggrepel label.
+  ## point + de-collided ggrepel label. The gene track is anchored to the axis top
+  ## (`cn_axis_max`), not the local data max, so genes sit at the top of the panel
+  ## regardless of the underlying allelic CN (e.g. over a near-diploid region).
+  gene_y_ref <- cn_axis_max
   if (displayExon) {
     if (is.null(cds_gr)) stop("displayExon = TRUE requires 'cds_gr' (a GRanges of ",
                               "CDS/exon ranges with a 'gene_name' column).")
     cds <- as.data.frame(cds_gr)
     cds$chr <- if (all(grepl("^chr", cds$seqnames))) as.character(cds$seqnames)
                else paste0("chr", cds$seqnames)
-    yb <- max.cn * offset_gene
+    yb <- gene_y_ref * offset_gene
     ## Minimum rendered exon width so short exons remain visible at genomic scale:
     min_ex_w <- total_w * 0.0015
     ex_df <- data.frame(); body_df <- data.frame(); lab_df <- data.frame()
@@ -601,7 +604,7 @@ plot_sv_linear <- function(sample,
       g
     }))
     if (!is.null(gl) && nrow(gl) > 0) {
-      gl$y <- max.cn * offset_gene
+      gl$y <- gene_y_ref * offset_gene
       ## "Crowded" = at least two gene labels closer than 5% of the plotted width.
       ## When crowded, labels are angled and ggrepel draws a leader line back to
       ## each point; when the labels are nicely separated, the leader lines are
@@ -613,7 +616,7 @@ plot_sv_linear <- function(sample,
       if (repel_labels && requireNamespace("ggrepel", quietly = TRUE)) {
         p <- p + ggrepel::geom_text_repel(data = gl, aes(x = gx, y = y, label = gene),
           size = size_gene_label, fontface = "italic", angle = gene_label_angle, hjust = 0,
-          direction = "both", nudge_y = max.cn * 0.12, ylim = c(max.cn * 1.02, NA),
+          direction = "both", nudge_y = gene_y_ref * 0.12, ylim = c(gene_y_ref * 1.02, NA),
           segment.size = 0.2, segment.colour = "grey60",
           min.segment.length = if (crowded) 0 else Inf,
           box.padding = 0.25, max.overlaps = Inf, seed = 1L)

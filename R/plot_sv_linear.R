@@ -612,11 +612,11 @@ plot_sv_linear <- function(sample,
       gp <- sort(gl$gx)
       crowded <- length(gp) > 1 && min(diff(gp)) < 0.05 * total_w
       if (is.null(gene_label_angle)) gene_label_angle <- if (crowded) 45 else 0
-      p <- p + geom_point(data = gl, aes(x = gx, y = y * 0.985), shape = 16, size = 1, colour = "black")
+      p <- p + geom_point(data = gl, aes(x = gx, y = y * 0.90), shape = 16, size = 1, colour = "black")
       if (repel_labels && requireNamespace("ggrepel", quietly = TRUE)) {
         p <- p + ggrepel::geom_text_repel(data = gl, aes(x = gx, y = y, label = gene),
           size = size_gene_label, fontface = "italic", angle = gene_label_angle, hjust = 0,
-          direction = "both", nudge_y = gene_y_ref * 0.03, ylim = c(gene_y_ref * 0.99, NA),
+          direction = "both", nudge_y = gene_y_ref * 0.02, ylim = c(gene_y_ref * 0.99, NA),
           segment.size = 0.2, segment.colour = "grey60",
           min.segment.length = if (crowded) 0 else Inf,
           box.padding = 0.25, max.overlaps = Inf, seed = 1L)

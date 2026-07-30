@@ -241,7 +241,8 @@ in-window genes instead of a point + label (default \code{FALSE}).}
 column \code{gene_name}); required when \code{displayExon = TRUE}.}
 
 \item{cn_max}{Optional numeric override for the copy-number axis top; if
-\code{NULL} it is rounded up from the data to two significant figures.}
+\code{NULL} it is rounded up from the data to two significant figures, with a
+floor of 2 so near-diploid regions still use a full 0-2 axis.}
 
 \item{offset_gene, ymax_highlight_ratio, karyotype_rel_size, loh_position_ratio}{Layout tuning parameters.}
 

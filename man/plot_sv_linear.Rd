@@ -143,7 +143,8 @@ genes are crowded.}
 (default \code{TRUE}; falls back to plain labels if ggrepel is absent).}
 
 \item{cn_max}{Optional numeric override for the copy-number axis top; if
-\code{NULL} it is rounded up from the data to two significant figures.}
+\code{NULL} it is rounded up from the data to two significant figures, with a
+floor of 2 so near-diploid regions still use a full 0-2 axis.}
 
 \item{displayExon}{Logical; if \code{TRUE}, draw exon models (from \code{cds_gr}) for
 in-window genes instead of a point + label (default \code{FALSE}).}

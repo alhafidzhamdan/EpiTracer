@@ -344,7 +344,9 @@ plot_sv_reconstruction <- function(sample,
     if (!is.finite(x) || x <= 0) return(1)
     mag <- 10^(floor(log10(x)) - (digits - 1)); ceiling(x / mag) * mag
   }
-  cn_axis_max <- if (!is.null(cn_max)) cn_max else nice_ceiling(max.cn)
+  ## Floor the axis top at 2 (matching plot_sv_linear) so a near-diploid region
+  ## uses a full 0-2 axis; harmless for amplicons where max.cn is far above 2.
+  cn_axis_max <- if (!is.null(cn_max)) cn_max else max(2, nice_ceiling(max.cn))
 
   ## ---- SVs ----------------------------------------------------------------
   sv <- sv_data[sv_data$sample == this_sample, , drop = FALSE]

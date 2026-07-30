@@ -418,15 +418,7 @@ plot_sv_linear <- function(sample,
   max.cn <- max(cn_plot$majorAlleleCopyNumber)
 
   ## ---- Axis scaling (shared CN + read-support, 2-sig-fig tops) ------------
-  nice_step <- function(span, n = 5) {
-    if (!is.finite(span) || span <= 0) return(1)
-    raw <- span / n; mag <- 10^floor(log10(raw)); frac <- raw / mag
-    (if (frac < 1.5) 1 else if (frac < 3) 2 else if (frac < 7) 5 else 10) * mag
-  }
-  nice_ceiling <- function(x, digits = 2) {
-    if (!is.finite(x) || x <= 0) return(1)
-    mag <- 10^(floor(log10(x)) - (digits - 1)); ceiling(x / mag) * mag
-  }
+  ## `nice_ceiling()` lives in R/utils-axis.R (shared with plot_sv_reconstruction).
   ## Left (copy-number) axis top: rounded up from the data, but never below 2 so a
   ## near-diploid region still uses a full 0-2 axis instead of a squashed 0-1.1 one.
   cn_axis_max <- if (!is.null(cn_max)) cn_max else max(2, nice_ceiling(max.cn))

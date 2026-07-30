@@ -93,7 +93,8 @@
 #' @param repel_labels Logical; use \pkg{ggrepel} to de-collide gene labels
 #'   (default `TRUE`; falls back to plain labels if ggrepel is absent).
 #' @param cn_max Optional numeric override for the copy-number axis top; if
-#'   `NULL` it is rounded up from the data to two significant figures.
+#'   `NULL` it is rounded up from the data to two significant figures, with a
+#'   floor of 2 so near-diploid regions still use a full 0-2 axis.
 #' @param displayExon Logical; if `TRUE`, draw exon models (from `cds_gr`) for
 #'   in-window genes instead of a point + label (default `FALSE`).
 #' @param cds_gr Optional [GenomicRanges::GRanges] of CDS/exon ranges (metadata
@@ -426,7 +427,9 @@ plot_sv_linear <- function(sample,
     if (!is.finite(x) || x <= 0) return(1)
     mag <- 10^(floor(log10(x)) - (digits - 1)); ceiling(x / mag) * mag
   }
-  cn_axis_max <- if (!is.null(cn_max)) cn_max else nice_ceiling(max.cn)
+  ## Left (copy-number) axis top: rounded up from the data, but never below 2 so a
+  ## near-diploid region still uses a full 0-2 axis instead of a squashed 0-1.1 one.
+  cn_axis_max <- if (!is.null(cn_max)) cn_max else max(2, nice_ceiling(max.cn))
 
   ## ---- SVs ----------------------------------------------------------------
   sv <- sv_data[sv_data$sample == this_sample, , drop = FALSE]
@@ -447,7 +450,10 @@ plot_sv_linear <- function(sample,
   sv$colour <- sv_col(sv$strands)
 
   max_vf <- if (nrow(sv) > 0) max(sv$VF, na.rm = TRUE) else 0
-  rs_axis_max <- if (max_vf > 0) nice_ceiling(max_vf) else 0
+  ## Right (read-support / VF) axis. When the loci contain no SVs there is no VF to
+  ## scale to, but the axis is still drawn (for a consistent two-axis layout) by
+  ## mirroring the copy-number axis (coeff = 1), so the top panel always shows both.
+  rs_axis_max <- if (max_vf > 0) nice_ceiling(max_vf) else cn_axis_max
   coeff <- if (max_vf > 0) rs_axis_max / cn_axis_max else 1
 
   ## ---- Colours / sizes ----------------------------------------------------
@@ -695,13 +701,11 @@ plot_sv_linear <- function(sample,
       plot.margin = unit(c(.3, .5, if (has_snv) .1 else 1.3, .2), "cm")
     )
 
-  if (max_vf > 0) {
-    rs_breaks <- unique(c(0, rs_axis_max / 2, rs_axis_max))
-    p <- p + scale_y_continuous(breaks = cn_breaks,
-      sec.axis = sec_axis(trans = ~ . * coeff, breaks = rs_breaks, name = "Read support"))
-  } else {
-    p <- p + scale_y_continuous(breaks = cn_breaks)
-  }
+  ## Always carry the read-support secondary axis (see `coeff` above for the
+  ## no-SV case), so the panel's layout is identical with or without SVs.
+  rs_breaks <- unique(c(0, rs_axis_max / 2, rs_axis_max))
+  p <- p + scale_y_continuous(breaks = cn_breaks,
+    sec.axis = sec_axis(trans = ~ . * coeff, breaks = rs_breaks, name = "Read support"))
 
   ## ---- SNV panel ----------------------------------------------------------
   ## A second track of the sample's small mutations, sharing the CN/SV panel's

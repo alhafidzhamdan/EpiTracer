@@ -15,6 +15,13 @@ whole-genome sequencing (WGS) data — click a tool for its full documentation:
 | [**`plot_sv_linear()`**](docs/plot_sv_linear.md) | A general-purpose, flexible plotter for structural variants and copy number, with an optional stacked SNV panel. |
 | [**`plot_sv_reconstruction()`**](docs/plot_sv_reconstruction.md) | Reconstructs a focal amplicon wave by wave — stacks SV + CN panels ordered by read support (`VF`). |
 
+> [!TIP]
+> **Interactive ecDNA simulations** accompany EpiTracer:
+> **[alhafidzhamdan.github.io/simulations](https://alhafidzhamdan.github.io/simulations/)** —
+> browser-based models of ecDNA birth and evolution over 100 cell divisions (neutral drift,
+> positive selection with structural evolution, a micronucleus/chromothripsis origin, and
+> spatial selection across tumour niches), with genome profiles drawn in the EpiTracer style.
+
 > [!IMPORTANT]
 > `call_episomal_ecdna()` relies on the focal amplicon calls from
 > [AmpliconArchitect](https://github.com/AmpliconSuite/AmpliconArchitect). In

@@ -16,7 +16,7 @@ whole-genome sequencing (WGS) data — click a tool for its full documentation:
 | [**`plot_sv_reconstruction()`**](docs/plot_sv_reconstruction.md) | Reconstructs a focal amplicon wave by wave — stacks SV + CN panels ordered by read support (`VF`). |
 
 > [!TIP]
-> **Interactive ecDNA simulations** accompany EpiTracer:
+> **[Ongoing work] Interactive ecDNA simulations** accompany EpiTracer:
 > **[alhafidzhamdan.github.io/simulations](https://alhafidzhamdan.github.io/simulations/)** —
 > browser-based models of ecDNA birth and evolution over 100 cell divisions (neutral drift,
 > positive selection with structural evolution, a micronucleus/chromothripsis origin, and
@@ -30,10 +30,9 @@ whole-genome sequencing (WGS) data — click a tool for its full documentation:
 > [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple), part
 > of the Hartwig Medical Foundation (HMF) pipeline. This is because the tools
 > rely on accurate copy-number segmented SV calls which are critical in
-> nominating amplicons formed via simple episomal exclusion events. Should they
-> choose however, users may opt to coerce the appropriate required metadata
-> derived from other SV and CNV callers, although this is not the recommended
-> option.
+> nominating amplicons formed via simple episomal exclusion events.
+> In the future, we envisage that EpiTracer can automatically nominate episomal ecDNA amplicons
+> without "seed" calls from AmpliconArchitect. 
 
 ## Installation
 

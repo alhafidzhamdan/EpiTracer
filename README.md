@@ -47,7 +47,7 @@ BiocManager::install("alhafidzhamdan/EpiTracer")
 
 ## Status
 
-Early development (`v0.0.0.9000`) — the API may change.
+Very early development (`v0.0.0.9000`) — everything in this repository may change.
 
 ## License
 

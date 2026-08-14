@@ -28,11 +28,11 @@ Imports:
     GenomicRanges,
     ggplot2,
     grid,
-    gUtils,
     magrittr,
     methods,
     parallel,
     regioneR,
+    S4Vectors,
     scales,
     stats,
     grDevices
@@ -45,8 +45,6 @@ Suggests:
     testthat (>= 3.0.0),
     withr
 VignetteBuilder: knitr
-Remotes:
-    mskilab/gUtils
 Config/testthat/edition: 3
 URL: https://github.com/alhafidzhamdan/EpiTracer
 BugReports: https://github.com/alhafidzhamdan/EpiTracer/issues

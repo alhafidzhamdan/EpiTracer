@@ -14,16 +14,27 @@ NULL
 
 #' GenomicRanges overlap-annotation operator
 #'
-#' Re-exported from \pkg{gUtils}. `x \%$\% y` annotates the ranges in `x`
-#' with the metadata columns of `y` by genomic overlap. See
-#' \code{gUtils::\link[gUtils]{\%$\%}} for details.
+#' `x \%$\% y` returns the GRanges `x` with the metadata columns of the first
+#' range in `y` that each range of `x` overlaps (`NA` where there is no overlap).
+#' A small, dependency-free replacement for the gUtils operator of the same name,
+#' covering the annotate-by-overlap use inside EpiTracer (where the ranges of `y`
+#' — amplicons, genes, copy-number segments — do not overlap one another).
 #'
 #' @name %$%
 #' @rdname gr-annotate
 #' @keywords internal
-#' @importFrom gUtils %$%
-#' @usage x \%$\% y
 #' @param x A GRanges to be annotated.
 #' @param y A GRanges whose metadata is transferred onto `x`.
 #' @return `x` with metadata columns added from overlapping ranges in `y`.
-NULL
+`%$%` <- function(x, y) {
+  hit   <- GenomicRanges::findOverlaps(x, y, select = "first")
+  ycols <- S4Vectors::mcols(y)
+  if (!is.null(ycols) && ncol(ycols) > 0L) {
+    add <- ycols[hit, , drop = FALSE]     # NA rows where there is no overlap
+    mc  <- S4Vectors::mcols(x)
+    if (is.null(mc)) mc <- S4Vectors::DataFrame(row.names = seq_along(x))
+    for (nm in colnames(add)) mc[[nm]] <- add[[nm]]
+    S4Vectors::mcols(x) <- mc
+  }
+  x
+}

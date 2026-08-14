@@ -49,7 +49,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
   this_sample_cnv_gr <- cnv_gr[cnv_gr$sample == this_sample]
 
   this_sample_breakpoints <- breakpoints_gr[breakpoints_gr$WGS_ID == this_sample] %>%
-    gUtils::gr2dt() %>%
+    gr2dt() %>%
     dplyr::arrange(seqnames, start) %>%
     dplyr::select(seqnames, start, end, event, svclass,
                   AF = PURPLE_AF, JCN = PURPLE_JCN, VF, PURPLE_CN,
@@ -59,7 +59,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
   ## Breakpoints at (or just outside) the amplicon boundaries:
   this_sample_breakpoints_ecdna_annotated <-
     (this_sample_breakpoints %$% GenomicRanges::trim((this_amplicon_gr + ext))) %>%
-    gUtils::gr2dt() %>%
+    gr2dt() %>%
     dplyr::filter(seqnames %in% as.character(this_amplicon_gr@seqnames)) %>%
     dplyr::arrange(seqnames, start) %>%
     dplyr::filter(ID != "") %>%
@@ -68,13 +68,13 @@ classify_amplicon_episomal <- function(this_amplicon_id,
   ## Add oncogene info:
   this_sample_breakpoints_ecdna_annotated <-
     ((this_sample_breakpoints_ecdna_annotated %>% regioneR::toGRanges()) %$% cancer_genes_gr) %>%
-    gUtils::gr2dt() %>%
+    gr2dt() %>%
     dplyr::select(-c(strand, width))
 
   ## Annotate with minor and major allele info:
   this_sample_breakpoints_ecdna_annotated <-
     ((this_sample_breakpoints_ecdna_annotated %>% regioneR::toGRanges()) %$% this_sample_cnv_gr) %>%
-    gUtils::gr2dt() %>%
+    gr2dt() %>%
     dplyr::select(-c(strand, width))
 
   if (nrow(this_sample_breakpoints_ecdna_annotated) > 0) {
@@ -102,19 +102,19 @@ classify_amplicon_episomal <- function(this_amplicon_id,
         dplyr::filter(seqnames %in% unique_chrs[i])
 
       ## Min/max coords of amplified regions for this chromosome:
-      has_amp_region <- nrow(this_sample_cnv_gr %>% gUtils::gr2dt() %>%
+      has_amp_region <- nrow(this_sample_cnv_gr %>% gr2dt() %>%
                                dplyr::filter(seqnames %in% unique_chrs[i]) %>%
                                dplyr::filter(copyNumber > 3 * ploidy)) > 0
 
       if (has_amp_region) {
 
-        min_amp_coord <- this_sample_cnv_gr %>% gUtils::gr2dt() %>%
+        min_amp_coord <- this_sample_cnv_gr %>% gr2dt() %>%
           dplyr::filter(seqnames %in% unique_chrs[i]) %>%
           dplyr::filter(copyNumber > 3 * ploidy) %>%
           dplyr::filter(start >= min(this_amplicon_gr[as.character(GenomicRanges::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@start)) %>%
           dplyr::filter(start == min(start)) %>% .$start
 
-        max_amp_coord <- this_sample_cnv_gr %>% gUtils::gr2dt() %>%
+        max_amp_coord <- this_sample_cnv_gr %>% gr2dt() %>%
           dplyr::filter(seqnames %in% unique_chrs[i]) %>%
           dplyr::filter(copyNumber > 3 * ploidy) %>%
           dplyr::filter(end <= max(this_amplicon_gr[as.character(GenomicRanges::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@start +
@@ -184,13 +184,13 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 
               ## Chromosomal segments < prox_boundary and > dist_boundary
               ## should not be gained/amplified:
-              before_prox_boundary_not_gained <- nrow(this_sample_cnv_gr %>% gUtils::gr2dt() %>%
+              before_prox_boundary_not_gained <- nrow(this_sample_cnv_gr %>% gr2dt() %>%
                                                          dplyr::filter(seqnames %in% unique_chrs[i]) %>%
                                                          dplyr::filter(end < prox_boundary) %>%
                                                          dplyr::filter(end == max(end)) %>%
                                                          dplyr::filter(copyNumber < 1.4 * ploidy)) > 0
 
-              after_dist_boundary_not_gained <- nrow(this_sample_cnv_gr %>% gUtils::gr2dt() %>%
+              after_dist_boundary_not_gained <- nrow(this_sample_cnv_gr %>% gr2dt() %>%
                                                         dplyr::filter(seqnames %in% unique_chrs[i]) %>%
                                                         dplyr::filter(start > dist_boundary) %>%
                                                         dplyr::filter(start == min(start)) %>%
@@ -311,6 +311,23 @@ call_episomal_ecdna <- function(ecdna_gr,
     methods::is(cancer_genes_gr, "GRanges"),
     !is.null(ecdna_gr$ID), !is.null(ecdna_gr$WGS_ID)
   )
+
+  ## Caller-agnostic column checks. EpiTracer works with SV/CN calls from any
+  ## source (not only PURPLE / AmpliconArchitect) once coerced to these columns;
+  ## fail early with an explicit message naming what is missing.
+  .need <- function(gr, cols, what) {
+    miss <- setdiff(cols, names(S4Vectors::mcols(gr)))
+    if (length(miss))
+      stop(sprintf("%s is missing required metadata column(s): %s",
+                   what, paste(miss, collapse = ", ")), call. = FALSE)
+  }
+  .need(breakpoints_gr,
+        c("WGS_ID", "event", "svclass", "PURPLE_AF", "PURPLE_JCN",
+          "VF", "PURPLE_CN", "insLen", "HOMLEN"), "breakpoints_gr")
+  .need(cnv_gr,
+        c("sample", "copyNumber", "ploidy",
+          "majorAlleleCopyNumber", "minorAlleleCopyNumber"), "cnv_gr")
+  .need(cancer_genes_gr, "gene", "cancer_genes_gr")
 
   amplicon_ids <- unique(ecdna_gr$ID)
   if (verbose) message("Classifying ", length(amplicon_ids), " amplicons ...")

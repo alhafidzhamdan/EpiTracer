@@ -13,3 +13,4 @@
 ^validation$
 ^_pkgdown\.yml$
 ^pkgdown$
+^CITATION\.cff$

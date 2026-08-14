@@ -27,7 +27,6 @@
 #' @keywords internal
 #' @importFrom data.table data.table rbindlist :=
 #' @importFrom GenomicRanges trim
-#' @importFrom regioneR toGRanges
 #' @importFrom dplyr filter select arrange rename mutate
 classify_amplicon_episomal <- function(this_amplicon_id,
                                        ecdna_gr,
@@ -54,7 +53,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
     dplyr::select(seqnames, start, end, event, svclass,
                   AF = PURPLE_AF, JCN = PURPLE_JCN, VF, PURPLE_CN,
                   insLen, homLen = HOMLEN) %>%
-    regioneR::toGRanges(genome = "hg38")
+    to_granges()
 
   ## Breakpoints at (or just outside) the amplicon boundaries:
   this_sample_breakpoints_ecdna_annotated <-
@@ -67,13 +66,13 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 
   ## Add oncogene info:
   this_sample_breakpoints_ecdna_annotated <-
-    ((this_sample_breakpoints_ecdna_annotated %>% regioneR::toGRanges()) %$% cancer_genes_gr) %>%
+    ((this_sample_breakpoints_ecdna_annotated %>% to_granges()) %$% cancer_genes_gr) %>%
     gr2dt() %>%
     dplyr::select(-c(strand, width))
 
   ## Annotate with minor and major allele info:
   this_sample_breakpoints_ecdna_annotated <-
-    ((this_sample_breakpoints_ecdna_annotated %>% regioneR::toGRanges()) %$% this_sample_cnv_gr) %>%
+    ((this_sample_breakpoints_ecdna_annotated %>% to_granges()) %$% this_sample_cnv_gr) %>%
     gr2dt() %>%
     dplyr::select(-c(strand, width))
 
@@ -174,7 +173,10 @@ classify_amplicon_episomal <- function(this_amplicon_id,
             ## max VF for DUP only (allow other internal SVs with higher VF)
             max_vf <- max(this_chr %>% dplyr::filter(svclass == "DUP") %>% .$VF)
 
-            if (unique(this_chr[boundary_index]$VF) == max_vf) {
+            ## Does a boundary DUP carry the highest DUP VF? Use max() so the
+            ## test stays length-1 even when the two boundary breakends report
+            ## slightly different VFs (real read-support noise / ties).
+            if (max(this_chr[boundary_index]$VF) == max_vf) {
 
               this_chr[boundary_index]$duplication_at_boundary_has_highest_VF <- "TRUE"
 
@@ -254,10 +256,11 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #' breakpoints with oncogene and allele-specific copy-number context, then
 #' applies the heuristic described in [classify_amplicon_episomal()].
 #'
-#' @param ecdna_gr A [GenomicRanges::GRanges] of ecDNA amplicon regions. Must
-#'   contain metadata columns `ID` (unique amplicon identifier) and `WGS_ID`
-#'   (sample identifier). Typically the AmpliconArchitect ecDNA amplicon
-#'   catalogue.
+#' @param ecdna_gr A [GenomicRanges::GRanges] of ecDNA amplicon regions with
+#'   metadata columns `ID` (unique amplicon identifier) and `WGS_ID` (sample
+#'   identifier) — typically the AmpliconArchitect amplicon catalogue. If `NULL`
+#'   (the default), focal-amplicon seeds are detected from `cnv_gr` with
+#'   [detect_amplicon_seeds()], so EpiTracer can run without AmpliconArchitect.
 #' @param breakpoints_gr A [GenomicRanges::GRanges] of PURPLE (HMF pipeline) SV
 #'   breakpoints with metadata columns `WGS_ID`, `event`, `svclass` (e.g. "DUP",
 #'   "DEL"), `PURPLE_AF`, `PURPLE_JCN`, `VF`, `PURPLE_CN`, `insLen`, `HOMLEN`.
@@ -272,6 +275,10 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #' @param mc.cores Integer; number of cores for [parallel::mclapply()]
 #'   (default `1`). Values > 1 are ignored on Windows.
 #' @param verbose Logical; print per-amplicon progress (default `FALSE`).
+#' @param min_cn_ratio,seed_gap,seed_min_width Passed to
+#'   [detect_amplicon_seeds()] when `ecdna_gr` is `NULL` (copy-number amplicon
+#'   threshold `copyNumber > min_cn_ratio * ploidy`, gap to merge across, and
+#'   minimum seed width). Ignored when `ecdna_gr` is supplied.
 #'
 #' @return A [data.table::data.table] combining the annotated breakpoints of all
 #'   amplicons, with per-breakpoint classification columns including
@@ -296,20 +303,21 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #' @export
 #' @importFrom parallel mclapply
 #' @importFrom data.table rbindlist
-call_episomal_ecdna <- function(ecdna_gr,
+call_episomal_ecdna <- function(ecdna_gr = NULL,
                                 breakpoints_gr,
                                 cnv_gr,
                                 cancer_genes_gr,
                                 ext = 1e7,
                                 mc.cores = 1L,
-                                verbose = FALSE) {
+                                verbose = FALSE,
+                                min_cn_ratio = 3,
+                                seed_gap = 1e6,
+                                seed_min_width = 1e5) {
 
   stopifnot(
-    methods::is(ecdna_gr, "GRanges"),
     methods::is(breakpoints_gr, "GRanges"),
     methods::is(cnv_gr, "GRanges"),
-    methods::is(cancer_genes_gr, "GRanges"),
-    !is.null(ecdna_gr$ID), !is.null(ecdna_gr$WGS_ID)
+    methods::is(cancer_genes_gr, "GRanges")
   )
 
   ## Caller-agnostic column checks. EpiTracer works with SV/CN calls from any
@@ -328,6 +336,20 @@ call_episomal_ecdna <- function(ecdna_gr,
         c("sample", "copyNumber", "ploidy",
           "majorAlleleCopyNumber", "minorAlleleCopyNumber"), "cnv_gr")
   .need(cancer_genes_gr, "gene", "cancer_genes_gr")
+
+  ## Amplicon seeds: use the supplied AmpliconArchitect catalogue, or (when
+  ## ecdna_gr is NULL) detect focal amplicons from copy number alone.
+  if (is.null(ecdna_gr)) {
+    if (verbose) message("No ecdna_gr supplied; detecting focal-amplicon seeds from cnv_gr ...")
+    ecdna_gr <- detect_amplicon_seeds(cnv_gr, min_cn_ratio = min_cn_ratio,
+                                      gap = seed_gap, min_width = seed_min_width)
+    if (length(ecdna_gr) == 0L)
+      stop("No focal amplicons detected in cnv_gr ",
+           "(need copyNumber > ", min_cn_ratio, " x ploidy).", call. = FALSE)
+  } else {
+    stopifnot(methods::is(ecdna_gr, "GRanges"),
+              !is.null(ecdna_gr$ID), !is.null(ecdna_gr$WGS_ID))
+  }
 
   amplicon_ids <- unique(ecdna_gr$ID)
   if (verbose) message("Classifying ", length(amplicon_ids), " amplicons ...")

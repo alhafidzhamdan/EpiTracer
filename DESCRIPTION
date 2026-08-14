@@ -31,9 +31,7 @@ Imports:
     magrittr,
     methods,
     parallel,
-    regioneR,
     S4Vectors,
-    scales,
     stats,
     grDevices
 Suggests:

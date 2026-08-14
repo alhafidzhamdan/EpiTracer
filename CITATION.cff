@@ -14,7 +14,7 @@ authors:
 repository-code: "https://github.com/alhafidzhamdan/EpiTracer"
 url: "https://alhafidzhamdan.github.io/EpiTracer"
 license: MIT
-version: 0.0.0.9000
+version: 0.0.1
 date-released: "2026-08-14"
 keywords:
   - ecDNA

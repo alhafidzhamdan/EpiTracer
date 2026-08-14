@@ -99,4 +99,31 @@ ex_plot_inputs <- list(
 )
 
 ## ---------------------------------------------------------------------------
-usethis::use_data(ex_caller_inputs, ex_plot_inputs, overwrite = TRUE)
+## 3. A kataegis example for the optional SNV panel of plot_sv_linear()
+##    A tight cluster of C>N substitutions (short intermutation distances -> a
+##    rainfall-plot dip) over the EGFR amplicon, plus a few scattered background
+##    SNVs for contrast. SNV column convention: sampleID / allelic_freq / type.
+## ---------------------------------------------------------------------------
+
+set.seed(2)
+## scattered background SNVs (outside the amplicon) -> long intermutation distances
+bg_pos  <- sort(round(c(runif(4, 54.10e6, 54.90e6), runif(4, 55.60e6, 55.95e6))))
+## a kataegis shower over the amplicon: ~25 SNVs with 0.2-4 kb gaps, C>N (APOBEC-like)
+gaps    <- round(runif(24, 200, 4000))
+kat_pos <- 55240000L + as.integer(c(0, cumsum(gaps)))
+nb <- length(bg_pos); nk <- length(kat_pos)
+
+ex_snv <- data.frame(
+  sampleID     = "EXAMPLE01",
+  seqnames     = "chr7",
+  start        = c(bg_pos, kat_pos),
+  allelic_freq = c(runif(nb, 0.20, 0.35), runif(nk, 0.35, 0.50)),
+  variant_cn   = c(rep(2L, nb), rep(24L, nk)),
+  type         = "SNV",
+  ref          = c(rep("T", nb), rep("C", nk)),           # kataegis: C>N (APOBEC-like)
+  mut          = c(rep("C", nb), rep(c("T", "G"), length.out = nk)),
+  stringsAsFactors = FALSE
+)
+
+## ---------------------------------------------------------------------------
+usethis::use_data(ex_caller_inputs, ex_plot_inputs, ex_snv, overwrite = TRUE)

@@ -10,3 +10,6 @@
 ^docs$
 ^data-raw$
 ^\.claude$
+^validation$
+^_pkgdown\.yml$
+^pkgdown$

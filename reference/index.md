@@ -34,3 +34,6 @@ Small bundled datasets used in the vignette and examples.
 
   Example inputs for
   [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
+
+- [`ex_snv`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_snv.md)
+  : Example small mutations with a kataegis cluster

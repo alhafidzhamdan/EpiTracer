@@ -92,8 +92,39 @@ p
 
 By default the plot is returned as a `ggplot` object and nothing is
 written to disk. Pass `outdir = "."` to also save a publication-ready
-PDF, and supply `snv_data` to add a stacked panel of the sample’s small
-mutations.
+PDF.
+
+## Kataegis in the SNV panel
+
+Supplying `snv_data` adds a second panel of the sample’s small mutations
+beneath the copy-number / SV panel, on the same genomic x-axis. With the
+default `snv_y = "imd"` it is a *rainfall plot* — each SNV sits at its
+intermutation distance to the previous one — so **kataegis** (localised
+hypermutation) appears as a tight cluster of points dropping toward the
+bottom of the panel.
+
+The bundled `ex_snv` places an APOBEC-like kataegis shower over the EGFR
+amplicon, with a few scattered background SNVs for contrast:
+
+``` r
+
+plot_sv_linear(
+  sample   = "EXAMPLE01",
+  cnv_data = ex_plot_inputs$cnv_data,
+  sv_data  = ex_plot_inputs$sv_data,
+  wgd_data = ex_plot_inputs$wgd_data,
+  chromosome       = "chr7",
+  chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+  snv_data = ex_snv          # snv_y = "imd" (rainfall) by default
+)
+```
+
+![](epitracer_files/figure-html/kataegis-1.png)
+
+The kataegis cluster sits at ~100 bp–1 kb intermutation distance inside
+the amplicon, well below the scattered background mutations.
+`snv_y = "vaf"` or `"cn"` switch the panel to variant-allele frequency
+or SNV copy number instead.
 
 ## Using your own data
 
@@ -157,5 +188,6 @@ pipelines:
     #> [43] Rcpp_1.1.2           glue_1.8.1           data.table_1.18.4   
     #> [46] systemfonts_1.3.2    xfun_0.60            tibble_3.3.1        
     #> [49] GenomicRanges_1.64.0 tidyselect_1.2.1     knitr_1.51          
-    #> [52] farver_2.1.2         htmltools_0.5.9      labeling_0.4.3      
-    #> [55] rmarkdown_2.31       compiler_4.6.1       S7_0.2.2
+    #> [52] farver_2.1.2         patchwork_1.3.2      htmltools_0.5.9     
+    #> [55] labeling_0.4.3       rmarkdown_2.31       compiler_4.6.1      
+    #> [58] S7_0.2.2

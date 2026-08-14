@@ -146,8 +146,35 @@ bundled hg38 references are used.)</p>
 <p><img src="epitracer_files/figure-html/plot-1.png" class="r-plt" alt="" width="768"></p>
 <p>By default the plot is returned as a <code>ggplot</code> object and
 nothing is written to disk. Pass <code>outdir = "."</code> to also save
-a publication-ready PDF, and supply <code>snv_data</code> to add a
-stacked panel of the sample’s small mutations.</p>
+a publication-ready PDF.</p>
+</div>
+<div class="section level2">
+<h2 id="kataegis-in-the-snv-panel">Kataegis in the SNV panel<a class="anchor" aria-label="anchor" href="#kataegis-in-the-snv-panel"></a>
+</h2>
+<p>Supplying <code>snv_data</code> adds a second panel of the sample’s
+small mutations beneath the copy-number / SV panel, on the same genomic
+x-axis. With the default <code>snv_y = "imd"</code> it is a <em>rainfall
+plot</em> — each SNV sits at its intermutation distance to the previous
+one — so <strong>kataegis</strong> (localised hypermutation) appears as
+a tight cluster of points dropping toward the bottom of the panel.</p>
+<p>The bundled <code>ex_snv</code> places an APOBEC-like kataegis shower
+over the EGFR amplicon, with a few scattered background SNVs for
+contrast:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sv_linear.html">plot_sv_linear</a></span><span class="op">(</span></span>
+<span>  sample   <span class="op">=</span> <span class="st">"EXAMPLE01"</span>,</span>
+<span>  cnv_data <span class="op">=</span> <span class="va">ex_plot_inputs</span><span class="op">$</span><span class="va">cnv_data</span>,</span>
+<span>  sv_data  <span class="op">=</span> <span class="va">ex_plot_inputs</span><span class="op">$</span><span class="va">sv_data</span>,</span>
+<span>  wgd_data <span class="op">=</span> <span class="va">ex_plot_inputs</span><span class="op">$</span><span class="va">wgd_data</span>,</span>
+<span>  chromosome       <span class="op">=</span> <span class="st">"chr7"</span>,</span>
+<span>  chromosome_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">54e6</span>, <span class="fl">56e6</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  snv_data <span class="op">=</span> <span class="va">ex_snv</span>          <span class="co"># snv_y = "imd" (rainfall) by default</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="epitracer_files/figure-html/kataegis-1.png" class="r-plt" alt="" width="768"></p>
+<p>The kataegis cluster sits at ~100 bp–1 kb intermutation distance
+inside the amplicon, well below the scattered background mutations.
+<code>snv_y = "vaf"</code> or <code>"cn"</code> switch the panel to
+variant-allele frequency or SNV copy number instead.</p>
 </div>
 <div class="section level2">
 <h2 id="using-your-own-data">Using your own data<a class="anchor" aria-label="anchor" href="#using-your-own-data"></a>
@@ -209,8 +236,9 @@ or take explicit <code>loci</code>. See
 <span><span class="co">#&gt; [43] Rcpp_1.1.2           glue_1.8.1           data.table_1.18.4   </span></span>
 <span><span class="co">#&gt; [46] systemfonts_1.3.2    xfun_0.60            tibble_3.3.1        </span></span>
 <span><span class="co">#&gt; [49] GenomicRanges_1.64.0 tidyselect_1.2.1     knitr_1.51          </span></span>
-<span><span class="co">#&gt; [52] farver_2.1.2         htmltools_0.5.9      labeling_0.4.3      </span></span>
-<span><span class="co">#&gt; [55] rmarkdown_2.31       compiler_4.6.1       S7_0.2.2</span></span></code></pre>
+<span><span class="co">#&gt; [52] farver_2.1.2         patchwork_1.3.2      htmltools_0.5.9     </span></span>
+<span><span class="co">#&gt; [55] labeling_0.4.3       rmarkdown_2.31       compiler_4.6.1      </span></span>
+<span><span class="co">#&gt; [58] S7_0.2.2</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

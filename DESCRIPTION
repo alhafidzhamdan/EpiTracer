@@ -25,6 +25,7 @@ Depends:
 Imports:
     data.table,
     dplyr,
+    GenomeInfoDb,
     GenomicRanges,
     ggplot2,
     grid,

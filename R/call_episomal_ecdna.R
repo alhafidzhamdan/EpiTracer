@@ -110,14 +110,14 @@ classify_amplicon_episomal <- function(this_amplicon_id,
         min_amp_coord <- this_sample_cnv_gr %>% gr2dt() %>%
           dplyr::filter(seqnames %in% unique_chrs[i]) %>%
           dplyr::filter(copyNumber > 3 * ploidy) %>%
-          dplyr::filter(start >= min(this_amplicon_gr[as.character(GenomicRanges::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@start)) %>%
+          dplyr::filter(start >= min(this_amplicon_gr[as.character(GenomeInfoDb::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@start)) %>%
           dplyr::filter(start == min(start)) %>% .$start
 
         max_amp_coord <- this_sample_cnv_gr %>% gr2dt() %>%
           dplyr::filter(seqnames %in% unique_chrs[i]) %>%
           dplyr::filter(copyNumber > 3 * ploidy) %>%
-          dplyr::filter(end <= max(this_amplicon_gr[as.character(GenomicRanges::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@start +
-                                     this_amplicon_gr[as.character(GenomicRanges::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@width)) %>%
+          dplyr::filter(end <= max(this_amplicon_gr[as.character(GenomeInfoDb::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@start +
+                                     this_amplicon_gr[as.character(GenomeInfoDb::seqnames(this_amplicon_gr)) %in% unique_chrs[i]]@ranges@width)) %>%
           dplyr::filter(end == max(end)) %>% .$end
 
         ## Find DUP at boundary; ensure DUP has highest VF; check flanking CN;

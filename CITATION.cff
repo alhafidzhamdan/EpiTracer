@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use EpiTracer, please cite it as below."
+title: "EpiTracer: Calling and Visualising Episomal Extrachromosomal DNA from Whole-Genome Sequencing"
+abstract: >-
+  An R package to detect episomal extrachromosomal DNA (ecDNA) amplicons —
+  circles formed by simple DNA excision events rather than complex double-strand
+  break processes — from whole-genome sequencing, and to visualise the
+  structural rearrangements underlying focal amplifications.
+type: software
+authors:
+  - family-names: Hamdan
+    given-names: Alhafidz
+    email: alhafidz.hamdan@ed.ac.uk
+repository-code: "https://github.com/alhafidzhamdan/EpiTracer"
+url: "https://alhafidzhamdan.github.io/EpiTracer"
+license: MIT
+version: 0.0.0.9000
+date-released: "2026-08-14"
+keywords:
+  - ecDNA
+  - extrachromosomal DNA
+  - episome
+  - structural variants
+  - copy number
+  - cancer genomics
+  - whole-genome sequencing

@@ -12,6 +12,7 @@ Tools for detecting episomal extrachromosomal DNA (ecDNA) amplicons (ecDNAs form
 Useful links:
 \itemize{
   \item \url{https://github.com/alhafidzhamdan/EpiTracer}
+  \item \url{https://alhafidzhamdan.github.io/EpiTracer}
   \item Report bugs at \url{https://github.com/alhafidzhamdan/EpiTracer/issues}
 }
 

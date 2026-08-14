@@ -5,20 +5,24 @@
 \title{Call episomal extrachromosomal DNA from WGS structural variants}
 \usage{
 call_episomal_ecdna(
-  ecdna_gr,
+  ecdna_gr = NULL,
   breakpoints_gr,
   cnv_gr,
   cancer_genes_gr,
   ext = 1e+07,
   mc.cores = 1L,
-  verbose = FALSE
+  verbose = FALSE,
+  min_cn_ratio = 3,
+  seed_gap = 1e+06,
+  seed_min_width = 1e+05
 )
 }
 \arguments{
-\item{ecdna_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of ecDNA amplicon regions. Must
-contain metadata columns \code{ID} (unique amplicon identifier) and \code{WGS_ID}
-(sample identifier). Typically the AmpliconArchitect ecDNA amplicon
-catalogue.}
+\item{ecdna_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of ecDNA amplicon regions with
+metadata columns \code{ID} (unique amplicon identifier) and \code{WGS_ID} (sample
+identifier) — typically the AmpliconArchitect amplicon catalogue. If \code{NULL}
+(the default), focal-amplicon seeds are detected from \code{cnv_gr} with
+\code{\link[=detect_amplicon_seeds]{detect_amplicon_seeds()}}, so EpiTracer can run without AmpliconArchitect.}
 
 \item{breakpoints_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of PURPLE (HMF pipeline) SV
 breakpoints with metadata columns \code{WGS_ID}, \code{event}, \code{svclass} (e.g. "DUP",
@@ -39,6 +43,11 @@ searching for boundary breakpoints (default \code{1e7}).}
 (default \code{1}). Values > 1 are ignored on Windows.}
 
 \item{verbose}{Logical; print per-amplicon progress (default \code{FALSE}).}
+
+\item{min_cn_ratio, seed_gap, seed_min_width}{Passed to
+\code{\link[=detect_amplicon_seeds]{detect_amplicon_seeds()}} when \code{ecdna_gr} is \code{NULL} (copy-number amplicon
+threshold \code{copyNumber > min_cn_ratio * ploidy}, gap to merge across, and
+minimum seed width). Ignored when \code{ecdna_gr} is supplied.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} combining the annotated breakpoints of all

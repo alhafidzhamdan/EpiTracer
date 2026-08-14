@@ -1,0 +1,10 @@
+citHeader("To cite EpiTracer in publications, please use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "EpiTracer: Calling and Visualising Episomal Extrachromosomal DNA from Whole-Genome Sequencing",
+  author   = person("Alhafidz", "Hamdan"),
+  year     = "2026",
+  note     = "R package version 0.0.0.9000",
+  url      = "https://github.com/alhafidzhamdan/EpiTracer"
+)

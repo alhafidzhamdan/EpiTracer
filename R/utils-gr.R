@@ -18,3 +18,19 @@ gr2dt <- function(x) {
   if ("strand"   %in% names(dt)) dt[, strand   := as.character(strand)]
   dt[]
 }
+
+#' Convert a data.frame/data.table to GRanges
+#'
+#' Internal replacement for `regioneR::toGRanges()`: builds a
+#' [GenomicRanges::GRanges] from a table with `seqnames`, `start`, `end`
+#' columns, keeping every other column as metadata. Dependency-free (uses only
+#' GenomicRanges), so EpiTracer needs neither regioneR nor a GitHub remote.
+#'
+#' @param x A `data.frame`/`data.table` with `seqnames`, `start`, `end` columns.
+#' @return A [GenomicRanges::GRanges].
+#' @keywords internal
+#' @importFrom GenomicRanges makeGRangesFromDataFrame
+to_granges <- function(x) {
+  GenomicRanges::makeGRangesFromDataFrame(as.data.frame(x),
+                                          keep.extra.columns = TRUE)
+}

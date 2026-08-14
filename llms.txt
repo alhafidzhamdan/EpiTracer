@@ -135,9 +135,17 @@ Small bundled datasets used in the vignette and examples.
 - [`ex_snv`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_snv.md)
   : Example small mutations with a kataegis cluster
 
+- [`ex_recon_inputs`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_recon_inputs.md)
+  :
+
+  Example inputs for
+  [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md)
+
 # Articles
 
-### Get started
+### Articles
 
 - [Calling and visualising episomal ecDNA with
   EpiTracer](https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.md):
+- [Reconstructing a focal amplicon wave by
+  wave](https://alhafidzhamdan.github.io/EpiTracer/articles/reconstruction.md):

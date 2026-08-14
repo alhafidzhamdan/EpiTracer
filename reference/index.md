@@ -37,3 +37,9 @@ Small bundled datasets used in the vignette and examples.
 
 - [`ex_snv`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_snv.md)
   : Example small mutations with a kataegis cluster
+
+- [`ex_recon_inputs`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_recon_inputs.md)
+  :
+
+  Example inputs for
+  [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md)

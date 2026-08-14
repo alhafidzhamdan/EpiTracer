@@ -3,6 +3,7 @@
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/LICENSE-text.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/index.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/reconstruction.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/authors.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/index.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/news/index.html</loc></url>
@@ -12,6 +13,7 @@
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/detect_amplicon_seeds.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/ex_caller_inputs.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/ex_plot_inputs.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/ex_recon_inputs.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/ex_snv.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/gr-annotate.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/gr2dt.html</loc></url>

@@ -76,33 +76,30 @@ package.)</p>
 <div class="section level2">
 <h2 id="the-example-data">The example data<a class="anchor" aria-label="anchor" href="#the-example-data"></a>
 </h2>
-<p>The bundled <code>ex_recon_inputs</code> is a synthetic EGFR amplicon
-on chr7 carrying many duplication junctions spanning read support from
-<code>VF</code> 6 to 520:</p>
+<p>The bundled <code>ex_recon_inputs</code> is a real, complex
+amplification: the <strong>CDK4</strong> amplicon on chr12 in tumour
+sample <code>"DO11501T1"</code>, carrying hundreds of structural-variant
+junctions spanning read support from <code>VF</code> 4 to 496.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 'data.frame':    12 obs. of  10 variables:</span></span>
-<span><span class="co">#&gt;  $ chrom1 : chr  "7" "7" "7" "7" ...</span></span>
-<span><span class="co">#&gt;  $ start1 : num  55100000 55154545 55209091 55263636 55318182 ...</span></span>
-<span><span class="co">#&gt;  $ chrom2 : chr  "7" "7" "7" "7" ...</span></span>
-<span><span class="co">#&gt;  $ start2 : num  55140000 55194545 55249091 55303636 55358182 ...</span></span>
-<span><span class="co">#&gt;  $ strand1: chr  "-" "-" "-" "-" ...</span></span>
-<span><span class="co">#&gt;  $ strand2: chr  "+" "+" "+" "+" ...</span></span>
-<span><span class="co">#&gt;  $ svclass: chr  "DUP" "DUP" "DUP" "DUP" ...</span></span>
-<span><span class="co">#&gt;  $ VF     : num  520 470 430 90 82 74 66 14 11 9 ...</span></span>
-<span><span class="co">#&gt;  $ JCN    : num  26 24 22 4 4 4 3 1 1 1 ...</span></span>
-<span><span class="co">#&gt;  $ sample : chr  "EXAMPLE01" "EXAMPLE01" "EXAMPLE01" "EXAMPLE01" ...</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span><span class="op">)</span>                     <span class="co"># junctions</span></span>
+<span><span class="co">#&gt; [1] 259</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span><span class="op">$</span><span class="va">svclass</span><span class="op">)</span>            <span class="co"># DUP / DEL / TRA / inversions</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;    DEL    DUP h2hINV t2tINV </span></span>
+<span><span class="co">#&gt;     56     56     74     73</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="reconstruction">Reconstruction<a class="anchor" aria-label="anchor" href="#reconstruction"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sv_reconstruction.html">plot_sv_reconstruction</a></span><span class="op">(</span></span>
-<span>  sample   <span class="op">=</span> <span class="st">"EXAMPLE01"</span>,</span>
+<span>  sample   <span class="op">=</span> <span class="st">"DO11501T1"</span>,</span>
 <span>  cnv_data <span class="op">=</span> <span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">cnv_data</span>,</span>
 <span>  sv_data  <span class="op">=</span> <span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span>,</span>
 <span>  wgd_data <span class="op">=</span> <span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">wgd_data</span>,</span>
-<span>  chromosome <span class="op">=</span> <span class="st">"chr7"</span></span>
+<span>  chromosome       <span class="op">=</span> <span class="st">"chr12"</span>,</span>
+<span>  chromosome_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">57e6</span>, <span class="fl">60e6</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  min_vf <span class="op">=</span> <span class="fl">10</span>                                     <span class="co"># drop the lowest-support noise</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="reconstruction_files/figure-html/recon-1.png" class="r-plt" alt="" width="672"></p>
 <p>Reading it top to bottom: the first panel isolates the single

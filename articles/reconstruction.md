@@ -9,24 +9,19 @@ amplicon was assembled. (Requires the package.)
 
 ## The example data
 
-The bundled `ex_recon_inputs` is a synthetic EGFR amplicon on chr7
-carrying many duplication junctions spanning read support from `VF` 6 to
-520:
+The bundled `ex_recon_inputs` is a real, complex amplification: the
+**CDK4** amplicon on chr12 in tumour sample `"DO11501T1"`, carrying
+hundreds of structural-variant junctions spanning read support from `VF`
+4 to 496.
 
 ``` r
 
-str(ex_recon_inputs$sv_data)
-#> 'data.frame':    12 obs. of  10 variables:
-#>  $ chrom1 : chr  "7" "7" "7" "7" ...
-#>  $ start1 : num  55100000 55154545 55209091 55263636 55318182 ...
-#>  $ chrom2 : chr  "7" "7" "7" "7" ...
-#>  $ start2 : num  55140000 55194545 55249091 55303636 55358182 ...
-#>  $ strand1: chr  "-" "-" "-" "-" ...
-#>  $ strand2: chr  "+" "+" "+" "+" ...
-#>  $ svclass: chr  "DUP" "DUP" "DUP" "DUP" ...
-#>  $ VF     : num  520 470 430 90 82 74 66 14 11 9 ...
-#>  $ JCN    : num  26 24 22 4 4 4 3 1 1 1 ...
-#>  $ sample : chr  "EXAMPLE01" "EXAMPLE01" "EXAMPLE01" "EXAMPLE01" ...
+nrow(ex_recon_inputs$sv_data)                     # junctions
+#> [1] 259
+table(ex_recon_inputs$sv_data$svclass)            # DUP / DEL / TRA / inversions
+#> 
+#>    DEL    DUP h2hINV t2tINV 
+#>     56     56     74     73
 ```
 
 ## Reconstruction
@@ -34,11 +29,13 @@ str(ex_recon_inputs$sv_data)
 ``` r
 
 plot_sv_reconstruction(
-  sample   = "EXAMPLE01",
+  sample   = "DO11501T1",
   cnv_data = ex_recon_inputs$cnv_data,
   sv_data  = ex_recon_inputs$sv_data,
   wgd_data = ex_recon_inputs$wgd_data,
-  chromosome = "chr7"
+  chromosome       = "chr12",
+  chromosome_range = matrix(c(57e6, 60e6), nrow = 1),
+  min_vf = 10                                     # drop the lowest-support noise
 )
 ```
 

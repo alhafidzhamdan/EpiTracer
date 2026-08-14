@@ -126,41 +126,58 @@ ex_snv <- data.frame(
 )
 
 ## ---------------------------------------------------------------------------
-## 4. A real read-support-stratified reconstruction example: the DO11501T1 CDK4
-##    amplicon on chr12 -- a complex, heavily rearranged focal amplification that
-##    plot_sv_reconstruction() rebuilds wave by wave. Derived from the cohort
-##    SV / CN / WGD tables under example_data/ (git-ignored); the built
-##    data/ex_recon_inputs.rda is what ships.
+## 4. A synthetic read-support-stratified reconstruction example modelled on a
+##    real complex CDK4 amplicon (chr12): a heavily rearranged focal
+##    amplification that plot_sv_reconstruction() rebuilds wave by wave. The
+##    statistics mirror a real amplicon -- ~250 intra-chromosomal junctions
+##    (DEL/DUP/h2hINV/t2tINV), variant fraction centred ~46 with a single VF~496
+##    founder, and an oscillating copy-number profile (CN 15-35, median 24) over
+##    chr12 57.4-59.6 Mb -- but every coordinate and value is simulated.
 ## ---------------------------------------------------------------------------
 
-stopifnot(file.exists("example_data/all_353_CN_segments.rds"))
-.cn   <- as.data.frame(readRDS("example_data/all_353_CN_segments.rds"))
-.sv   <- as.data.frame(readRDS("example_data/all_348_SV_bedpe.rds"))
-.wgd  <- read.delim("example_data/all_353_wgd_data.txt", fill = TRUE,
-                    stringsAsFactors = FALSE)
-.S    <- "DO11501T1"
-.win  <- c(56e6, 61e6)                      # chr12 window around CDK4 (~57.7 Mb)
-.on12 <- function(z) z %in% c("chr12", "12")
+set.seed(11)
+.a0 <- 57.41e6; .a1 <- 59.58e6                 # amplicon boundaries (chr12)
 
-.cnv <- .cn[.cn$sample == .S & .on12(.cn$seqnames) &
-              .cn$end > .win[1] & .cn$start < .win[2],
-            c("sample", "seqnames", "start", "end", "copyNumber", "ploidy",
-              "majorAlleleCopyNumber", "minorAlleleCopyNumber")]
-.cnv$seqnames <- "chr12"
+## oscillating (chromothriptic) copy-number profile: many tiny segments, CN 13-36
+.w   <- round(runif(500, 2e3, 8e3))
+.brk <- .a0 + cumsum(.w); .brk <- .brk[.brk < .a1]
+.st  <- c(.a0, .brk); .en <- c(.brk - 1, .a1)
+.cn  <- pmin(36L, pmax(13L, as.integer(round(rnorm(length(.st), 24, 5)))))
 
-.svd <- .sv[.sv$sample == .S & .on12(.sv$chrom1) & .on12(.sv$chrom2) &
-              .sv$start1 > .win[1] & .sv$start1 < .win[2] &
-              .sv$start2 > .win[1] & .sv$start2 < .win[2],
-            c("chrom1", "start1", "chrom2", "start2", "strand1", "strand2",
-              "svclass", "VF", "JCN", "sample")]
-.svd$chrom1 <- "12"; .svd$chrom2 <- "12"
+recon_cnv <- data.frame(
+  sample = "EXAMPLE02", seqnames = "chr12",
+  start  = c(55e6, .st, .a1 + 1),
+  end    = c(.a0 - 1, .en, 62e6),
+  copyNumber = c(2L, .cn, 2L), ploidy = 2,
+  majorAlleleCopyNumber = c(1L, pmax(1L, .cn - 1L), 1L),
+  minorAlleleCopyNumber = 1L
+)
+
+## ~250 junctions across the amplicon: svclass mix and VF distribution mirrored
+.nj  <- 250
+.cls <- sample(c("DEL", "DUP", "h2hINV", "t2tINV"), .nj, replace = TRUE,
+               prob = c(0.216, 0.216, 0.286, 0.282))
+.p1  <- round(runif(.nj, .a0, .a1))
+.p2  <- round(pmin(.a1, .p1 + runif(.nj, 5e3, 400e3)))
+.s1  <- c(DEL = "+", DUP = "-", h2hINV = "+", t2tINV = "-")[.cls]
+.s2  <- c(DEL = "-", DUP = "+", h2hINV = "+", t2tINV = "-")[.cls]
+.vf  <- as.integer(round(pmax(4, pmin(80, rlnorm(.nj, log(45), 0.42)))))
+## founder junction: highest read support, spanning the amplicon (circularisation)
+.cls[1] <- "DUP"; .p1[1] <- 57.45e6; .p2[1] <- 59.55e6
+.s1[1] <- "-"; .s2[1] <- "+"; .vf[1] <- 496L
+
+recon_sv <- data.frame(
+  chrom1 = "12", start1 = .p1, chrom2 = "12", start2 = .p2,
+  strand1 = unname(.s1), strand2 = unname(.s2), svclass = unname(.cls),
+  VF = .vf, JCN = pmax(1L, as.integer(round(.vf / 20))), sample = "EXAMPLE02"
+)
 
 ex_recon_inputs <- list(
-  cnv_data = `rownames<-`(.cnv, NULL),
-  sv_data  = `rownames<-`(.svd, NULL),
-  wgd_data = data.frame(sample = .S, Polyploidy = .wgd$Polyploidy[.wgd$WGS_ID == .S])
+  cnv_data = recon_cnv,
+  sv_data  = recon_sv,
+  wgd_data = data.frame(sample = "EXAMPLE02", Polyploidy = "No")
 )
-rm(.cn, .sv, .wgd, .S, .win, .on12, .cnv, .svd)
+rm(.a0, .a1, .w, .brk, .st, .en, .cn, .nj, .cls, .p1, .p2, .s1, .s2, .vf)
 
 ## ---------------------------------------------------------------------------
 usethis::use_data(ex_caller_inputs, ex_plot_inputs, ex_snv, ex_recon_inputs,

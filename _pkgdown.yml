@@ -33,9 +33,11 @@ reference:
       - ex_caller_inputs
       - ex_plot_inputs
       - ex_snv
+      - ex_recon_inputs
 
 articles:
-  - title: Get started
+  - title: Articles
     navbar: ~
     contents:
       - epitracer
+      - reconstruction

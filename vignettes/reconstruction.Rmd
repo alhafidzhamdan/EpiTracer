@@ -1,0 +1,69 @@
+---
+title: "Reconstructing a focal amplicon wave by wave"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reconstructing a focal amplicon wave by wave}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  message  = FALSE,
+  warning  = FALSE,
+  fig.width = 7,
+  fig.height = 8.5,
+  dpi = 96
+)
+suppressPackageStartupMessages(library(EpiTracer))
+```
+
+`plot_sv_reconstruction()` rebuilds a focal amplicon **wave by wave**. It
+stratifies the structural-variant junctions by read support (`VF`) and draws one
+panel per stratum, from the highest-`VF` **founder** junction down to the
+lowest-`VF` late additions — so you can read the order in which the amplicon was
+assembled. (Requires the \pkg{patchwork} package.)
+
+## The example data
+
+The bundled `ex_recon_inputs` is a synthetic EGFR amplicon on chr7 carrying many
+duplication junctions spanning read support from `VF` 6 to 520:
+
+```{r data}
+str(ex_recon_inputs$sv_data)
+```
+
+## Reconstruction
+
+```{r recon}
+plot_sv_reconstruction(
+  sample   = "EXAMPLE01",
+  cnv_data = ex_recon_inputs$cnv_data,
+  sv_data  = ex_recon_inputs$sv_data,
+  wgd_data = ex_recon_inputs$wgd_data,
+  chromosome = "chr7"
+)
+```
+
+Reading it top to bottom: the first panel isolates the single highest-`VF`
+**founder** junction (the earliest, highest-copy event); each subsequent panel
+folds in the next-lower `VF` stratum, and the amplified region grows as later
+junctions are added. Read support is shown on the right-hand axis, and prior
+(higher-`VF`) junctions are drawn faintly for context.
+
+## Controls
+
+By default the number of strata is chosen automatically (`k = "auto"`). Common
+adjustments:
+
+- **`k`** — fix the number of read-support strata.
+- **`vf_breaks`** — explicit `VF` cut points instead of automatic clustering.
+- **`min_vf`** — drop low-support junctions before clustering.
+- **`isolate_founder = FALSE`** — keep the single top junction inside its
+  cluster rather than in its own founder panel.
+
+See `?plot_sv_reconstruction` for the full set of controls, and the
+[get-started vignette](epitracer.html) for the copy-number / SV viewer
+`plot_sv_linear()`.

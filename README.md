@@ -1,6 +1,7 @@
 # EpiTracer
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/alhafidzhamdan/EpiTracer/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/alhafidzhamdan/EpiTracer/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 > **EpiTracer** — *calling and visualising extrachromosomal circular DNA

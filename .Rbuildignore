@@ -8,3 +8,5 @@
 ^example_data$
 ^references$
 ^docs$
+^data-raw$
+^\.claude$

@@ -87,8 +87,7 @@ figure.
 
 ## Status
 
-Very early development (`v0.0.0.9000`) — everything in this repository
-may change.
+**v0.0.1 — alpha.** Under active development; the API may still change.
 
 ## License
 

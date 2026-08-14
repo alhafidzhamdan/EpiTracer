@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">EpiTracer</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,14 @@
       <small>Source: <a href="https://github.com/alhafidzhamdan/EpiTracer/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.1" id="epitracer-001-alpha">EpiTracer 0.0.1 (alpha)<a class="anchor" aria-label="anchor" href="#epitracer-001-alpha"></a></h2>
+<ul><li>
+<strong>AmpliconArchitect-optional.</strong> <code>call_episomal_ecdna(ecdna_gr = NULL, ...)</code> detects focal-amplicon seeds from copy number via the new exported <code><a href="../reference/detect_amplicon_seeds.html">detect_amplicon_seeds()</a></code>, so the caller can run from SV + CN alone.</li>
+<li>Caller-agnostic input validation, and a robustness fix to the boundary highest-VF test (no longer errors on tied / noisy variant fractions).</li>
+<li>Dropped the GitHub-only <code>gUtils</code> and the <code>regioneR</code> dependencies (vendored internally) — EpiTracer now installs from CRAN + Bioconductor alone.</li>
+<li>Added bundled example data (<code>ex_caller_inputs</code>, <code>ex_plot_inputs</code>), a get-started vignette, GitHub Actions <code>R-CMD-check</code>, and a pkgdown site.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.0.9000" id="epitracer-0009000">EpiTracer 0.0.0.9000<a class="anchor" aria-label="anchor" href="#epitracer-0009000"></a></h2>
 <ul><li>Initial development version.</li>
@@ -96,7 +104,8 @@
 <li>Returns a <strong>patchwork</strong> object (per-junction stratum assignment attached as <code>attr(p, "strata")</code>); requires <strong>patchwork</strong>, and <code>k = "auto"</code> uses <strong>Ckmeans.1d.dp</strong> when installed.</li>
 </ul></li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

@@ -137,7 +137,7 @@ pipelines:
     #> [1] stats     graphics  grDevices utils     datasets  methods   base     
     #> 
     #> other attached packages:
-    #> [1] EpiTracer_0.0.0.9000
+    #> [1] EpiTracer_0.0.1
     #> 
     #> loaded via a namespace (and not attached):
     #>  [1] sass_0.4.10          generics_0.1.4       digest_0.6.39       

@@ -32,6 +32,7 @@ reference:
     contents:
       - ex_caller_inputs
       - ex_plot_inputs
+      - ex_snv
 
 articles:
   - title: Get started

@@ -3,7 +3,7 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   epitracer: epitracer.html
-last_built: 2026-08-14T21:47Z
+last_built: 2026-08-14T21:50Z
 urls:
   reference: https://alhafidzhamdan.github.io/EpiTracer/reference
   article: https://alhafidzhamdan.github.io/EpiTracer/articles

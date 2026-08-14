@@ -126,31 +126,41 @@ ex_snv <- data.frame(
 )
 
 ## ---------------------------------------------------------------------------
-## 4. A read-support-stratified reconstruction example for plot_sv_reconstruction()
-##    An EGFR amplicon carrying many DUP junctions across a wide VF range, so the
-##    reconstruction plotter can rebuild it wave by wave: a high-VF founder, a
-##    mid-VF wave, and a low-VF wave.
+## 4. A real read-support-stratified reconstruction example: the DO11501T1 CDK4
+##    amplicon on chr12 -- a complex, heavily rearranged focal amplification that
+##    plot_sv_reconstruction() rebuilds wave by wave. Derived from the cohort
+##    SV / CN / WGD tables under example_data/ (git-ignored); the built
+##    data/ex_recon_inputs.rda is what ships.
 ## ---------------------------------------------------------------------------
 
-recon_vf <- c(520, 470, 430, 90, 82, 74, 66, 14, 11, 9, 8, 6)
-nrv      <- length(recon_vf)
-recon_p1 <- seq(55.10e6, 55.70e6, length.out = nrv)
+stopifnot(file.exists("example_data/all_353_CN_segments.rds"))
+.cn   <- as.data.frame(readRDS("example_data/all_353_CN_segments.rds"))
+.sv   <- as.data.frame(readRDS("example_data/all_348_SV_bedpe.rds"))
+.wgd  <- read.delim("example_data/all_353_wgd_data.txt", fill = TRUE,
+                    stringsAsFactors = FALSE)
+.S    <- "DO11501T1"
+.win  <- c(56e6, 61e6)                      # chr12 window around CDK4 (~57.7 Mb)
+.on12 <- function(z) z %in% c("chr12", "12")
+
+.cnv <- .cn[.cn$sample == .S & .on12(.cn$seqnames) &
+              .cn$end > .win[1] & .cn$start < .win[2],
+            c("sample", "seqnames", "start", "end", "copyNumber", "ploidy",
+              "majorAlleleCopyNumber", "minorAlleleCopyNumber")]
+.cnv$seqnames <- "chr12"
+
+.svd <- .sv[.sv$sample == .S & .on12(.sv$chrom1) & .on12(.sv$chrom2) &
+              .sv$start1 > .win[1] & .sv$start1 < .win[2] &
+              .sv$start2 > .win[1] & .sv$start2 < .win[2],
+            c("chrom1", "start1", "chrom2", "start2", "strand1", "strand2",
+              "svclass", "VF", "JCN", "sample")]
+.svd$chrom1 <- "12"; .svd$chrom2 <- "12"
 
 ex_recon_inputs <- list(
-  cnv_data = data.frame(
-    sample   = "EXAMPLE01", seqnames = "chr7",
-    start    = c(40e6, 55e6, 55.9e6 + 1),
-    end      = c(54.99e6, 55.9e6, 70e6),
-    copyNumber = c(2, 40, 2), ploidy = 2,
-    majorAlleleCopyNumber = c(1, 39, 1), minorAlleleCopyNumber = c(1, 1, 1)
-  ),
-  sv_data = data.frame(
-    chrom1 = "7", start1 = recon_p1, chrom2 = "7", start2 = recon_p1 + 40e3,
-    strand1 = "-", strand2 = "+", svclass = "DUP",
-    VF = recon_vf, JCN = pmax(1, round(recon_vf / 20)), sample = "EXAMPLE01"
-  ),
-  wgd_data = data.frame(sample = "EXAMPLE01", Polyploidy = "No")
+  cnv_data = `rownames<-`(.cnv, NULL),
+  sv_data  = `rownames<-`(.svd, NULL),
+  wgd_data = data.frame(sample = .S, Polyploidy = .wgd$Polyploidy[.wgd$WGS_ID == .S])
 )
+rm(.cn, .sv, .wgd, .S, .win, .on12, .cnv, .svd)
 
 ## ---------------------------------------------------------------------------
 usethis::use_data(ex_caller_inputs, ex_plot_inputs, ex_snv, ex_recon_inputs,

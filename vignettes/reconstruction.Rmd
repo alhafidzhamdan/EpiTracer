@@ -28,22 +28,26 @@ assembled. (Requires the \pkg{patchwork} package.)
 
 ## The example data
 
-The bundled `ex_recon_inputs` is a synthetic EGFR amplicon on chr7 carrying many
-duplication junctions spanning read support from `VF` 6 to 520:
+The bundled `ex_recon_inputs` is a real, complex amplification: the **CDK4**
+amplicon on chr12 in tumour sample `"DO11501T1"`, carrying hundreds of
+structural-variant junctions spanning read support from `VF` 4 to 496.
 
 ```{r data}
-str(ex_recon_inputs$sv_data)
+nrow(ex_recon_inputs$sv_data)                     # junctions
+table(ex_recon_inputs$sv_data$svclass)            # DUP / DEL / TRA / inversions
 ```
 
 ## Reconstruction
 
 ```{r recon}
 plot_sv_reconstruction(
-  sample   = "EXAMPLE01",
+  sample   = "DO11501T1",
   cnv_data = ex_recon_inputs$cnv_data,
   sv_data  = ex_recon_inputs$sv_data,
   wgd_data = ex_recon_inputs$wgd_data,
-  chromosome = "chr7"
+  chromosome       = "chr12",
+  chromosome_range = matrix(c(57e6, 60e6), nrow = 1),
+  min_vf = 10                                     # drop the lowest-support noise
 )
 ```
 

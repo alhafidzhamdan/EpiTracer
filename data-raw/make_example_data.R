@@ -126,4 +126,32 @@ ex_snv <- data.frame(
 )
 
 ## ---------------------------------------------------------------------------
-usethis::use_data(ex_caller_inputs, ex_plot_inputs, ex_snv, overwrite = TRUE)
+## 4. A read-support-stratified reconstruction example for plot_sv_reconstruction()
+##    An EGFR amplicon carrying many DUP junctions across a wide VF range, so the
+##    reconstruction plotter can rebuild it wave by wave: a high-VF founder, a
+##    mid-VF wave, and a low-VF wave.
+## ---------------------------------------------------------------------------
+
+recon_vf <- c(520, 470, 430, 90, 82, 74, 66, 14, 11, 9, 8, 6)
+nrv      <- length(recon_vf)
+recon_p1 <- seq(55.10e6, 55.70e6, length.out = nrv)
+
+ex_recon_inputs <- list(
+  cnv_data = data.frame(
+    sample   = "EXAMPLE01", seqnames = "chr7",
+    start    = c(40e6, 55e6, 55.9e6 + 1),
+    end      = c(54.99e6, 55.9e6, 70e6),
+    copyNumber = c(2, 40, 2), ploidy = 2,
+    majorAlleleCopyNumber = c(1, 39, 1), minorAlleleCopyNumber = c(1, 1, 1)
+  ),
+  sv_data = data.frame(
+    chrom1 = "7", start1 = recon_p1, chrom2 = "7", start2 = recon_p1 + 40e3,
+    strand1 = "-", strand2 = "+", svclass = "DUP",
+    VF = recon_vf, JCN = pmax(1, round(recon_vf / 20)), sample = "EXAMPLE01"
+  ),
+  wgd_data = data.frame(sample = "EXAMPLE01", Polyploidy = "No")
+)
+
+## ---------------------------------------------------------------------------
+usethis::use_data(ex_caller_inputs, ex_plot_inputs, ex_snv, ex_recon_inputs,
+                  overwrite = TRUE)

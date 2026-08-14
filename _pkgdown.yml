@@ -1,0 +1,39 @@
+url: https://alhafidzhamdan.github.io/EpiTracer
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#0f7d78"
+
+home:
+  title: EpiTracer
+  description: >
+    Calling and visualising episomal extrachromosomal DNA (ecDNA) amplicons —
+    circles formed by simple excision events — from whole-genome sequencing.
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+
+reference:
+  - title: Detection
+    desc: Call ecDNA amplicons that arose by simple episomal excision.
+    contents:
+      - call_episomal_ecdna
+  - title: Visualisation
+    desc: Plot the structural rearrangements underlying focal amplifications.
+    contents:
+      - plot_sv_linear
+      - plot_sv_reconstruction
+  - title: Example data
+    desc: Small bundled datasets used in the vignette and examples.
+    contents:
+      - ex_caller_inputs
+      - ex_plot_inputs
+
+articles:
+  - title: Get started
+    navbar: ~
+    contents:
+      - epitracer

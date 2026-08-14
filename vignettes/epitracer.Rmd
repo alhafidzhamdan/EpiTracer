@@ -11,10 +11,13 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment  = "#>",
+  message  = FALSE,
+  warning  = FALSE,
   fig.width = 8,
   fig.height = 4.2,
   dpi = 96
 )
+suppressPackageStartupMessages(library(EpiTracer))
 ```
 
 **EpiTracer** detects extrachromosomal circular DNA (ecDNA) amplicons that were

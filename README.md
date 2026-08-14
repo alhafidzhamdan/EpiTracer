@@ -37,9 +37,9 @@ whole-genome sequencing (WGS) data — click a tool for its full documentation:
 
 ## Installation
 
-Install with `BiocManager`, which resolves the Bioconductor
-(`GenomicRanges`, `regioneR`), GitHub ([`gUtils`](https://github.com/mskilab/gUtils))
-and `Remotes:` dependencies in one call:
+EpiTracer depends only on CRAN and Bioconductor packages (no GitHub-only
+remotes). Install with `BiocManager`, which resolves the Bioconductor
+dependencies (`GenomicRanges`, `S4Vectors`, `regioneR`) in one call:
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")

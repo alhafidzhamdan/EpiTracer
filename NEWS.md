@@ -1,3 +1,15 @@
+# EpiTracer 0.0.1 (alpha)
+
+* **AmpliconArchitect-optional.** `call_episomal_ecdna(ecdna_gr = NULL, ...)`
+  detects focal-amplicon seeds from copy number via the new exported
+  `detect_amplicon_seeds()`, so the caller can run from SV + CN alone.
+* Caller-agnostic input validation, and a robustness fix to the boundary
+  highest-VF test (no longer errors on tied / noisy variant fractions).
+* Dropped the GitHub-only `gUtils` and the `regioneR` dependencies (vendored
+  internally) — EpiTracer now installs from CRAN + Bioconductor alone.
+* Added bundled example data (`ex_caller_inputs`, `ex_plot_inputs`), a
+  get-started vignette, GitHub Actions `R-CMD-check`, and a pkgdown site.
+
 # EpiTracer 0.0.0.9000
 
 * Initial development version.

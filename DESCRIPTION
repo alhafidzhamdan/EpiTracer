@@ -1,6 +1,6 @@
 Package: EpiTracer
 Title: Calling and Visualising Episomal Extrachromosomal DNA from WGS
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R:
     person("Alhafidz", "Hamdan", , "alhafidz.hamdan@ed.ac.uk", role = c("aut", "cre"))
 Description: Tools for detecting episomal extrachromosomal

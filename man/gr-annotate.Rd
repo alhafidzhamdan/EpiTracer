@@ -15,8 +15,10 @@ x \%$\% y
 \code{x} with metadata columns added from overlapping ranges in \code{y}.
 }
 \description{
-Re-exported from \pkg{gUtils}. \verb{x \\\%$\\\% y} annotates the ranges in \code{x}
-with the metadata columns of \code{y} by genomic overlap. See
-\code{gUtils::\link[gUtils]{\%$\%}} for details.
+\verb{x \\\%$\\\% y} returns the GRanges \code{x} with the metadata columns of the first
+range in \code{y} that each range of \code{x} overlaps (\code{NA} where there is no overlap).
+A small, dependency-free replacement for the gUtils operator of the same name,
+covering the annotate-by-overlap use inside EpiTracer (where the ranges of \code{y}
+— amplicons, genes, copy-number segments — do not overlap one another).
 }
 \keyword{internal}

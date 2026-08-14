@@ -21,6 +21,7 @@ reference:
     desc: Call ecDNA amplicons that arose by simple episomal excision.
     contents:
       - call_episomal_ecdna
+      - detect_amplicon_seeds
   - title: Visualisation
     desc: Plot the structural rearrangements underlying focal amplifications.
     contents:

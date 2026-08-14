@@ -25,12 +25,40 @@ Rscript validation/simulate_benchmark.R
 
 Writes `output/{metrics.csv, confusion.csv, by_type.csv, benchmark.pdf}`.
 
-On the clean regime shipped here (n = 300, seed 1) the caller separates the
-classes perfectly (sensitivity = specificity = PPV = 1.0). **Next step for a
-publication-grade ROC:** dial in difficulty — jitter the flank copy number
-toward the amplification threshold, add VF noise and CN-segmentation error, and
-mislabel a fraction — to show performance degrades gracefully rather than
-cliff-edging, and to pick robust defaults for `ext` and the VF rule.
+On the clean regime (n = 300, seed 1) the caller separates the classes perfectly
+(sensitivity = specificity = PPV = 1.0).
+
+### Difficulty sweep — `simulate_sweep.R`
+
+Real copy-number and read-support estimates are noisy, so this script adds
+increasing Gaussian noise to segment copy number and log-normal noise to the
+breakpoint variant fraction, and tracks how the metrics degrade — a tool that
+fails gracefully rather than cliff-edging is the point.
+
+```sh
+Rscript validation/simulate_sweep.R      # -> output/{sweep_metrics.csv, sweep.pdf}
+```
+
+Result (n = 60 per class per level, seed 1): sensitivity stays **1.0 up to
+0.25 copies SD** (the realistic PURPLE segment-error regime), degrading
+gracefully to 0.87 at 0.5 and 0.68 at 1.0 copies SD — while **specificity and
+PPV never drop below 1.0**. EpiTracer is high-precision and conservative under
+noise: when it calls an amplicon episomal it is right, and noise costs recall,
+not precision.
+
+> Building this sweep **surfaced and fixed a real caller bug**: under noisy /
+> tied boundary-DUP VFs the highest-VF test evaluated a length>1 condition and
+> errored. Fixed to compare the maximum boundary VF (regression-tested), which
+> is exactly the kind of robustness a reviewer probes.
+
+### Runtime / scaling — `runtime_scaling.R`
+
+Wall-clock of `call_episomal_ecdna()` as the number of amplicons grows, for the
+manuscript's availability / implementation note.
+
+```sh
+Rscript validation/runtime_scaling.R     # -> output/{scaling.csv, scaling.pdf}
+```
 
 ## 2. Known-ecDNA cell lines — `cell_line_case_study.R`
 

@@ -9,19 +9,20 @@ amplicon was assembled. (Requires the package.)
 
 ## The example data
 
-The bundled `ex_recon_inputs` is a real, complex amplification: the
-**CDK4** amplicon on chr12 in tumour sample `"DO11501T1"`, carrying
-hundreds of structural-variant junctions spanning read support from `VF`
-4 to 496.
+The bundled `ex_recon_inputs` is a synthetic but realistic **complex
+CDK4 amplicon** on chr12 (sample `"EXAMPLE02"`), whose statistics are
+modelled on a real ecDNA amplicon: ~250 intra-chromosomal junctions
+spanning read support from `VF` ~4 up to a `VF`-496 founder, over an
+oscillating copy-number profile.
 
 ``` r
 
 nrow(ex_recon_inputs$sv_data)                     # junctions
-#> [1] 259
+#> [1] 250
 table(ex_recon_inputs$sv_data$svclass)            # DUP / DEL / TRA / inversions
 #> 
 #>    DEL    DUP h2hINV t2tINV 
-#>     56     56     74     73
+#>     62     56     59     73
 ```
 
 ## Reconstruction
@@ -29,7 +30,7 @@ table(ex_recon_inputs$sv_data$svclass)            # DUP / DEL / TRA / inversions
 ``` r
 
 plot_sv_reconstruction(
-  sample   = "DO11501T1",
+  sample   = "EXAMPLE02",
   cnv_data = ex_recon_inputs$cnv_data,
   sv_data  = ex_recon_inputs$sv_data,
   wgd_data = ex_recon_inputs$wgd_data,

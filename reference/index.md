@@ -43,4 +43,4 @@ Small bundled datasets used in the vignette and examples.
 
   Example inputs for
   [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md):
-  the DO11501T1 CDK4 amplicon
+  a complex CDK4 amplicon

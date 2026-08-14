@@ -76,24 +76,26 @@ package.)</p>
 <div class="section level2">
 <h2 id="the-example-data">The example data<a class="anchor" aria-label="anchor" href="#the-example-data"></a>
 </h2>
-<p>The bundled <code>ex_recon_inputs</code> is a real, complex
-amplification: the <strong>CDK4</strong> amplicon on chr12 in tumour
-sample <code>"DO11501T1"</code>, carrying hundreds of structural-variant
-junctions spanning read support from <code>VF</code> 4 to 496.</p>
+<p>The bundled <code>ex_recon_inputs</code> is a synthetic but realistic
+<strong>complex CDK4 amplicon</strong> on chr12 (sample
+<code>"EXAMPLE02"</code>), whose statistics are modelled on a real ecDNA
+amplicon: ~250 intra-chromosomal junctions spanning read support from
+<code>VF</code> ~4 up to a <code>VF</code>-496 founder, over an
+oscillating copy-number profile.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span><span class="op">)</span>                     <span class="co"># junctions</span></span>
-<span><span class="co">#&gt; [1] 259</span></span>
+<span><span class="co">#&gt; [1] 250</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span><span class="op">$</span><span class="va">svclass</span><span class="op">)</span>            <span class="co"># DUP / DEL / TRA / inversions</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;    DEL    DUP h2hINV t2tINV </span></span>
-<span><span class="co">#&gt;     56     56     74     73</span></span></code></pre></div>
+<span><span class="co">#&gt;     62     56     59     73</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="reconstruction">Reconstruction<a class="anchor" aria-label="anchor" href="#reconstruction"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sv_reconstruction.html">plot_sv_reconstruction</a></span><span class="op">(</span></span>
-<span>  sample   <span class="op">=</span> <span class="st">"DO11501T1"</span>,</span>
+<span>  sample   <span class="op">=</span> <span class="st">"EXAMPLE02"</span>,</span>
 <span>  cnv_data <span class="op">=</span> <span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">cnv_data</span>,</span>
 <span>  sv_data  <span class="op">=</span> <span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">sv_data</span>,</span>
 <span>  wgd_data <span class="op">=</span> <span class="va">ex_recon_inputs</span><span class="op">$</span><span class="va">wgd_data</span>,</span>

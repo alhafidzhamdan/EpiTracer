@@ -43,10 +43,6 @@ whole-genome sequencing (WGS) data — click a tool for its full documentation:
 
 ## Installation
 
-EpiTracer depends only on CRAN and Bioconductor packages (no GitHub-only
-remotes). Install with `BiocManager`, which resolves the Bioconductor
-dependencies (`GenomicRanges`, `GenomeInfoDb`, `S4Vectors`) in one call:
-
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 BiocManager::install("alhafidzhamdan/EpiTracer")

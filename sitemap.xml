@@ -1,0 +1,23 @@
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/404.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/LICENSE-text.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/index.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/authors.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/index.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/news/index.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/EpiTracer-package.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/classify_amplicon_episomal.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/detect_amplicon_seeds.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/ex_caller_inputs.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/ex_plot_inputs.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/gr-annotate.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/gr2dt.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/index.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/pipe.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/to_granges.html</loc></url>
+</urlset>
+

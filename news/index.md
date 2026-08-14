@@ -1,0 +1,152 @@
+# Changelog
+
+## EpiTracer 0.0.0.9000
+
+- Initial development version.
+- [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md):
+  episomal (breakage-independent) ecDNA caller, refactored from the
+  original cohort analysis script into a function taking ecDNA / SV /
+  CNV / cancer-gene `GRanges` as arguments.
+  - **Bug fix:** the original script’s boundary-flank check compared
+    `after_dist_boundary_not_gained` to itself (always `TRUE`). It now
+    correctly requires *both* flanks to be non-gained before calling an
+    episome region.
+- [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md):
+  linear allele-specific copy-number and structural rearrangement
+  plotter.
+  - `wgd_data` is now **optional**; WGD status is annotated in the title
+    only when supplied. `karyotype` and `gene_coord` **default to small
+    bundled hg38 references** (`inst/extdata`: a ~7 kB ideogram and a ~1
+    kB oncogene-panel coordinate table), so a minimal call is
+    `plot_sv_linear(sample, cnv_data, sv_data)`. The bundled gene table
+    covers only the default oncogene panel; supply your own `gene_coord`
+    for other genes or genome builds. (Kept small to stay
+    distribution/CRAN-friendly.)
+  - New `flank_pct` option: extend each auto-detected (CN-status) window
+    on both sides by a percentage of its width (default `10` = +/-10%).
+    Replaces the earlier fractional `margin`.
+  - **General CN/SV viewer, not amplification-only.** New `events`
+    argument (`"amp"`, `"gain"`, `"hetdel"`, `"homdel"`) chooses which
+    copy-number events auto-detection targets; explicit
+    `chromosome`/`loci` plot any region regardless of event type.
+    Auto-detected events are **clustered** into separate loci
+    (`cluster_gap`) so scattered focal events become their own panels.
+    Thresholds exposed via `min_cn_ratio`/`gain_ratio`/`hetdel_ratio`/
+    `homdel_thresh`.
+  - `displayExon` (with `cds_gr`) re-introduced – draws exon models for
+    in-window genes.
+  - **Optional SNV panel.** Supply `snv_data` (a `data.frame`/`GRanges`
+    of small mutations with a sample column, `snv_sample_col`, default
+    `sampleID`) to stack a second mutation track directly beneath the
+    CN/SV panel, sharing the same concatenated genomic x-axis so
+    mutations line up under the copy number and rearrangements they sit
+    within. The karyotype ideogram moves to the base of this bottom
+    panel and carries the shared Mb/chromosome axis. Only
+    single-nucleotide variants are shown – indels/MNVs are excluded via
+    a mutation-type column (`snv_type_col`, default `type`, keeping
+    `"SNV"`) or, failing that, inferred from single-base `ref`/`mut`.
+    The y-axis is set by `snv_y`:
+    - `"imd"` (default) – **intermutation distance**: a rainfall plot of
+      the bp distance to the previous SNV on the same chromosome (log10
+      axis). Distances are computed across all of the sample’s SNVs per
+      chromosome before restricting to the plotted loci, so window-edge
+      mutations keep their true neighbour distance.
+    - `"vaf"` – variant-allele frequency (`vaf_col`, default
+      `allelic_freq`); values outside `[0, vaf_max]` (default `1`) are
+      dropped as artefacts.
+    - `"cn"` – SNV copy number / mutation copy number (`snv_cn_col`,
+      default `variant_cn`); in an amplicon this times each SNV against
+      the amplification (pre-amplification mutations reach high copy
+      number). The two panels are combined with and returned/saved as
+      one figure; styling via
+      `snv_rel_height`/`snv_point_size`/`snv_alpha`/`snv_colour`. When
+      `snv_data = NULL` (default) behaviour is unchanged and a plain
+      `ggplot` is returned.
+  - Larger axis fonts and longer tick marks; ideogram 20% slimmer; a
+    leading `0.0` Mb tick at a locus start is no longer drawn.
+  - **Unified onto a single concatenated x-axis** (faceting retired):
+    draws one locus or many side-by-side, and structural variants
+    interconnecting separate amplicons are drawn as arcs spanning the
+    loci (previously impossible under faceting – see the interim
+    multi-locus plotting function, now merged in and removed). Loci come
+    from `chromosome`+`chromosome_range`, explicit `loci`, or are
+    **auto-detected** from amplified segments
+    (`copyNumber > min_cn_ratio x ploidy`, padded by `margin`) when
+    neither is given.
+  - Removed faceting-only arguments (`scale_ticks`,
+    `yend_left`/`yend_right`, `interchrom_arcs`,
+    `displayExon`/`cds_gr`); axis tops/ticks are now automatic.
+    Reference annotation (karyotype ideogram, gene coordinates, CDS
+    models) is now passed via the `karyotype`, `gene_coord`, and
+    `cds_gr` arguments instead of being read from hard-coded paths.
+    `useDingbats = FALSE` for modern R.
+  - **Bug fix:** the `chromosome_range` (zoom) code path was broken
+    because `chr_selection`’s chromosome column was mis-named `chrs`
+    instead of `chr`; zoomed views now correctly restrict to the
+    requested window.
+  - Now **returns the `ggplot` object** (with any written PDF path
+    attached as attribute `"path"`); writing a PDF is optional
+    (`outdir`/`save`).
+  - **Robust axes:** x-axis tick spacing auto-adapts to the plotted
+    window (`scale_ticks = NULL`); the copy-number axis auto-scales its
+    breaks to the data (fixing label collisions at very high copy
+    number); the read-support secondary axis is placed at real VF values
+    and omitted when SV arcs are negligible relative to a focal
+    amplicon.
+  - **Flexible inputs:** `wgd_data` may be keyed by `sample` or `WGS_ID`
+    (or a custom `wgd_sample_col`); the output filename encodes the
+    plotted region so zoomed plots no longer overwrite full-chromosome
+    ones.
+  - **Polish:** gene labels are de-collided with (optional,
+    `repel_labels`); line geoms use `linewidth` (no more ggplot2
+    deprecation warnings); debug output is gated behind `verbose`.
+  - The **read-support (SV) secondary axis is always shown** alongside
+    the allele-specific copy-number axis, **sharing the same three tick
+    positions** (0, half, full). Axis tops round to two significant
+    figures (e.g. 132 -\> 140, 1462 -\> 1500); both axis spines are
+    black and stop at the baseline so the ideogram gap stays clear.
+  - New `interchrom_arcs` argument. Inter-chromosomal connecting arcs
+    reach across panels via a large offset that stretches the source
+    panel under free-x faceting; set `interchrom_arcs = FALSE` for
+    multi-chromosome plots to keep each panel bounded to its locus
+    (breakpoints still marked).
+  - **Performance:** SV arcs and breakpoint lines are now drawn as a
+    handful of batched layers (grouped by curvature/linewidth via
+    `scale_colour_identity`) instead of one ggplot layer per SV. A
+    highly-rearranged amplicon with ~300 SVs now renders in ~2 s instead
+    of ~2 min, with identical output.
+  - **Always saves PDF** (the PNG output option and `format`/`dpi` were
+    removed).
+  - **LOH / homozygous-deletion bars** are placed in the empty band
+    between the ideogram and the copy-number baseline
+    (`loh_position_ratio` now a fraction of that gap), so they no longer
+    overlap the ideogram.
+  - Gene labels **angle automatically (45 deg) when crowded** within a
+    panel and stay horizontal otherwise; overridable via
+    `gene_label_angle`. When no genes are specified, all default
+    oncogenes falling in the plotted window are shown.
+- [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md):
+  new companion plotter that stratifies a locus’s structural variants by
+  read support (`VF`) and stacks one panel per stratum, reconstructing
+  how a focal amplicon is built up wave by wave (top = highest read
+  support = earliest / highest-copy events).
+  - The single highest-`VF` junction is isolated into a **“Max VF”** top
+    panel; the remaining junctions are clustered on `log(VF)` into
+    **“Cluster 1..X”** panels (highest first). Stratification is
+    controlled by `k` / `max_k` / `vf_breaks` / `isolate_founder` /
+    `founder_offscale` / `vf_scale`.
+  - `cn_display = "reconstruct"` (default) rebuilds the major-allele
+    copy number cumulatively per wave — the flat founder baseline
+    subdivides as each stratum’s breakpoints are added, down to the full
+    observed profile; `"actual"` instead shows the observed segments
+    near each stratum’s breakpoints (`cn_near_flank`).
+  - **LOH / homozygous-deletion** segments are reconstructed on the same
+    timeline: each is introduced by the earliest deletion junction
+    spanning it, or shown from the top panel down when no deletion
+    explains it.
+  - Optional exon models (`displayExon` / `cds_gr`) flag intragenic loss
+    such as EGFRvIII; dashed guides mark every reconstructed copy-number
+    transition (`cn_border_lines` / `cn_border_min_step`).
+  - Returns a **patchwork** object (per-junction stratum assignment
+    attached as `attr(p, "strata")`); requires **patchwork**, and
+    `k = "auto"` uses **Ckmeans.1d.dp** when installed.

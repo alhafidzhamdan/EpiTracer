@@ -86,6 +86,13 @@
 #'   the accumulation of rearrangements is visible going down. The current
 #'   stratum is always drawn at full opacity. Set to `0` to show only the current
 #'   stratum's junctions in each panel (default `0.15`).
+#' @param founder_alpha Numeric in `[0, 1]`; opacity at which the founder
+#'   junction (the defining, highest-`VF` event) is re-drawn as a prior in the
+#'   lower panels. Kept higher than `prior_sv_alpha` so the founder stays
+#'   trackable all the way down the reconstruction, while later waves fade more.
+#'   The founder arc is also drawn with a slightly bolder line than the other
+#'   junctions. Has no effect on the founder's own (top) panel, where it is
+#'   always at full opacity (default `0.5`).
 #' @param cn_border_lines Logical (default `TRUE`); draw vertical dashed guide
 #'   lines at the borders of the final (fully reconstructed) copy-number
 #'   segments. Because the panels share the x-axis, the guides line up across the
@@ -151,6 +158,7 @@ plot_sv_reconstruction <- function(sample,
                           cn_near_flank = 1e5,
                           cn_display = c("reconstruct", "actual"),
                           prior_sv_alpha = 0.15,
+                          founder_alpha = 0.5,
                           cn_border_lines = TRUE,
                           cn_border_min_step = NULL,
                           drop_empty_strata = TRUE,
@@ -476,6 +484,7 @@ plot_sv_reconstruction <- function(sample,
   color_minor_cn <- "#3a9387"; color_major_cn <- "#d92a05"
   color_homdel <- "#0077b6"; color_loh <- "#bde0fe"
   cn_size <- 0.9; size_sv_line <- 0.2; size_interchr_line <- 0.3
+  founder_lwd_mult <- 1.6   # founder junction drawn slightly bolder than the rest
   size_gene_label <- 3; size_text <- 8
   curv_intra <- 0.18; curv_inter <- -0.18
 
@@ -782,7 +791,10 @@ plot_sv_reconstruction <- function(sample,
       arc_rows <- list(); seg_rows <- list()
       for (i in seq_len(nrow(svset))) {
         yv <- min(svset$VF[i] / coeff_s, y_cap); col <- svset$colour[i]
-        lwd_seg <- size_sv_line
+        ## the founder junction is drawn with a slightly bolder line so it stays
+        ## legible even where it spans the whole amplicon or is re-drawn faintly.
+        fmul <- if (isTRUE(svset$is_founder[i])) founder_lwd_mult else 1
+        lwd_seg <- size_sv_line * fmul
         in1 <- !is.na(svset$l1[i]); in2 <- !is.na(svset$l2[i])
         gx1 <- if (in1) gx_of(svset$l1[i], svset$pos1[i]) else NA
         gx2 <- if (in2) gx_of(svset$l2[i], svset$pos2[i]) else NA
@@ -794,7 +806,7 @@ plot_sv_reconstruction <- function(sample,
           } else curv_inter
           arc_rows[[length(arc_rows) + 1L]] <- data.frame(x = gx1, xend = gx2, y = yv, yend = yv,
             curvature = cv, colour = col,
-            lwd = if (same) size_sv_line else size_interchr_line)
+            lwd = (if (same) size_sv_line else size_interchr_line) * fmul)
           seg_rows[[length(seg_rows) + 1L]] <- data.frame(x = gx1, xend = gx1, y = 0, yend = yv, colour = col, lwd = lwd_seg)
           seg_rows[[length(seg_rows) + 1L]] <- data.frame(x = gx2, xend = gx2, y = 0, yend = yv, colour = col, lwd = lwd_seg)
         } else {
@@ -822,10 +834,15 @@ plot_sv_reconstruction <- function(sample,
       }
       p
     }
-    if (prior_sv_alpha > 0) {
-      prior <- sv[sv$stratum < s, , drop = FALSE]
-      p <- add_sv_layer(p, prior, alpha = prior_sv_alpha)
-    }
+    ## Prior (already-placed) junctions are faded, but the founder is held at a
+    ## higher opacity so it can still be followed all the way down the panels.
+    prior <- sv[sv$stratum < s, , drop = FALSE]
+    prior_founder <- prior[prior$is_founder, , drop = FALSE]
+    prior_rest    <- prior[!prior$is_founder, , drop = FALSE]
+    if (prior_sv_alpha > 0 && nrow(prior_rest) > 0)
+      p <- add_sv_layer(p, prior_rest, alpha = prior_sv_alpha)
+    if (nrow(prior_founder) > 0)
+      p <- add_sv_layer(p, prior_founder, alpha = max(prior_sv_alpha, founder_alpha))
     p <- add_sv_layer(p, sv_s, alpha = 1)
     p <- p + scale_colour_identity()
 

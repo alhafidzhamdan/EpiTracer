@@ -34,6 +34,7 @@ plot_sv_reconstruction(
   cn_near_flank = 1e+05,
   cn_display = c("reconstruct", "actual"),
   prior_sv_alpha = 0.15,
+  founder_alpha = 0.5,
   cn_border_lines = TRUE,
   cn_border_min_step = NULL,
   drop_empty_strata = TRUE,
@@ -204,6 +205,14 @@ earlier (higher-\code{VF}) strata are re-drawn faintly in each lower panel, so
 the accumulation of rearrangements is visible going down. The current
 stratum is always drawn at full opacity. Set to \code{0} to show only the current
 stratum's junctions in each panel (default \code{0.15}).}
+
+\item{founder_alpha}{Numeric in \verb{[0, 1]}; opacity at which the founder
+junction (the defining, highest-\code{VF} event) is re-drawn as a prior in the
+lower panels. Kept higher than \code{prior_sv_alpha} so the founder stays
+trackable all the way down the reconstruction, while later waves fade more.
+The founder arc is also drawn with a slightly bolder line than the other
+junctions. Has no effect on the founder's own (top) panel, where it is
+always at full opacity (default \code{0.5}).}
 
 \item{cn_border_lines}{Logical (default \code{TRUE}); draw vertical dashed guide
 lines at the borders of the final (fully reconstructed) copy-number

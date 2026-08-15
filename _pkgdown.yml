@@ -36,8 +36,13 @@ reference:
       - ex_recon_inputs
 
 articles:
-  - title: Articles
+  - title: Get started
     navbar: ~
     contents:
       - epitracer
+  - title: Guides
+    navbar: ~
+    contents:
+      - calling
+      - plotting
       - reconstruction

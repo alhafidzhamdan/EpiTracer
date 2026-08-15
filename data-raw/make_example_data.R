@@ -153,17 +153,20 @@ recon_cnv <- data.frame(
   minorAlleleCopyNumber = 1L
 )
 
-## ~250 junctions across the amplicon: svclass mix and VF distribution mirrored
+## The founder DUP is the circularisation junction: its breakpoints ARE the
+## amplicon (episome) boundaries, and every later, internal rearrangement is
+## bounded within it.
 .nj  <- 250
 .cls <- sample(c("DEL", "DUP", "h2hINV", "t2tINV"), .nj, replace = TRUE,
                prob = c(0.216, 0.216, 0.286, 0.282))
+## internal junctions: both breakends strictly inside the founder DUP [.a0, .a1]
 .p1  <- round(runif(.nj, .a0, .a1))
 .p2  <- round(pmin(.a1, .p1 + runif(.nj, 5e3, 400e3)))
 .s1  <- c(DEL = "+", DUP = "-", h2hINV = "+", t2tINV = "-")[.cls]
 .s2  <- c(DEL = "-", DUP = "+", h2hINV = "+", t2tINV = "-")[.cls]
 .vf  <- as.integer(round(pmax(4, pmin(80, rlnorm(.nj, log(45), 0.42)))))
-## founder junction: highest read support, spanning the amplicon (circularisation)
-.cls[1] <- "DUP"; .p1[1] <- 57.45e6; .p2[1] <- 59.55e6
+## founder junction: highest read support, spanning the whole amplicon
+.cls[1] <- "DUP"; .p1[1] <- .a0; .p2[1] <- .a1
 .s1[1] <- "-"; .s2[1] <- "+"; .vf[1] <- 496L
 
 recon_sv <- data.frame(

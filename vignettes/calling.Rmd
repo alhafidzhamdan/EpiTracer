@@ -55,7 +55,7 @@ the caller is built for.
 
 AmpliconArchitect is optional. Pass `ecdna_gr = NULL` and EpiTracer detects the
 focal-amplicon seeds directly from the copy-number segments (via
-[`detect_amplicon_seeds()`]), so it can run from SV + CN alone:
+`detect_amplicon_seeds()`), so it can run from SV + CN alone:
 
 ```{r aa-free}
 res2 <- call_episomal_ecdna(

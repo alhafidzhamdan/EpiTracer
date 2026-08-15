@@ -57,7 +57,7 @@ is built for.
 AmpliconArchitect is optional. Pass `ecdna_gr = NULL` and EpiTracer
 detects the focal-amplicon seeds directly from the copy-number segments
 (via
-\[[`detect_amplicon_seeds()`](https://alhafidzhamdan.github.io/EpiTracer/reference/detect_amplicon_seeds.md)\]),
+[`detect_amplicon_seeds()`](https://alhafidzhamdan.github.io/EpiTracer/reference/detect_amplicon_seeds.md)),
 so it can run from SV + CN alone:
 
 ``` r

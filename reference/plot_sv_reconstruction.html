@@ -91,6 +91,7 @@ decomposition of amplicon evolution.</p>
 <span>  cn_near_flank <span class="op">=</span> <span class="fl">1e+05</span>,</span>
 <span>  cn_display <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"reconstruct"</span>, <span class="st">"actual"</span><span class="op">)</span>,</span>
 <span>  prior_sv_alpha <span class="op">=</span> <span class="fl">0.15</span>,</span>
+<span>  founder_alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  cn_border_lines <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cn_border_min_step <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  drop_empty_strata <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -322,6 +323,16 @@ earlier (higher-<code>VF</code>) strata are re-drawn faintly in each lower panel
 the accumulation of rearrangements is visible going down. The current
 stratum is always drawn at full opacity. Set to <code>0</code> to show only the current
 stratum's junctions in each panel (default <code>0.15</code>).</p></dd>
+
+
+<dt id="arg-founder-alpha">founder_alpha<a class="anchor" aria-label="anchor" href="#arg-founder-alpha"></a></dt>
+<dd><p>Numeric in <code>[0, 1]</code>; opacity at which the founder
+junction (the defining, highest-<code>VF</code> event) is re-drawn as a prior in the
+lower panels. Kept higher than <code>prior_sv_alpha</code> so the founder stays
+trackable all the way down the reconstruction, while later waves fade more.
+The founder arc is also drawn with a slightly bolder line than the other
+junctions. Has no effect on the founder's own (top) panel, where it is
+always at full opacity (default <code>0.5</code>).</p></dd>
 
 
 <dt id="arg-cn-border-lines">cn_border_lines<a class="anchor" aria-label="anchor" href="#arg-cn-border-lines"></a></dt>

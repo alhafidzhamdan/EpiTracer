@@ -135,7 +135,9 @@ run_benchmark <- function(data_root, flip_dup_del = FALSE) {
   epi <- summarise_calls(all_calls)
 
   ## --- SILVER: AmpliconClassifier labels (consolidated file, or per-sample) ---
-  ac_file <- list.files(data_root, pattern = "_amplicon_classification_profiles\\.tsv$",
+  ## scope to this project's tree (the parent of samples_root) so a stray
+  ## classification file from another extracted archive is not picked up.
+  ac_file <- list.files(dirname(samples_root), pattern = "_amplicon_classification_profiles\\.tsv$",
                         full.names = TRUE, recursive = TRUE)
   if (length(ac_file)) {
     ac <- as.data.table(read_ac_profiles(ac_file[1]))

@@ -97,30 +97,44 @@ Rscript validation/cell_line_benchmark.R selftest          # parser + caller smo
 Rscript validation/cell_line_benchmark.R /path/to/aa_data  # real benchmark -> output/cell_line_*.tsv
 ```
 
-**Two things to verify on first real run (documented in `aa_to_epitracer.R`):**
+**Two subtleties the adapter handles (both found while running real data):**
 
-1. **Strand convention.** EpiTracer keys on a boundary `DUP`. The AA vertex
-   strand → SV-type map is set for the common convention; confirm on a positive
-   control (COLO320DM MYC boundary must come out `DUP`). If it comes out `DEL`,
-   append `flip` to the command — a one-line switch.
-2. **Genome-wide copy number.** The episome heuristic requires the segments
-   *flanking* the amplicon to be diploid, but an AA amplicon graph often contains
-   only the amplified core. Supply genome-wide CN (the CNVkit `*_CNV_CALLS.bed`,
-   auto-detected in each sample folder) so the flank test is well-defined;
-   otherwise the AA sequence edges are used as a fallback.
+1. **SV convention must be read position-sorted.** EpiTracer keys on a boundary
+   `DUP`. AA lists a discordant edge's two vertices in *either* order, so the SV
+   type must be taken from the strands ordered by coordinate, not the raw listing
+   order — `(lower −, higher +)` = DUP (circularisation), `(lower +, higher −)` =
+   DEL. Verified on GBM39, whose amplicon-spanning circularisation junction is
+   written in opposite orders in the hg19 vs hg38 builds yet resolves to DUP in
+   both. `flip` on the command line is an escape hatch if a future AA build differs.
+2. **Flank test uses the local chromosomal baseline, not global ploidy.** The
+   episome heuristic needs the flanks to be non-focally-gained. Cancer
+   chromosomes are often polysomic (chr7 in GBM is the textbook case), so a
+   genome-wide ploidy of 2 wrongly flags a trisomic flank as "gained". With the
+   genome-wide CNVkit `*_CNV_CALLS.bed` (auto-detected per sample), the adapter
+   sets each segment's baseline to the per-chromosome median CN, so the flank test
+   is calibrated to the local baseline. Without a CNV bed, the AA sequence edges
+   are used as a fallback (flanks then unreliable).
+
+**Positive control — GBM39 (canonical EGFR ecDNA).** Run on the hg38
+AmpliconSuite output (which ships a CNVkit bed), GBM39's EGFR amplicon is called
+**episomal**: an amplicon-spanning circularisation DUP carrying the highest read
+support, with flanks at the chr7 (polysomic) baseline. It is *not* callable from
+the AA graph alone — chr7's trisomy defeats a global-diploid flank test — which
+is exactly why the two fixes above matter.
 
 **Result (329 CCLE lines, AmpliconRepository, run 2026-08-16).** EpiTracer
-processed 798 amplicons across 237 lines and called **13 episomal**. Every one
+processed 799 amplicons across 238 lines and called **11 episomal**. Every one
 falls in an AmpliconClassifier **Cyclic** (ecDNA) amplicon — **0 of 516**
 non-cyclic amplicons (Linear / Complex-non-cyclic / No-FSCNA) were called
-episomal (100% specificity against the AC class). Within the 282 Cyclic
-amplicons, EpiTracer isolates 13 (~4.6%) as *simple episomes* — the
-mechanism sub-classification AmpliconClassifier does not make — at canonical
-ecDNA oncogenes (MYC in NCI-H2170/NCI-H1792/COR-L279, FGFR2 in KATO III, MYCN
-in NCI-H526). See `output/cell_line_benchmark.png`. (`excision_scar` is `FALSE`
-throughout: the scar deletion sits in diploid flanks that the AA amplicon graph
-does not include — recoverable only with genome-wide SV calls, e.g. PURPLE.)
-~25 of ~1,116 amplicons (2%) are skipped on degenerate single-region graphs.
+episomal (**100% specificity** against the AC class). Within the 283 Cyclic
+amplicons, EpiTracer isolates 11 (~3.9%) as *simple episomes* — the mechanism
+sub-classification AmpliconClassifier does not make — at canonical ecDNA
+oncogenes (MYC in NCI-H2170 [VF 1532] / NCI-H1792 / COR-L279, FGFR2 in KATO III,
+MYCN in NCI-H526). See `output/cell_line_benchmark.png`. (`excision_scar` is
+`FALSE` throughout: the scar deletion sits in the flank, which the AA amplicon
+graph does not include — recoverable only with genome-wide SV calls, e.g.
+PURPLE.) ~24 of ~1,140 amplicons (2%) are skipped on degenerate single-region
+graphs.
 
 A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
 in `cell_line_case_study.R`.

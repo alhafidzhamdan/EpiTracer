@@ -129,10 +129,13 @@ aa_to_epitracer_inputs <- function(graph_path, cycles_path, sample_id,
   ## copy-number segments — prefer genome-wide CN when supplied
   if (!is.null(cnv_bed)) {
     bed <- utils::read.delim(cnv_bed, header = FALSE, stringsAsFactors = FALSE)
+    ## AmpliconSuite CNVkit calls are "chr start end CNVkit <copyNumber>"; a plain
+    ## 4-column bed is "chr start end <copyNumber>". Copy number is the last column.
+    cn <- as.numeric(bed[[ncol(bed)]])
     cnv_gr <- GRanges(bed[[1]], IRanges(pmax(1, as.numeric(bed[[2]])), as.numeric(bed[[3]])),
                       sample = sample_id,
-                      copyNumber = as.numeric(bed[[4]]), ploidy = 2,
-                      majorAlleleCopyNumber = as.numeric(bed[[4]]), minorAlleleCopyNumber = 0)
+                      copyNumber = cn, ploidy = 2,
+                      majorAlleleCopyNumber = cn, minorAlleleCopyNumber = 0)
   } else {
     seg <- g$segments
     cnv_gr <- GRanges(seg$chr, IRanges(pmax(1, seg$start), seg$end),
@@ -163,7 +166,13 @@ aa_to_epitracer_inputs <- function(graph_path, cycles_path, sample_id,
                               PURPLE_CN = rows$PURPLE_CN, insLen = rows$insLen,
                               HOMLEN = rows$HOMLEN)
   } else {
-    breakpoints_gr <- GRanges()
+    ## typed-empty: carry the required mcols so the caller's column check passes
+    ## (an amplicon with no qualifying SV simply cannot be episomal).
+    breakpoints_gr <- GRanges(seqnames = character(0), ranges = IRanges(integer(0), integer(0)))
+    S4Vectors::mcols(breakpoints_gr) <- S4Vectors::DataFrame(
+      WGS_ID = character(0), event = character(0), svclass = character(0),
+      PURPLE_AF = numeric(0), PURPLE_JCN = numeric(0), VF = numeric(0),
+      PURPLE_CN = numeric(0), insLen = numeric(0), HOMLEN = numeric(0))
   }
 
   ## amplicon footprint (falls back to the CN segment extent if no intervals)

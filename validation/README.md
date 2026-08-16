@@ -109,6 +109,19 @@ Rscript validation/cell_line_benchmark.R /path/to/aa_data  # real benchmark -> o
    auto-detected in each sample folder) so the flank test is well-defined;
    otherwise the AA sequence edges are used as a fallback.
 
+**Result (329 CCLE lines, AmpliconRepository, run 2026-08-16).** EpiTracer
+processed 798 amplicons across 237 lines and called **13 episomal**. Every one
+falls in an AmpliconClassifier **Cyclic** (ecDNA) amplicon — **0 of 516**
+non-cyclic amplicons (Linear / Complex-non-cyclic / No-FSCNA) were called
+episomal (100% specificity against the AC class). Within the 282 Cyclic
+amplicons, EpiTracer isolates 13 (~4.6%) as *simple episomes* — the
+mechanism sub-classification AmpliconClassifier does not make — at canonical
+ecDNA oncogenes (MYC in NCI-H2170/NCI-H1792/COR-L279, FGFR2 in KATO III, MYCN
+in NCI-H526). See `output/cell_line_benchmark.png`. (`excision_scar` is `FALSE`
+throughout: the scar deletion sits in diploid flanks that the AA amplicon graph
+does not include — recoverable only with genome-wide SV calls, e.g. PURPLE.)
+~25 of ~1,116 amplicons (2%) are skipped on degenerate single-region graphs.
+
 A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
 in `cell_line_case_study.R`.
 

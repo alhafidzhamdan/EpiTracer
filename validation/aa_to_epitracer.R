@@ -29,18 +29,25 @@ suppressPackageStartupMessages({
 ## because EpiTracer keys on a boundary `svclass == "DUP"` carrying the highest
 ## read support. AA's vertex orientations map to SV type as below.
 ##
-## IMPORTANT — confirm this on a positive control before trusting the numbers.
-## Run the benchmark with `selftest`, then on a known ecDNA line (e.g. COLO320DM,
-## MYC): the highest-read-support junction spanning the amplicon boundary must
-## come out as "DUP". If it comes out "DEL", your AA build uses the opposite
-## convention — set `flip_dup_del = TRUE` in aa_to_epitracer_inputs() (a one-line
-## switch) and re-run. This is the only convention-dependent step.
-aa_svclass <- function(chr1, s1, chr2, s2, flip_dup_del = FALSE) {
+## Convention derived from AA's own vertex semantics: in a `sequence` edge a
+## segment is written `chr:left-  chr:right+`, so `-` marks a segment's LEFT
+## (5') end and `+` its RIGHT (3') end. AA lists a discordant edge's two vertices
+## in EITHER order, so the SV type must be read from the strands ORDERED BY
+## POSITION, not from the raw listing order (the same junction can appear as
+## `A- -> B+` or `B+ -> A-`). Ordered by position:
+##   (lower `-`, higher `+`)  = head-to-tail duplication / circularisation (DUP)
+##   (lower `+`, higher `-`)  = deletion / excision scar (DEL)
+##   (`+`,`+`) / (`-`,`-`)    = inversions
+## Verified on GBM39 (canonical simple EGFR ecDNA), whose amplicon-spanning
+## circularisation junction resolves to DUP in both the hg19 and hg38 builds
+## despite opposite vertex ordering. `flip_dup_del = TRUE` swaps DUP/DEL as an
+## escape hatch if a future AA build differs — check a positive control first.
+aa_svclass <- function(chr1, pos1, s1, chr2, pos2, s2, flip_dup_del = FALSE) {
   if (!identical(chr1, chr2)) return("TRA")
-  key <- paste0(s1, s2)
-  cls <- switch(key,
-    "-+" = "DUP",     # head-to-tail: tandem dup / circularisation junction
-    "+-" = "DEL",     # head-to-head-of-next: deletion / excision scar
+  if (pos1 <= pos2) { sl <- s1; sh <- s2 } else { sl <- s2; sh <- s1 }
+  cls <- switch(paste0(sl, sh),
+    "-+" = "DUP",     # lower left-end -> higher right-end: tandem dup / circularisation
+    "+-" = "DEL",     # lower right-end -> higher left-end: deletion / excision scar
     "++" = "h2hINV",
     "--" = "t2tINV",
     "BND")
@@ -131,10 +138,26 @@ aa_to_epitracer_inputs <- function(graph_path, cycles_path, sample_id,
     bed <- utils::read.delim(cnv_bed, header = FALSE, stringsAsFactors = FALSE)
     ## AmpliconSuite CNVkit calls are "chr start end CNVkit <copyNumber>"; a plain
     ## 4-column bed is "chr start end <copyNumber>". Copy number is the last column.
+    chrom <- as.character(bed[[1]])
     cn <- as.numeric(bed[[ncol(bed)]])
-    cnv_gr <- GRanges(bed[[1]], IRanges(pmax(1, as.numeric(bed[[2]])), as.numeric(bed[[3]])),
+    st <- as.numeric(bed[[2]]); en <- as.numeric(bed[[3]])
+    ## Calibrate the "flank not gained" test to the LOCAL chromosomal baseline,
+    ## not global ploidy: cancer chromosomes are often polysomic (e.g. chr7 in
+    ## GBM), so a genome-wide ploidy of 2 wrongly flags a trisomic flank as
+    ## "gained" and misses episomes excised from a gained chromosome. Per
+    ## chromosome, ploidy = width-weighted median CN of its non-focally-amplified
+    ## segments (CN < 6); the caller's flank test reads this per-segment column.
+    wmed <- function(v, w) { o <- order(v); v[o][which(cumsum(w[o])/sum(w) >= 0.5)[1]] }
+    ploidy_vec <- rep(2, length(cn))
+    ok <- is.finite(cn) & is.finite(st) & is.finite(en) & en > st
+    for (ch in unique(chrom[ok])) {
+      idx <- which(ok & chrom == ch)
+      base_idx <- idx[cn[idx] < 6]; if (!length(base_idx)) base_idx <- idx
+      ploidy_vec[chrom == ch] <- max(2, round(wmed(cn[base_idx], en[base_idx] - st[base_idx])))
+    }
+    cnv_gr <- GRanges(bed[[1]], IRanges(pmax(1, st), en),
                       sample = sample_id,
-                      copyNumber = cn, ploidy = 2,
+                      copyNumber = cn, ploidy = ploidy_vec,
                       majorAlleleCopyNumber = cn, minorAlleleCopyNumber = 0)
   } else {
     seg <- g$segments
@@ -149,7 +172,8 @@ aa_to_epitracer_inputs <- function(graph_path, cycles_path, sample_id,
   b <- b[b$type == "discordant" & b$n_reads >= min_break_reads, , drop = FALSE]
   if (nrow(b)) {
     b$svclass <- vapply(seq_len(nrow(b)), function(i)
-      aa_svclass(b$chr1[i], b$strand1[i], b$chr2[i], b$strand2[i], flip_dup_del),
+      aa_svclass(b$chr1[i], b$pos1[i], b$strand1[i],
+                 b$chr2[i], b$pos2[i], b$strand2[i], flip_dup_del),
       character(1))
     b$event <- paste0(b$svclass, seq_len(nrow(b)))
     mk <- function(chr, pos, row) data.frame(

@@ -42,10 +42,12 @@ oncogenes_gr <- GRanges(
 
 ## --- run EpiTracer on one AA amplicon folder --------------------------------
 call_one_sample <- function(sample_dir, sample_id, flip_dup_del = FALSE) {
-  gpaths <- list.files(sample_dir, pattern = "_graph\\.txt$", full.names = TRUE)
+  ## recursive: AmpliconRepository puts graphs in <sample>_reconstruction_results/
+  gpaths <- list.files(sample_dir, pattern = "_amplicon[0-9]+_graph\\.txt$",
+                       full.names = TRUE, recursive = TRUE)
   ## genome-wide CN (recommended) — AmpliconSuite CNVkit calls, if present
-  cnv_bed <- list.files(sample_dir, pattern = "(CNV_CALLS|CNV_SEEDS|\\.cnv)\\.bed$",
-                        full.names = TRUE)
+  cnv_bed <- list.files(sample_dir, pattern = "(CNV_CALLS|\\.cnv)\\.bed$",
+                        full.names = TRUE, recursive = TRUE)
   cnv_bed <- if (length(cnv_bed)) cnv_bed[1] else NULL
   out <- lapply(gpaths, function(gp) {
     cp <- sub("_graph\\.txt$", "_cycles.txt", gp)
@@ -116,8 +118,12 @@ run_selftest <- function() {
 ## ===========================================================================
 run_benchmark <- function(data_root, flip_dup_del = FALSE) {
   panel <- fread("validation/cell_line_panel.tsv")
-  sample_dirs <- list.dirs(data_root, recursive = FALSE)
-  if (!length(sample_dirs)) stop("no sample sub-folders under ", data_root)
+  ## AmpliconRepository archives extract to results/samples/<SAMPLE>/ — use that
+  ## if present, otherwise treat each immediate sub-folder as a sample.
+  samples_root <- if (dir.exists(file.path(data_root, "results", "samples")))
+    file.path(data_root, "results", "samples") else data_root
+  sample_dirs <- list.dirs(samples_root, recursive = FALSE)
+  if (!length(sample_dirs)) stop("no sample sub-folders under ", samples_root)
   message("Found ", length(sample_dirs), " sample folders.")
 
   ## --- run EpiTracer on every sample ---
@@ -128,14 +134,15 @@ run_benchmark <- function(data_root, flip_dup_del = FALSE) {
   }), fill = TRUE)
   epi <- summarise_calls(all_calls)
 
-  ## --- SILVER: AmpliconClassifier labels ---
-  ac <- rbindlist(lapply(sample_dirs, function(sd) {
-    f <- list.files(sd, pattern = "_amplicon_classification_profiles\\.tsv$", full.names = TRUE)
-    if (!length(f)) return(NULL)
-    d <- as.data.table(read_ac_profiles(f[1]))
-    d[, WGS_ID := basename(sd)]
-    d
-  }), fill = TRUE)
+  ## --- SILVER: AmpliconClassifier labels (consolidated file, or per-sample) ---
+  ac_file <- list.files(data_root, pattern = "_amplicon_classification_profiles\\.tsv$",
+                        full.names = TRUE, recursive = TRUE)
+  if (length(ac_file)) {
+    ac <- as.data.table(read_ac_profiles(ac_file[1]))
+    if ("sample_name" %in% names(ac)) ac[, WGS_ID := sample_name]
+  } else {
+    ac <- data.table()
+  }
 
   dir.create("validation/output", showWarnings = FALSE, recursive = TRUE)
   fwrite(epi, "validation/output/cell_line_episomal_calls.tsv", sep = "\t")

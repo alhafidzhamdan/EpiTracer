@@ -31,6 +31,16 @@ gr2dt <- function(x) {
 #' @keywords internal
 #' @importFrom GenomicRanges makeGRangesFromDataFrame
 to_granges <- function(x) {
-  GenomicRanges::makeGRangesFromDataFrame(as.data.frame(x),
-                                          keep.extra.columns = TRUE)
+  x <- as.data.frame(x)
+  ## makeGRangesFromDataFrame() errors on a 0-row table; return an empty GRanges
+  ## that still carries the metadata columns, so callers can keep piping/selecting
+  ## (e.g. an amplicon with no in-region breakpoints classifies as not-episomal
+  ## rather than crashing the run).
+  if (nrow(x) == 0L) {
+    gr <- GenomicRanges::GRanges()
+    extra <- setdiff(names(x), c("seqnames", "start", "end", "width", "strand"))
+    if (length(extra)) S4Vectors::mcols(gr) <- S4Vectors::DataFrame(x[, extra, drop = FALSE])
+    return(gr)
+  }
+  GenomicRanges::makeGRangesFromDataFrame(x, keep.extra.columns = TRUE)
 }

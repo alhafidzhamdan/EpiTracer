@@ -1,0 +1,12 @@
+cell_line	ccle_name	in_ccle	oncogene	ecdna_status	amplicon_mechanism	assay	confidence	source
+COLO320DM	COLO320_LARGE_INTESTINE	yes	MYC	positive	ecDNA (double minutes)	metaphase FISH	high	Wu et al. 2019 Nature; Hung et al. 2021 Nature
+COLO320HSR	NA	no	MYC	negative	HSR (chromosomal, same amplicon integrated)	metaphase FISH	high	Wu et al. 2019 Nature (matched HSR counterpart of COLO320DM)
+SNU16	SNU16_STOMACH	yes	MYC	positive	ecDNA	metaphase FISH	high	Turner et al. 2017 Nature; Kim et al. 2020 Nat Genet
+SNU16	SNU16_STOMACH	yes	FGFR2	positive	ecDNA	metaphase FISH	high	Turner et al. 2017 Nature
+PC3	PC3_PROSTATE	yes	MYC	positive	ecDNA	metaphase FISH	high	Turner et al. 2017 Nature
+GBM39	NA	no	EGFR	positive	ecDNA (EGFRvIII)	metaphase FISH	high	Turner et al. 2017 Nature; deCarvalho et al. 2018 Nat Genet
+Kelly	KELLY_AUTONOMIC_GANGLIA	yes	MYCN	positive	ecDNA	metaphase FISH	medium	Koche et al. 2020 Nat Genet
+NGP	NGP_AUTONOMIC_GANGLIA	yes	MYCN	positive	ecDNA (double minutes)	metaphase FISH	medium	Koche et al. 2020 Nat Genet; Storlazzi et al. 2010
+CHP212	CHP212_AUTONOMIC_GANGLIA	yes	MYCN	positive	ecDNA	metaphase FISH	medium	Koche et al. 2020 Nat Genet
+IMR32	IMR32_AUTONOMIC_GANGLIA	yes	MYCN	negative	HSR (chromosomal)	metaphase FISH	medium	Storlazzi et al. 2010 (predominantly HSR); use as HSR negative
+HeLa	HELA_CERVIX	yes	NA	negative	no focal ecDNA amplicon	karyotype / AmpliconClassifier	medium	Kim et al. 2020 Nat Genet (no ecDNA call)

@@ -60,14 +60,57 @@ manuscript's availability / implementation note.
 Rscript validation/runtime_scaling.R     # -> output/{scaling.csv, scaling.pdf}
 ```
 
-## 2. Known-ecDNA cell lines — `cell_line_case_study.R`
+## 2. Public known-ecDNA cell-line benchmark — `cell_line_benchmark.R`
 
-Ground-truth **case study** on cell lines whose ecDNA status at a focal oncogene
-is established orthogonally (FISH / metaphase imaging / AmpliconArchitect):
-EGFR (e.g. GBM39), MYCN (e.g. IMR-32, Kelly), MYC (e.g. COLO320-DM). Confirms
-EpiTracer flags the episomal lines and reconstructs the circle, and correctly
-does **not** call chromothriptic-hub ecDNA episomal. A **template** — edit the
-input paths to your processed cell-line PURPLE + AmpliconArchitect output.
+Runs EpiTracer directly on **public** AmpliconArchitect (AA) reconstructions and
+scores it against orthogonal ground truth — no in-house data, fully
+reproducible by a reviewer. This is the head-to-head-with-an-existing-tool
+evidence the journal expects.
+
+**Files**
+
+| File | Role |
+| :--- | :--- |
+| `aa_to_epitracer.R` | Adapter: AA `_graph.txt` (sequence edges → CN; discordant edges → SV breakpoints with read support) + `_cycles.txt` intervals → EpiTracer's GRanges inputs. Also reads AmpliconClassifier profiles. |
+| `cell_line_panel.tsv` | FISH-validated ground-truth panel (cell line → ecDNA status, oncogene, assay, citation), incl. the matched **COLO320DM (ecDNA⁺) / COLO320HSR (ecDNA⁻)** pair. |
+| `cell_line_benchmark.R` | Driver: builds inputs, runs `call_episomal_ecdna()`, scores gold + silver. |
+| `fixtures/COLO320DM/` | A synthetic AA-format amplicon used by the self-test. |
+
+**Two evidence tiers**
+
+- **GOLD** — the FISH panel. Does EpiTracer detect the amplicon on ecDNA⁺ lines,
+  and does it correctly **not** flag episomal on ecDNA⁻ (HSR / no-amplicon) lines?
+- **SILVER** — AmpliconClassifier's own `ecDNA+` / `BFB+` call on every downloaded
+  amplicon (large, objective, no manual labels). Detection concordance at scale,
+  plus the **episomal fraction among AC-called ecDNA** — the mechanistic layer AC
+  does not provide.
+
+**Getting the public data.** AA + AmpliconClassifier results for **329 CCLE cell
+lines** are hosted on [AmpliconRepository](https://ampliconrepository.org)
+(CC-BY-4.0), downloadable via its command-line API. Place one sub-folder per cell
+line under a data root, each containing the AA `*_graph.txt` / `*_cycles.txt` and
+the `*_amplicon_classification_profiles.tsv`. Optionally include the AmpliconSuite
+CNVkit `*_CNV_CALLS.bed` (see caveat below).
+
+```sh
+Rscript validation/cell_line_benchmark.R selftest          # parser + caller smoke test (no download; must print PASS)
+Rscript validation/cell_line_benchmark.R /path/to/aa_data  # real benchmark -> output/cell_line_*.tsv
+```
+
+**Two things to verify on first real run (documented in `aa_to_epitracer.R`):**
+
+1. **Strand convention.** EpiTracer keys on a boundary `DUP`. The AA vertex
+   strand → SV-type map is set for the common convention; confirm on a positive
+   control (COLO320DM MYC boundary must come out `DUP`). If it comes out `DEL`,
+   append `flip` to the command — a one-line switch.
+2. **Genome-wide copy number.** The episome heuristic requires the segments
+   *flanking* the amplicon to be diploid, but an AA amplicon graph often contains
+   only the amplified core. Supply genome-wide CN (the CNVkit `*_CNV_CALLS.bed`,
+   auto-detected in each sample folder) so the flank test is well-defined;
+   otherwise the AA sequence edges are used as a fallback.
+
+A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
+in `cell_line_case_study.R`.
 
 ## 3. In-house WGS cohort (script to add)
 

@@ -161,9 +161,13 @@ classifies **each major amplified locus** by mechanism from the AA graph:
   junctions are **not** a thicket (≤ 3 competing high-copy junctions); and no
   inter-locus TRA exceeds the boundary DUP. (Size is not a criterion — episomes
   range from ~0.2 Mb to > 20 Mb.)
-- **BFB** — fold-back inversions + oscillating copy number.
-- **chimeric-translocation** — the locus is joined by a dominant inter-chromosomal
-  junction (a backbone TRA), not a self-ligating circle.
+- **BFB** — fold-back inversions (breakage-fusion-bridge), no amplified translocation.
+- **translocation-bridge** — an amplified inter-chromosomal translocation forms a
+  dicentric bridge that amplifies, with few fold-backs (Lee et al., *Nature* 2023;
+  the ERBB2/CCND1 breast-cancer mechanism — e.g. AU565 chr17/ERBB2, BT20 chr7/EGFR).
+- **LTA** (loss-translocation-amplification) — an amplified translocation **plus**
+  fold-back inversions (BFB cycles); the `arm_loss` column flags the sub-baseline
+  loss on the amplicon chromosome (Espejo Valle-Inclán et al., *Cell* 2024).
 - **complex** — none of the above (no clean boundary DUP, or too many junctions).
 
 Inter-locus TRAs *below* the per-locus boundary DUPs are read as episome fusion
@@ -172,8 +176,8 @@ Inter-locus TRAs *below* the per-locus boundary DUPs are read as episome fusion
 Calibrated against expert ground truth (5637 chr3+chr6 episomal; KATO III chr3
 episomal / chr10 BFB; NCI-H2170 chr17 episomal / chr8 chimeric; NCI-H526 none).
 Across the 329 CCLE lines: of **633 major amplified loci**, only **17 (2.7%) in
-16 lines are simple episomes** (7 fused) — MYC, CCND2, PDGFRA among them — vs 111
-BFB, 104 chimeric-translocation and 401 complex. See
+16 lines are simple episomes** (7 fused) — MYC, CCND2, PDGFRA among them — vs 132
+translocation-bridge, 34 LTA, 97 BFB and 353 complex. See
 `output/{cell_line_loci.tsv, ccle_locus_mechanisms.png, ccle_episomal_loci_montage.png}`.
 
 ```sh

@@ -13,7 +13,15 @@
 ##      (fold-back) junctions, and
 ##   4. no inter-chromosomal (TRA) junction reaches the boundary DUP's copy
 ##      number (a dominant TRA = translocation-formed, not a circle).
-## Otherwise it is tagged `BFB`, `chimeric-translocation`, or `complex`.
+## Otherwise it is tagged by mechanism:
+##   BFB                  - fold-back inversions, no amplified translocation.
+##   translocation-bridge - an amplified inter-chromosomal translocation makes a
+##                          dicentric bridge that amplifies, few fold-backs
+##                          (Lee et al., Nature 2023).
+##   LTA                  - an amplified translocation PLUS fold-backs (BFB cycles);
+##                          `arm_loss` flags the sub-baseline loss on the amplicon
+##                          chromosome (Espejo Valle-Inclan et al., Cell 2024).
+##   complex              - none of the above (no clean boundary DUP / too many junctions).
 ## Inter-locus TRAs BELOW the per-locus boundary DUPs are episome fusion: the
 ## episomal loci of such an amplicon are flagged `fused = TRUE` (e.g. 5637).
 ##
@@ -27,7 +35,8 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
                           boundary_tol_frac = 0.05, foldback_dist = 5e4, foldback_min = 3L,
                           gain_mult = 1.4, min_break_reads = 5,
                           min_bdup_cn = 2, complexity_max = 3L, hi_junc_frac = 0.25,
-                          centromeres = NULL, centromere_pad = 5e5) {
+                          centromeres = NULL, centromere_pad = 5e5,
+                          tra_frac = 0.25, loss_frac = 0.6, loss_min_width = 1e6) {
   g   <- read_aa_graph(graph_path)
   seg <- g$segments
   br  <- g$breaks[g$breaks$type == "discordant" & g$breaks$n_reads >= min_break_reads, , drop = FALSE]
@@ -90,6 +99,8 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
     ## dominant inter-chromosomal junction touching this chr
     tra <- br[br$svclass == "TRA" & (br$chr1 == ch | br$chr2 == ch), , drop = FALSE]
     max_tra_cn <- if (nrow(tra)) max(tra$edge_cn) else 0
+    substantial_tra <- max_tra_cn >= tra_frac * L["maxcn"]   # an amplified boundary translocation
+    bfb <- fb_near >= foldback_min                            # fold-back inversions = BFB cycles
     ## centromere adjacency: an amplicon abutting the centromere is more likely
     ## pericentromeric/BFB than an excised episome.
     cen_adj <- FALSE
@@ -97,22 +108,32 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
       cc <- centromeres[centromeres$chr == ch, , drop = FALSE]
       if (nrow(cc)) cen_adj <- any(up >= cc$start - centromere_pad & lo <= cc$end + centromere_pad)
     }
+    ## a sizeable sub-baseline (lost) segment on the amplicon's chromosome — the
+    ## "loss" limb of loss-translocation-amplification.
+    armseg <- gw[gw$chr == ch, , drop = FALSE]
+    has_arm_loss <- any(armseg$cn < loss_frac * base & (armseg$end - armseg$start) > loss_min_width)
 
-    mech <- if (is.na(bd_cn)) {
-      if (max_tra_cn >= 0.4 * L["maxcn"]) "chimeric-translocation"
-      else if (fb_near >= foldback_min) "BFB" else "complex"
-    } else if (fb_near >= foldback_min) "BFB"
+    ## Mechanism. Both LTA and translocation-bridge (TB) are driven by an amplified
+    ## inter-chromosomal translocation; they are distinguished by fold-back content
+    ## (LTA proceeds through BFB cycles -> fold-backs; TB's translocation makes the
+    ## dicentric directly -> few fold-backs). See Espejo Valle-Inclan et al. Cell
+    ## 2024 (LTA) and Lee et al. Nature 2023 (TB).
+    mech <- if (bfb && substantial_tra) "LTA"
+    else if (is.na(bd_cn)) {
+      if (substantial_tra) "translocation-bridge"
+      else if (bfb) "BFB" else "complex"
+    } else if (bfb) "BFB"
     else if (n_hi_junc > complexity_max) "complex"       # thicket of junctions, not a clean circle
     else if (!diploid_flanks) "complex"
     else if (cen_adj) "complex"                          # pericentromeric, not a clean episome
-    else if (max_tra_cn > bd_cn) "chimeric-translocation"
+    else if (max_tra_cn > bd_cn) "translocation-bridge"
     else "episomal"
 
     data.frame(sample = sample_id, amplicon = amplicon, chr = ch,
                start = unname(lo), end = unname(up), max_cn = unname(L["maxcn"]),
                baseline = base, boundary_dup_cn = bd_cn, boundary_dup_vf = bd_vf,
                foldbacks = fb_near, n_hi_junc = n_hi_junc, diploid_flanks = diploid_flanks,
-               centromere_adjacent = cen_adj, max_tra_cn = max_tra_cn,
+               centromere_adjacent = cen_adj, max_tra_cn = max_tra_cn, arm_loss = has_arm_loss,
                mechanism = mech, stringsAsFactors = FALSE)
   })
   res <- do.call(rbind, out)

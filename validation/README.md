@@ -146,6 +146,36 @@ NCI-H2170); busier panels carry more internal structure.
 Rscript validation/plot_ccle_episomal.R /path/to/results/samples   # -> output/ccle_episomal_montage.png
 ```
 
+### Per-locus mechanism classification (`classify_loci.R` + `cell_line_loci_benchmark.R`)
+
+The per-amplicon episomal call is too coarse: an AmpliconArchitect amplicon can
+fuse a genuine episome to a BFB or a translocation-driven amplicon (e.g.
+NCI-H2170 co-amplifies a chr17 episome and a chr8 MYC amplicon). `classify_loci.R`
+classifies **each major amplified locus** by mechanism from the AA graph:
+
+- **episomal** — a boundary DUP spans the locus and is its highest-VF DUP, flanks
+  are diploid (vs the per-chromosome baseline), it is **not** BFB (< 3 near-self
+  fold-back inversions), the junctions are **not** a thicket (≤ 3 competing
+  high-copy junctions), and no inter-locus TRA exceeds the boundary DUP.
+- **BFB** — fold-back inversions + oscillating copy number.
+- **chimeric-translocation** — the locus is joined by a dominant inter-chromosomal
+  junction (a backbone TRA), not a self-ligating circle.
+- **complex** — none of the above (no clean boundary DUP, or too many junctions).
+
+Inter-locus TRAs *below* the per-locus boundary DUPs are read as episome fusion
+(the episomal loci are flagged `fused`, e.g. 5637's chr3+chr6 circles).
+
+Calibrated against expert ground truth (5637 chr3+chr6 episomal; KATO III chr3
+episomal / chr10 BFB; NCI-H2170 chr17 episomal / chr8 chimeric; NCI-H526 none).
+Across the 329 CCLE lines: of **633 major amplified loci**, only **18 (2.8%) in
+17 lines are simple episomes** (7 fused) — MYC, CCND2, PDGFRA among them — vs 112
+BFB, 102 chimeric-translocation and 401 complex. See
+`output/{cell_line_loci.tsv, ccle_locus_mechanisms.png}`.
+
+```sh
+Rscript validation/cell_line_loci_benchmark.R /path/to/results/samples   # -> output/cell_line_loci.tsv
+```
+
 A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
 in `cell_line_case_study.R`.
 

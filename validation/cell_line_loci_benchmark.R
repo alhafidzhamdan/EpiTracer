@@ -25,6 +25,15 @@ samples_root <- if (length(args)) args[1] else stop("pass the CCLE results/sampl
 onc <- utils::read.table(system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
                          sep = "\t", col.names = c("chr", "start", "end", "strand", "gene"))
 onc_gr <- GRanges(onc$chr, IRanges(onc$start, onc$end), gene = onc$gene)
+
+## hg38 centromere span per chromosome (from the bundled karyotype's acen bands)
+ki <- readRDS(system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"))
+acen <- ki[ki$gieStain == "acen", ]
+centromeres <- data.frame(
+  chr   = tapply(as.character(acen$seqnames), acen$seqnames, `[`, 1),
+  start = tapply(acen$start, acen$seqnames, min),
+  end   = tapply(acen$end,   acen$seqnames, max), stringsAsFactors = FALSE)
+centromeres <- centromeres[!is.na(centromeres$chr), ]
 label_genes <- function(chr, lo, up) {
   h <- onc[onc$chr == chr & onc$start <= up & onc$end >= lo, "gene"]
   if (length(h)) paste(h, collapse = ",") else ""
@@ -40,7 +49,8 @@ all_loci <- rbindlist(lapply(sample_dirs, function(sd) {
   graphs <- list.files(sd, "_amplicon[0-9]+_graph\\.txt$", full.names = TRUE, recursive = TRUE)
   rbindlist(lapply(graphs, function(g) {
     amp <- sub(".*_(amplicon[0-9]+)_.*", "\\1", basename(g))
-    tryCatch(classify_loci(g, wgs, amp, cnv_bed = cnv), error = function(e) NULL)
+    tryCatch(classify_loci(g, wgs, amp, cnv_bed = cnv, centromeres = centromeres),
+             error = function(e) NULL)
   }), fill = TRUE)
 }), fill = TRUE)
 

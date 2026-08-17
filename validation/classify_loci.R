@@ -26,7 +26,8 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
                           min_locus_width = 2e5, min_cn = 6,
                           span_frac = 0.6, foldback_dist = 5e4, foldback_min = 3L,
                           gain_mult = 1.4, min_break_reads = 5,
-                          min_bdup_cn = 2, complexity_max = 3L, hi_junc_frac = 0.25) {
+                          min_bdup_cn = 2, complexity_max = 3L, hi_junc_frac = 0.25,
+                          max_locus_width = 1.5e7) {
   g   <- read_aa_graph(graph_path)
   seg <- g$segments
   br  <- g$breaks[g$breaks$type == "discordant" & g$breaks$n_reads >= min_break_reads, , drop = FALSE]
@@ -92,6 +93,7 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
       else if (fb_near >= foldback_min) "BFB" else "complex"
     } else if (fb_near >= foldback_min) "BFB"
     else if (n_hi_junc > complexity_max) "complex"       # thicket of junctions, not a clean circle
+    else if (span > max_locus_width) "complex"           # too large to be a focal episome
     else if (!diploid_flanks) "complex"
     else if (max_tra_cn > bd_cn) "chimeric-translocation"
     else "episomal"

@@ -222,13 +222,8 @@ plot_sv_reconstruction <- function(sample,
   }
   gene_coord <- as.data.frame(gene_coord)
   names(gene_coord) <- c("chr", "start", "end", "strand", "gene")
-  genes <- if (is.null(genes_to_highlight))
-    c("EGFR", "MDM4", "CDK4", "MDM2", "CCND2", "MYC", "FOXO1", "MET",
-      "PRDM2", "AKT3", "EXO1", "PABPC1", "NTRK1", "GMPS", "SOX2",
-      "RECQL5", "H3F3B", "KLF4", "RAD23B", "TAL2", "CDK6", "HSP90AB1",
-      "NFKBIE", "NF1", "TERT", "PTEN", "PDGFRA", "TP53", "PIK3CA",
-      "CDKN2A")
-  else genes_to_highlight
+  ## default to the whole loaded panel, so labels adapt to `genome`
+  genes <- if (is.null(genes_to_highlight)) unique(gene_coord$gene) else genes_to_highlight
 
   ## ---- Sample data --------------------------------------------------------
   cnv <- cnv_data[cnv_data$sample == this_sample, , drop = FALSE]

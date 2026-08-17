@@ -223,3 +223,45 @@ read_ac_profiles <- function(path) {
   names(df) <- gsub("[^A-Za-z0-9]+", "_", names(df))
   df
 }
+
+## --- build plot_sv_linear() inputs from AA output --------------------------
+## Returns list(cnv_data, sv_data) as the data.frames plot_sv_linear() expects,
+## so an AmpliconArchitect amplicon can be drawn directly. `graph_paths` may be
+## several amplicon graphs (their SVs are pooled); genome-wide CN comes from
+## `cnv_bed` when given, else the AA sequence edges.
+aa_to_plot_inputs <- function(graph_paths, sample_id, cnv_bed = NULL,
+                              min_break_reads = 5, flip_dup_del = FALSE) {
+  ## copy number
+  if (!is.null(cnv_bed)) {
+    bed <- utils::read.delim(cnv_bed, header = FALSE, stringsAsFactors = FALSE)
+    cnv_data <- data.frame(sample = sample_id, seqnames = bed[[1]],
+                           start = as.numeric(bed[[2]]), end = as.numeric(bed[[3]]),
+                           copyNumber = as.numeric(bed[[ncol(bed)]]), ploidy = 2,
+                           stringsAsFactors = FALSE)
+  } else {
+    seg <- do.call(rbind, lapply(graph_paths, function(p) read_aa_graph(p)$segments))
+    cnv_data <- data.frame(sample = sample_id, seqnames = seg$chr,
+                           start = seg$start, end = seg$end,
+                           copyNumber = seg$cn, ploidy = 2, stringsAsFactors = FALSE)
+  }
+  cnv_data$majorAlleleCopyNumber <- cnv_data$copyNumber
+  cnv_data$minorAlleleCopyNumber <- 0
+
+  ## junction-level SVs (one row per discordant edge)
+  b <- do.call(rbind, lapply(graph_paths, function(p) read_aa_graph(p)$breaks))
+  b <- b[b$type == "discordant" & b$n_reads >= min_break_reads, , drop = FALSE]
+  ## plot_sv_linear() prepends "chr" to chrom1/chrom2, so pass them prefix-less
+  sv_data <- if (nrow(b)) data.frame(
+    chrom1 = sub("^chr", "", b$chr1), start1 = b$pos1,
+    chrom2 = sub("^chr", "", b$chr2), start2 = b$pos2,
+    strand1 = b$strand1, strand2 = b$strand2,
+    svclass = vapply(seq_len(nrow(b)), function(i)
+      aa_svclass(b$chr1[i], b$pos1[i], b$strand1[i],
+                 b$chr2[i], b$pos2[i], b$strand2[i], flip_dup_del), character(1)),
+    VF = b$n_reads, JCN = b$edge_cn, sample = sample_id, stringsAsFactors = FALSE)
+  else data.frame(chrom1 = character(), start1 = numeric(), chrom2 = character(),
+    start2 = numeric(), strand1 = character(), strand2 = character(),
+    svclass = character(), VF = numeric(), JCN = numeric(), sample = character())
+
+  list(cnv_data = cnv_data, sv_data = sv_data)
+}

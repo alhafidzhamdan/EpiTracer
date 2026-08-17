@@ -139,6 +139,40 @@ graphs.
 A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
 in `cell_line_case_study.R`.
 
+### Positive control — GBM39 EGFR ecDNA (`plot_gbm39_egfr.R`)
+
+The canonical simple EGFR ecDNA line, drawn straight from its public AA
+reconstruction (AmpliconRepository *AmpliconSuite benchmarking set hg38*,
+project `6a5a4a970664f9111b586742`, sample GBM39). The episome signature is
+visible at a glance — a single **circularisation junction (DUP) spanning the
+amplified EGFR locus**, diploid flanks either side. EpiTracer calls it episomal
+once the per-chromosome baseline is used (chr7 is polysomic in GBM; a
+global-diploid flank test misses it — see §2 subtleties).
+
+```sh
+Rscript validation/plot_gbm39_egfr.R /path/to/results/samples/GBM39   # -> output/gbm39_egfr.png
+```
+
+### Engineered ground-truth episome — time course (`engineered_ecdna_timecourse.R`)
+
+The strongest positive control: an ecDNA formed by a **designed** excision-
+circularisation event, sampled over time. Pradella et al. engineered a Cre-loxP
+cassette in mouse NPCs that circularises the **Myc/Pvt1** locus; WGS was taken
+at 1-5 weeks, with a p53-Cre arm as control (AmpliconRepository *Pradella et al.
+engineered murine Myc ecDNA*, project `6a5ea2166714848c8db0f348`, mm10).
+
+EpiTracer calls the locus **episomal exactly at 4w and 5w** — when the circle
+forms — and never in the control arm or the earlier timepoints, tracking the
+locus copy number as it rises (0.5 → 3.6 → 38 → 111 → 126 over the five weeks).
+At 3w the locus is already amplified (CN 38, AmpliconClassifier "Linear") but is
+**not** called episomal: EpiTracer waits for the circle, calling an *episome*
+rather than mere amplification. The 4w and 5w calls share the identical
+circularisation junction (chr15 ~60.65 Mb ↔ ~62.38 Mb).
+
+```sh
+Rscript validation/engineered_ecdna_timecourse.R /path/to/results/samples  # -> output/engineered_timecourse.{tsv,png}
+```
+
 ## 3. In-house WGS cohort (script to add)
 
 Across the cohort, show EpiTracer's `episomal` calls are a well-defined **subset**

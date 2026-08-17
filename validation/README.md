@@ -136,6 +136,16 @@ graph does not include — recoverable only with genome-wide SV calls, e.g.
 PURPLE.) ~24 of ~1,140 amplicons (2%) are skipped on degenerate single-region
 graphs.
 
+`plot_ccle_episomal.R` draws a montage of **every** amplicon the benchmark
+called episomal (one panel each, copy number + SV arcs at the amplicon locus,
+oncogene-centred where the panel gene applies). The simple episomes show a single
+circularisation arc over diploid flanks (e.g. MYC in MSTO-211H / NCI-H1792 /
+NCI-H2170); busier panels carry more internal structure.
+
+```sh
+Rscript validation/plot_ccle_episomal.R /path/to/results/samples   # -> output/ccle_episomal_montage.png
+```
+
 A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
 in `cell_line_case_study.R`.
 

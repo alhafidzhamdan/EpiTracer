@@ -133,8 +133,9 @@ plot_sv_reconstruction <- function(sample,
                           cnv_data,
                           sv_data,
                           wgd_data = NULL,
-                          karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
-                          gene_coord = system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
+                          genome = c("hg38", "hg19", "mm10"),
+                          karyotype = NULL,
+                          gene_coord = NULL,
                           chromosome = NULL,
                           chromosome_range = NULL,
                           loci = NULL,
@@ -192,6 +193,13 @@ plot_sv_reconstruction <- function(sample,
   this_sample <- sample
 
   ## ---- Reference data (identical handling to plot_sv_linear) --------------
+  ## `genome` selects the bundled karyotype + oncogene panel (hg38 / hg19 /
+  ## mm10); an explicit `karyotype` / `gene_coord` overrides.
+  genome <- match.arg(genome)
+  if (is.null(karyotype))
+    karyotype <- system.file("extdata", paste0("chr_info_", genome, ".rds"), package = "EpiTracer")
+  if (is.null(gene_coord))
+    gene_coord <- system.file("extdata", paste0("oncogene_coord_", genome, ".bed"), package = "EpiTracer")
   if (is.character(karyotype)) {
     if (!nzchar(karyotype) || !file.exists(karyotype))
       stop("Karyotype reference not found. Pass `karyotype` (a data.frame or .rds path).")

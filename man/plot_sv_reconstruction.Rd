@@ -9,8 +9,9 @@ plot_sv_reconstruction(
   cnv_data,
   sv_data,
   wgd_data = NULL,
-  karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
-  gene_coord = system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
+  genome = c("hg38", "hg19", "mm10"),
+  karyotype = NULL,
+  gene_coord = NULL,
   chromosome = NULL,
   chromosome_range = NULL,
   loci = NULL,
@@ -75,15 +76,19 @@ plot_sv_reconstruction(
 WGD). If supplied, the sample's WGD status is annotated in the plot title;
 if \code{NULL} (default) the title shows just the sample name.}
 
+\item{genome}{Genome build for the bundled references: \code{"hg38"} (default),
+\code{"hg19"} or \code{"mm10"}. Selects the karyotype ideogram and oncogene panel used
+when \code{karyotype} / \code{gene_coord} are not given. Ignored for either reference
+that is supplied explicitly.}
+
 \item{karyotype}{Ideogram bands (UCSC \code{cytoBand} / \code{chr_info} style), as a
 data.frame (first column = chromosome; needs \code{start}, \code{end}, \code{gieStain}) or
-an \code{.rds} path. Defaults to the bundled hg38 reference.}
+an \code{.rds} path. \code{NULL} (default) uses the bundled reference for \code{genome}.}
 
 \item{gene_coord}{Gene coordinates as a data.frame with columns
 \code{chr},\code{start},\code{end},\code{strand},\code{gene}, or a path to a headerless tab-separated
-BED-like file with those columns. Defaults to a small bundled hg38 table
-covering the default oncogene panel; supply your own for other genes or
-genome builds.}
+BED-like file with those columns. \code{NULL} (default) uses the bundled oncogene
+panel for \code{genome}; supply your own to label other genes.}
 
 \item{chromosome}{Optional character vector of chromosomes to display, e.g.
 \code{c("chr7", "chr12")}.}

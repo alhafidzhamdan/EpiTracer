@@ -42,14 +42,17 @@
 #'   `wgd_sample_col`) and a `Polyploidy` column (`"No"` = diploid, otherwise
 #'   WGD). If supplied, the sample's WGD status is annotated in the plot title;
 #'   if `NULL` (default) the title shows just the sample name.
+#' @param genome Genome build for the bundled references: `"hg38"` (default),
+#'   `"hg19"` or `"mm10"`. Selects the karyotype ideogram and oncogene panel used
+#'   when `karyotype` / `gene_coord` are not given. Ignored for either reference
+#'   that is supplied explicitly.
 #' @param karyotype Ideogram bands (UCSC `cytoBand` / `chr_info` style), as a
 #'   data.frame (first column = chromosome; needs `start`, `end`, `gieStain`) or
-#'   an `.rds` path. Defaults to the bundled hg38 reference.
+#'   an `.rds` path. `NULL` (default) uses the bundled reference for `genome`.
 #' @param gene_coord Gene coordinates as a data.frame with columns
 #'   `chr`,`start`,`end`,`strand`,`gene`, or a path to a headerless tab-separated
-#'   BED-like file with those columns. Defaults to a small bundled hg38 table
-#'   covering the default oncogene panel; supply your own for other genes or
-#'   genome builds.
+#'   BED-like file with those columns. `NULL` (default) uses the bundled oncogene
+#'   panel for `genome`; supply your own to label other genes.
 #' @param chromosome Optional character vector of chromosomes to display, e.g.
 #'   `c("chr7", "chr12")`.
 #' @param chromosome_range Optional two-column matrix/data.frame of `start`,`end`
@@ -193,8 +196,9 @@ plot_sv_linear <- function(sample,
                            cnv_data,
                            sv_data,
                            wgd_data = NULL,
-                           karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
-                           gene_coord = system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
+                           genome = c("hg38", "hg19", "mm10"),
+                           karyotype = NULL,
+                           gene_coord = NULL,
                            chromosome = NULL,
                            chromosome_range = NULL,
                            loci = NULL,
@@ -252,6 +256,13 @@ plot_sv_linear <- function(sample,
   has_snv <- !is.null(snv_data)
 
   ## ---- Reference data -----------------------------------------------------
+  ## `genome` selects the bundled karyotype + oncogene panel (hg38 / hg19 /
+  ## mm10); an explicit `karyotype` / `gene_coord` (data.frame or path) overrides.
+  genome <- match.arg(genome)
+  if (is.null(karyotype))
+    karyotype <- system.file("extdata", paste0("chr_info_", genome, ".rds"), package = "EpiTracer")
+  if (is.null(gene_coord))
+    gene_coord <- system.file("extdata", paste0("oncogene_coord_", genome, ".bed"), package = "EpiTracer")
   if (is.character(karyotype)) {
     if (!nzchar(karyotype) || !file.exists(karyotype))
       stop("Karyotype reference not found. Pass `karyotype` (a data.frame or .rds path).")
@@ -522,8 +533,12 @@ plot_sv_linear <- function(sample,
         base <- if (abs(gx2 - gx1) <= total_w * 0.15) curv_intra * 1.4 else curv_intra
         if (sv$strands[i] %in% c("DEL", "h2hINV", "+-", "--")) base else -base
       } else curv_inter
-      arc_rows[[length(arc_rows) + 1L]] <- data.frame(x = gx1, xend = gx2, y = yv, yend = yv,
-        curvature = cv, colour = col, lwd = if (same) size_sv_line else size_interchr_line)
+      ## draw the connecting arc only when the two breakends map to distinct x
+      ## positions (geom_curve errors on identical end points); the breakpoint
+      ## verticals are drawn regardless.
+      if (abs(gx2 - gx1) >= 1)
+        arc_rows[[length(arc_rows) + 1L]] <- data.frame(x = gx1, xend = gx2, y = yv, yend = yv,
+          curvature = cv, colour = col, lwd = if (same) size_sv_line else size_interchr_line)
       seg_rows[[length(seg_rows) + 1L]] <- data.frame(x = gx1, xend = gx1, y = 0, yend = yv, colour = col)
       seg_rows[[length(seg_rows) + 1L]] <- data.frame(x = gx2, xend = gx2, y = 0, yend = yv, colour = col)
     } else {

@@ -153,11 +153,14 @@ fuse a genuine episome to a BFB or a translocation-driven amplicon (e.g.
 NCI-H2170 co-amplifies a chr17 episome and a chr8 MYC amplicon). `classify_loci.R`
 classifies **each major amplified locus** by mechanism from the AA graph:
 
-- **episomal** — a boundary DUP spans the locus and is its highest-VF DUP, the
-  locus is **focal** (< 15 Mb — not a chromosome-arm-scale gain), flanks are
-  diploid (vs the per-chromosome baseline), it is **not** BFB (< 3 near-self
-  fold-back inversions), the junctions are **not** a thicket (≤ 3 competing
-  high-copy junctions), and no inter-locus TRA exceeds the boundary DUP.
+- **episomal** — a boundary DUP whose **both ends reach the edges of the
+  amplified region** (a true self-ligated circle, not a DUP that stops short of
+  or overshoots the boundary) and is the locus's highest-VF DUP; flanks are
+  diploid (vs the per-chromosome baseline); the locus is **not**
+  pericentromeric; it is **not** BFB (< 3 near-self fold-back inversions); the
+  junctions are **not** a thicket (≤ 3 competing high-copy junctions); and no
+  inter-locus TRA exceeds the boundary DUP. (Size is not a criterion — episomes
+  range from ~0.2 Mb to > 20 Mb.)
 - **BFB** — fold-back inversions + oscillating copy number.
 - **chimeric-translocation** — the locus is joined by a dominant inter-chromosomal
   junction (a backbone TRA), not a self-ligating circle.
@@ -168,9 +171,9 @@ Inter-locus TRAs *below* the per-locus boundary DUPs are read as episome fusion
 
 Calibrated against expert ground truth (5637 chr3+chr6 episomal; KATO III chr3
 episomal / chr10 BFB; NCI-H2170 chr17 episomal / chr8 chimeric; NCI-H526 none).
-Across the 329 CCLE lines: of **633 major amplified loci**, only **16 (2.5%) in
-15 lines are simple episomes** (6 fused) — MYC, PDGFRA among them — vs 112 BFB,
-101 chimeric-translocation and 404 complex. See
+Across the 329 CCLE lines: of **633 major amplified loci**, only **17 (2.7%) in
+16 lines are simple episomes** (7 fused) — MYC, CCND2, PDGFRA among them — vs 111
+BFB, 104 chimeric-translocation and 401 complex. See
 `output/{cell_line_loci.tsv, ccle_locus_mechanisms.png, ccle_episomal_loci_montage.png}`.
 
 ```sh

@@ -24,10 +24,10 @@
 classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
                           cnv_bed = NULL,
                           min_locus_width = 2e5, min_cn = 6,
-                          span_frac = 0.6, foldback_dist = 5e4, foldback_min = 3L,
+                          boundary_tol_frac = 0.05, foldback_dist = 5e4, foldback_min = 3L,
                           gain_mult = 1.4, min_break_reads = 5,
                           min_bdup_cn = 2, complexity_max = 3L, hi_junc_frac = 0.25,
-                          max_locus_width = 1.5e7) {
+                          centromeres = NULL, centromere_pad = 5e5) {
   g   <- read_aa_graph(graph_path)
   seg <- g$segments
   br  <- g$breaks[g$breaks$type == "discordant" & g$breaks$n_reads >= min_break_reads, , drop = FALSE]
@@ -64,12 +64,15 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
     intra <- br[br$chr1 == ch & br$chr2 == ch &
                 pmin(br$pos1, br$pos2) <= up & pmax(br$pos1, br$pos2) >= lo, , drop = FALSE]
     ## boundary DUP: intra-chr DUP spanning most of the locus, near both ends
+    ## boundary DUP: a DUP whose BOTH ends sit at the amplified-region edges (a
+    ## true self-ligated circle), not one that stops short of the boundary or
+    ## overshoots far past it into flanking sequence.
     bd_cn <- NA_real_; bd_vf <- NA_real_
+    btol <- max(2e5, boundary_tol_frac * span)
     d <- intra[intra$svclass == "DUP", , drop = FALSE]
     if (nrow(d)) {
       a <- pmin(d$pos1, d$pos2); b <- pmax(d$pos1, d$pos2)
-      ok <- (b - a) >= span_frac * span & a <= lo + 0.15 * span & b >= up - 0.15 * span &
-            d$edge_cn >= min_bdup_cn                          # ignore CN~0 spurious DUPs
+      ok <- abs(a - lo) <= btol & abs(b - up) <= btol & d$edge_cn >= min_bdup_cn
       if (any(ok)) { j <- which(ok)[which.max(d$edge_cn[ok])]; bd_cn <- d$edge_cn[j]; bd_vf <- d$n_reads[j] }
     }
     ## fold-back (BFB) content: near-self inverted junctions
@@ -87,14 +90,21 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
     ## dominant inter-chromosomal junction touching this chr
     tra <- br[br$svclass == "TRA" & (br$chr1 == ch | br$chr2 == ch), , drop = FALSE]
     max_tra_cn <- if (nrow(tra)) max(tra$edge_cn) else 0
+    ## centromere adjacency: an amplicon abutting the centromere is more likely
+    ## pericentromeric/BFB than an excised episome.
+    cen_adj <- FALSE
+    if (!is.null(centromeres)) {
+      cc <- centromeres[centromeres$chr == ch, , drop = FALSE]
+      if (nrow(cc)) cen_adj <- any(up >= cc$start - centromere_pad & lo <= cc$end + centromere_pad)
+    }
 
     mech <- if (is.na(bd_cn)) {
       if (max_tra_cn >= 0.4 * L["maxcn"]) "chimeric-translocation"
       else if (fb_near >= foldback_min) "BFB" else "complex"
     } else if (fb_near >= foldback_min) "BFB"
     else if (n_hi_junc > complexity_max) "complex"       # thicket of junctions, not a clean circle
-    else if (span > max_locus_width) "complex"           # too large to be a focal episome
     else if (!diploid_flanks) "complex"
+    else if (cen_adj) "complex"                          # pericentromeric, not a clean episome
     else if (max_tra_cn > bd_cn) "chimeric-translocation"
     else "episomal"
 
@@ -102,7 +112,8 @@ classify_loci <- function(graph_path, sample_id, amplicon = NA_character_,
                start = unname(lo), end = unname(up), max_cn = unname(L["maxcn"]),
                baseline = base, boundary_dup_cn = bd_cn, boundary_dup_vf = bd_vf,
                foldbacks = fb_near, n_hi_junc = n_hi_junc, diploid_flanks = diploid_flanks,
-               max_tra_cn = max_tra_cn, mechanism = mech, stringsAsFactors = FALSE)
+               centromere_adjacent = cen_adj, max_tra_cn = max_tra_cn,
+               mechanism = mech, stringsAsFactors = FALSE)
   })
   res <- do.call(rbind, out)
   ## fusion: an amplicon whose episomal loci are joined by (subclonal) TRAs

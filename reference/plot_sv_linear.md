@@ -15,8 +15,9 @@ plot_sv_linear(
   cnv_data,
   sv_data,
   wgd_data = NULL,
-  karyotype = system.file("extdata", "chr_info_hg38.rds", package = "EpiTracer"),
-  gene_coord = system.file("extdata", "oncogene_coord_hg38.bed", package = "EpiTracer"),
+  genome = c("hg38", "hg19", "mm10"),
+  karyotype = NULL,
+  gene_coord = NULL,
   chromosome = NULL,
   chromosome_range = NULL,
   loci = NULL,
@@ -92,19 +93,26 @@ plot_sv_linear(
   the plot title; if `NULL` (default) the title shows just the sample
   name.
 
+- genome:
+
+  Genome build for the bundled references: `"hg38"` (default), `"hg19"`
+  or `"mm10"`. Selects the karyotype ideogram and oncogene panel used
+  when `karyotype` / `gene_coord` are not given. Ignored for either
+  reference that is supplied explicitly.
+
 - karyotype:
 
   Ideogram bands (UCSC `cytoBand` / `chr_info` style), as a data.frame
   (first column = chromosome; needs `start`, `end`, `gieStain`) or an
-  `.rds` path. Defaults to the bundled hg38 reference.
+  `.rds` path. `NULL` (default) uses the bundled reference for `genome`.
 
 - gene_coord:
 
   Gene coordinates as a data.frame with columns
   `chr`,`start`,`end`,`strand`,`gene`, or a path to a headerless
-  tab-separated BED-like file with those columns. Defaults to a small
-  bundled hg38 table covering the default oncogene panel; supply your
-  own for other genes or genome builds.
+  tab-separated BED-like file with those columns. `NULL` (default) uses
+  the bundled oncogene panel for `genome`; supply your own to label
+  other genes.
 
 - chromosome:
 

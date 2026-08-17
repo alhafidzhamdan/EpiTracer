@@ -63,8 +63,9 @@ of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.</p>
 <span>  <span class="va">cnv_data</span>,</span>
 <span>  <span class="va">sv_data</span>,</span>
 <span>  wgd_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  karyotype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"chr_info_hg38.rds"</span>, package <span class="op">=</span> <span class="st">"EpiTracer"</span><span class="op">)</span>,</span>
-<span>  gene_coord <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"oncogene_coord_hg38.bed"</span>, package <span class="op">=</span> <span class="st">"EpiTracer"</span><span class="op">)</span>,</span>
+<span>  genome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hg38"</span>, <span class="st">"hg19"</span>, <span class="st">"mm10"</span><span class="op">)</span>,</span>
+<span>  karyotype <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gene_coord <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chromosome <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chromosome_range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  loci <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -141,18 +142,24 @@ WGD). If supplied, the sample's WGD status is annotated in the plot title;
 if <code>NULL</code> (default) the title shows just the sample name.</p></dd>
 
 
+<dt id="arg-genome">genome<a class="anchor" aria-label="anchor" href="#arg-genome"></a></dt>
+<dd><p>Genome build for the bundled references: <code>"hg38"</code> (default),
+<code>"hg19"</code> or <code>"mm10"</code>. Selects the karyotype ideogram and oncogene panel used
+when <code>karyotype</code> / <code>gene_coord</code> are not given. Ignored for either reference
+that is supplied explicitly.</p></dd>
+
+
 <dt id="arg-karyotype">karyotype<a class="anchor" aria-label="anchor" href="#arg-karyotype"></a></dt>
 <dd><p>Ideogram bands (UCSC <code>cytoBand</code> / <code>chr_info</code> style), as a
 data.frame (first column = chromosome; needs <code>start</code>, <code>end</code>, <code>gieStain</code>) or
-an <code>.rds</code> path. Defaults to the bundled hg38 reference.</p></dd>
+an <code>.rds</code> path. <code>NULL</code> (default) uses the bundled reference for <code>genome</code>.</p></dd>
 
 
 <dt id="arg-gene-coord">gene_coord<a class="anchor" aria-label="anchor" href="#arg-gene-coord"></a></dt>
 <dd><p>Gene coordinates as a data.frame with columns
 <code>chr</code>,<code>start</code>,<code>end</code>,<code>strand</code>,<code>gene</code>, or a path to a headerless tab-separated
-BED-like file with those columns. Defaults to a small bundled hg38 table
-covering the default oncogene panel; supply your own for other genes or
-genome builds.</p></dd>
+BED-like file with those columns. <code>NULL</code> (default) uses the bundled oncogene
+panel for <code>genome</code>; supply your own to label other genes.</p></dd>
 
 
 <dt id="arg-chromosome">chromosome<a class="anchor" aria-label="anchor" href="#arg-chromosome"></a></dt>

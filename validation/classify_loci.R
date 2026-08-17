@@ -21,6 +21,11 @@
 ##   LTA                  - an amplified translocation PLUS fold-backs (BFB cycles);
 ##                          `arm_loss` flags the sub-baseline loss on the amplicon
 ##                          chromosome (Espejo Valle-Inclan et al., Cell 2024).
+##                          NB this is a STRUCTURAL PROXY: the authors' LTA call is
+##                          TP53/17p-centric (biallelic TP53 disruption + 17p->other-arm
+##                          translocation + >=75% 17p-terminal LOH), which needs
+##                          allele-specific CN (PURPLE) + TP53 status, not available
+##                          from an AA graph + total-CN CNVkit alone.
 ##   complex              - none of the above (no clean boundary DUP / too many junctions).
 ## Inter-locus TRAs BELOW the per-locus boundary DUPs are episome fusion: the
 ## episomal loci of such an amplicon are flagged `fused = TRUE` (e.g. 5637).

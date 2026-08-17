@@ -246,6 +246,9 @@ aa_to_plot_inputs <- function(graph_paths, sample_id, cnv_bed = NULL,
   }
   cnv_data$majorAlleleCopyNumber <- cnv_data$copyNumber
   cnv_data$minorAlleleCopyNumber <- 0
+  ## plot_sv_linear expects "chr"-prefixed CN seqnames (some cohorts use "11")
+  cnv_data$seqnames <- ifelse(grepl("^chr", cnv_data$seqnames),
+                              cnv_data$seqnames, paste0("chr", cnv_data$seqnames))
 
   ## junction-level SVs (one row per discordant edge)
   b <- do.call(rbind, lapply(graph_paths, function(p) read_aa_graph(p)$breaks))

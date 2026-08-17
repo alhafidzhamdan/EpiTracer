@@ -170,6 +170,14 @@ classifies **each major amplified locus** by mechanism from the AA graph:
   loss on the amplicon chromosome (Espejo Valle-Inclán et al., *Cell* 2024).
 - **complex** — none of the above (no clean boundary DUP, or too many junctions).
 
+Validated on the papers' own example: **TCGA-A8-A08S** (the Nature 2023 flagship TB
+case, AmpliconArchitect from AmpliconRepository TCGA) — both its **CCND1 (chr11)**
+and **ERBB2 (chr17)** loci are called `translocation-bridge`, co-amplified and joined
+by a boundary translocation, whereas AmpliconClassifier calls it only
+"Complex-non-cyclic" (`output/tcga_a8a08s_TB.png`). The LTA (Cell 2024) osteosarcoma
+examples are controlled-access, and a faithful LTA call is TP53/17p-LOH-centric —
+needing allele-specific CN (PURPLE), so the `LTA` tag here is a structural proxy.
+
 Inter-locus TRAs *below* the per-locus boundary DUPs are read as episome fusion
 (the episomal loci are flagged `fused`, e.g. 5637's chr3+chr6 circles).
 

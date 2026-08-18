@@ -108,3 +108,26 @@ test_that("a diploid-flank episome is episomal under BOTH flank_baseline modes",
     expect_true(all(res$episomal == "TRUE"), info = fb)
   }
 })
+
+test_that("a flank abutting the boundary DUP breakend is not dropped (<=/>= fix)", {
+  # DKFZ-GKS1T1 EGFR pattern: the boundary DUP breakends land exactly on the
+  # flank segment edges (prox == left-flank end, dist == right-flank start).
+  # A strict < / > in the flank test dropped the diploid flanks -> false negative.
+  ecdna_gr <- GenomicRanges::GRanges("chr7", IRanges::IRanges(55000000, 55500000),
+                                     ID = "S1_amp1", WGS_ID = "S1")
+  bp <- data.table::data.table(
+    seqnames = "chr7", start = c(54999999, 55500001), end = c(54999999, 55500001),
+    WGS_ID = "S1", event = "DUP1", svclass = "DUP",
+    PURPLE_AF = 0.9, PURPLE_JCN = 40, VF = 1000, PURPLE_CN = 50, insLen = 0L, HOMLEN = 0L)
+  breakpoints_gr <- GenomicRanges::makeGRangesFromDataFrame(bp, keep.extra.columns = TRUE)
+  cnv <- data.table::data.table(
+    seqnames = "chr7", start = c(1, 55000000, 55500001), end = c(54999999, 55500000, 70000000),
+    sample = "S1", copyNumber = c(2, 50, 2), ploidy = 2,
+    majorAlleleCopyNumber = c(1, 49, 1), minorAlleleCopyNumber = 1)
+  cnv_gr <- GenomicRanges::makeGRangesFromDataFrame(cnv, keep.extra.columns = TRUE)
+  cgg <- GenomicRanges::GRanges("chr7", IRanges::IRanges(55019017, 55211628), gene = "EGFR")
+
+  res <- call_episomal_ecdna(ecdna_gr, breakpoints_gr, cnv_gr, cgg, mc.cores = 1)
+  expect_true(all(res$duplication_at_boundary == "TRUE"))
+  expect_true(all(res$episomal == "TRUE"))
+})

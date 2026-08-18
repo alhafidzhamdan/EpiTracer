@@ -19,7 +19,9 @@ call_episomal_ecdna(
   verbose = FALSE,
   min_cn_ratio = 3,
   seed_gap = 1e+06,
-  seed_min_width = 1e+05
+  seed_min_width = 1e+05,
+  flank_baseline = c("chromosome", "ploidy"),
+  gain_ratio = 1.4
 )
 ```
 
@@ -81,6 +83,21 @@ call_episomal_ecdna(
   when `ecdna_gr` is `NULL` (copy-number amplicon threshold
   `copyNumber > min_cn_ratio * ploidy`, gap to merge across, and minimum
   seed width). Ignored when `ecdna_gr` is supplied.
+
+- flank_baseline:
+
+  How the "flanks not gained" test is calibrated: `"chromosome"`
+  (default) compares the amplicon flanks to the local per-chromosome
+  baseline (the width-weighted median copy number of that chromosome's
+  non-focally-amplified segments), `"ploidy"` compares them to the
+  global sample ploidy. Use `"chromosome"` for focal episomes on a
+  polysomic chromosome (e.g. EGFR on the gained chr7 in glioblastoma),
+  which `"ploidy"` misses because the flanks sit above tumour ploidy.
+
+- gain_ratio:
+
+  Numeric; a flank is "gained" when its copy number is at or above
+  `gain_ratio` times the baseline (default `1.4`).
 
 ## Value
 

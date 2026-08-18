@@ -14,7 +14,9 @@ call_episomal_ecdna(
   verbose = FALSE,
   min_cn_ratio = 3,
   seed_gap = 1e+06,
-  seed_min_width = 1e+05
+  seed_min_width = 1e+05,
+  flank_baseline = c("chromosome", "ploidy"),
+  gain_ratio = 1.4
 )
 }
 \arguments{
@@ -48,6 +50,17 @@ searching for boundary breakpoints (default \code{1e7}).}
 \code{\link[=detect_amplicon_seeds]{detect_amplicon_seeds()}} when \code{ecdna_gr} is \code{NULL} (copy-number amplicon
 threshold \code{copyNumber > min_cn_ratio * ploidy}, gap to merge across, and
 minimum seed width). Ignored when \code{ecdna_gr} is supplied.}
+
+\item{flank_baseline}{How the "flanks not gained" test is calibrated:
+\code{"chromosome"} (default) compares the amplicon flanks to the local
+per-chromosome baseline (the width-weighted median copy number of that
+chromosome's non-focally-amplified segments), \code{"ploidy"} compares them to
+the global sample ploidy. Use \code{"chromosome"} for focal episomes on a
+polysomic chromosome (e.g. EGFR on the gained chr7 in glioblastoma), which
+\code{"ploidy"} misses because the flanks sit above tumour ploidy.}
+
+\item{gain_ratio}{Numeric; a flank is "gained" when its copy number is at or
+above \code{gain_ratio} times the baseline (default \code{1.4}).}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} combining the annotated breakpoints of all

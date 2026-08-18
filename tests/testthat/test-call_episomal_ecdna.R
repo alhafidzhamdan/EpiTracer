@@ -78,3 +78,33 @@ test_that("ecdna_gr = NULL auto-detects seeds and still calls the episome", {
     "No focal amplicons"
   )
 })
+
+test_that("focal episome on a polysomic chromosome: flank_baseline recovers it", {
+  # chr7 whole-chromosome baseline of 4 (polysomy, as in glioblastoma), with a
+  # focal EGFR amplicon (CN 50) whose flanks sit at the chr7 baseline (4), and a
+  # boundary DUP + excision scar. This IS an episome excised from the polysomic
+  # chromosome, but the flanks (4) exceed 1.4 * tumour ploidy (2).
+  d <- make_episome_inputs(flank_cn = 4, chr_baseline = 4)
+
+  # default ("chromosome"): flanks compared to the local chr7 baseline (4) -> episomal
+  loc <- call_episomal_ecdna(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr,
+                             d$cancer_genes_gr, mc.cores = 1)
+  expect_true(all(loc$episomal == "TRUE"))
+  expect_true(all(loc[loc$event == "DUP1", ]$duplication_at_boundary == "TRUE"))
+
+  # "ploidy": flanks compared to global ploidy (2) -> the polysomic flanks read
+  # as gained and the episome is missed (the pre-fix behaviour)
+  glo <- call_episomal_ecdna(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr,
+                             d$cancer_genes_gr, mc.cores = 1,
+                             flank_baseline = "ploidy")
+  expect_true(all(glo$episomal == "FALSE"))
+})
+
+test_that("a diploid-flank episome is episomal under BOTH flank_baseline modes", {
+  d <- make_episome_inputs(flank_cn = 2, chr_baseline = 2)
+  for (fb in c("chromosome", "ploidy")) {
+    res <- call_episomal_ecdna(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr,
+                               d$cancer_genes_gr, mc.cores = 1, flank_baseline = fb)
+    expect_true(all(res$episomal == "TRUE"), info = fb)
+  }
+})

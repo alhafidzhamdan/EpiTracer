@@ -12,13 +12,27 @@ cat_tab <- fread("validation/output/gbm_episomal_catalogue.tsv")
 egfr <- sort(unique(cat_tab[gene == "EGFR"]$WGS_ID))
 message(length(egfr), " EGFR-episome samples")
 
+EGFR <- GenomicRanges::GRanges("chr7", IRanges::IRanges(55019017, 55211628))
 panel <- function(s) {
   cs <- cn[sample == s & seqnames == "chr7"]
   pl <- stats::median(cs$ploidy)
-  amp <- cs[copyNumber > 3 * pl & end > 54.5e6 & start < 55.6e6]
+  amp <- cs[copyNumber > 3 * pl]
   if (!nrow(amp)) return(NULL)
-  lo <- min(amp$start); up <- max(amp$end); pad <- max(0.2 * (up - lo), 2e5)
-  mx <- round(max(amp$copyNumber))
+  ## full contiguous high-copy amplicon(s); pick the one containing EGFR so the
+  ## window spans from one boundary of the amplicon to the other, not a fixed
+  ## window around the gene (which would clip a broad amplicon's far boundary).
+  red <- GenomicRanges::reduce(GenomicRanges::GRanges("chr7", IRanges::IRanges(amp$start, amp$end)),
+                               min.gapwidth = 1e6)
+  hit <- red[GenomicRanges::countOverlaps(red, EGFR) > 0]
+  if (!length(hit)) hit <- red[which.min(abs((start(red) + end(red)) / 2 - 55.1e6))]
+  if (!length(hit)) return(NULL)
+  lo <- min(GenomicRanges::start(hit)); up <- max(GenomicRanges::end(hit))
+  ## extend to any boundary DUP breakends that reach past the CN extent
+  dup <- sv[sample == s & chrom1 == "chr7" & chrom2 == "chr7" & svclass == "DUP" &
+            pmin(start1, start2) <= up + 2e5 & pmax(start1, start2) >= lo - 2e5]
+  if (nrow(dup)) { lo <- min(lo, dup$start1, dup$start2); up <- max(up, dup$start1, dup$start2) }
+  pad <- max(0.12 * (up - lo), 2e5)
+  mx <- round(max(cs[start <= up & end >= lo]$copyNumber))
   tryCatch(
     plot_sv_linear(sample = s, cnv_data = cn[sample == s], sv_data = sv[sample == s],
                    genome = "hg38", chromosome = "chr7",

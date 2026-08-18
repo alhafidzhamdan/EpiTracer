@@ -192,6 +192,21 @@ translocation-bridge, 34 LTA, 97 BFB and 353 complex. See
 Rscript validation/cell_line_loci_benchmark.R /path/to/results/samples   # -> output/cell_line_loci.tsv
 ```
 
+**Cohort mode with real LOH — `classify_loci_cohort.R`.** For a WGS cohort with an
+SV BEDPE + allele-specific copy number (PURPLE-style), this runs the same per-locus
+classifier directly (no AmpliconArchitect needed): it detects focal amplified loci
+from the CN and reads `svclass`/`JCN`/`VF` from the BEDPE. Because allele-specific CN
+is available it also reports LOH evidence — `tp53_17p_loh` (the LTA initiating loss),
+`subtelo_loh` (the TB bridge-arm LOH) and `tra_to_17p` — so LTA / TB calls can be
+checked against the authoritative signatures. On an in-house glioblastoma cohort
+(348 WGS samples) it finds 73 episomal loci strongly enriched for the canonical GBM
+ecDNA oncogenes (EGFR, MDM4, PDGFRA, CDK4, MDM2, MET), alongside translocation-bridge,
+LTA, BFB and complex.
+
+```sh
+Rscript validation/classify_loci_cohort.R sv_bedpe.rds cn_segments.rds   # -> output/cohort_loci.tsv
+```
+
 A **template** for arbitrary processed inputs (PURPLE + AA, any pipeline) remains
 in `cell_line_case_study.R`.
 

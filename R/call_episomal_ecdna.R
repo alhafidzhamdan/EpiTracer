@@ -34,6 +34,9 @@ classify_amplicon_episomal <- function(this_amplicon_id,
                                        cnv_gr,
                                        cancer_genes_gr,
                                        ext = 1e7,
+                                       flank_baseline = "chromosome",
+                                       gain_ratio = 1.4,
+                                       min_cn_ratio = 3,
                                        verbose = FALSE) {
 
   this_amplicon_gr <- ecdna_gr[ecdna_gr$ID %in% this_amplicon_id]
@@ -184,19 +187,36 @@ classify_amplicon_episomal <- function(this_amplicon_id,
               prox_boundary <- this_chr[boundary_index[1]]$start
               dist_boundary <- this_chr[boundary_index[2]]$start
 
-              ## Chromosomal segments < prox_boundary and > dist_boundary
-              ## should not be gained/amplified:
-              before_prox_boundary_not_gained <- nrow(this_sample_cnv_gr %>% gr2dt() %>%
-                                                         dplyr::filter(seqnames %in% unique_chrs[i]) %>%
+              ## Chromosomal segments < prox_boundary and > dist_boundary should
+              ## not be gained/amplified ABOVE the chromosome's background level.
+              ## `flank_baseline = "chromosome"` compares the flanks to the local
+              ## per-chromosome baseline (the width-weighted median copy number of
+              ## its non-focally-amplified segments), so a focal episome excised
+              ## from a POLYSOMIC chromosome (e.g. EGFR on the gained chr7 that is
+              ## near-universal in glioblastoma) is not missed just because its
+              ## flanks sit above the tumour ploidy. `"ploidy"` keeps the flanks
+              ## compared to the global sample ploidy.
+              chr_cn <- this_sample_cnv_gr %>% gr2dt() %>%
+                dplyr::filter(seqnames %in% unique_chrs[i])
+              if (identical(flank_baseline, "chromosome")) {
+                bg <- chr_cn %>% dplyr::filter(copyNumber < min_cn_ratio * this_sample_ploidy)
+                if (nrow(bg) == 0) bg <- chr_cn
+                w <- pmax(1, bg$end - bg$start); o <- order(bg$copyNumber)
+                chr_baseline <- max(1, bg$copyNumber[o][which(cumsum(w[o]) / sum(w) >= 0.5)[1]])
+              } else {
+                chr_baseline <- this_sample_ploidy
+              }
+              flank_thresh <- gain_ratio * chr_baseline
+
+              before_prox_boundary_not_gained <- nrow(chr_cn %>%
                                                          dplyr::filter(end < prox_boundary) %>%
                                                          dplyr::filter(end == max(end)) %>%
-                                                         dplyr::filter(copyNumber < 1.4 * ploidy)) > 0
+                                                         dplyr::filter(copyNumber < flank_thresh)) > 0
 
-              after_dist_boundary_not_gained <- nrow(this_sample_cnv_gr %>% gr2dt() %>%
-                                                        dplyr::filter(seqnames %in% unique_chrs[i]) %>%
+              after_dist_boundary_not_gained <- nrow(chr_cn %>%
                                                         dplyr::filter(start > dist_boundary) %>%
                                                         dplyr::filter(start == min(start)) %>%
-                                                        dplyr::filter(copyNumber < 1.4 * ploidy)) > 0
+                                                        dplyr::filter(copyNumber < flank_thresh)) > 0
 
               ## NOTE: the original script tested
               ##   `after_dist_boundary_not_gained == after_dist_boundary_not_gained`
@@ -279,6 +299,15 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'   [detect_amplicon_seeds()] when `ecdna_gr` is `NULL` (copy-number amplicon
 #'   threshold `copyNumber > min_cn_ratio * ploidy`, gap to merge across, and
 #'   minimum seed width). Ignored when `ecdna_gr` is supplied.
+#' @param flank_baseline How the "flanks not gained" test is calibrated:
+#'   `"chromosome"` (default) compares the amplicon flanks to the local
+#'   per-chromosome baseline (the width-weighted median copy number of that
+#'   chromosome's non-focally-amplified segments), `"ploidy"` compares them to
+#'   the global sample ploidy. Use `"chromosome"` for focal episomes on a
+#'   polysomic chromosome (e.g. EGFR on the gained chr7 in glioblastoma), which
+#'   `"ploidy"` misses because the flanks sit above tumour ploidy.
+#' @param gain_ratio Numeric; a flank is "gained" when its copy number is at or
+#'   above `gain_ratio` times the baseline (default `1.4`).
 #'
 #' @return A [data.table::data.table] combining the annotated breakpoints of all
 #'   amplicons, with per-breakpoint classification columns including
@@ -312,8 +341,11 @@ call_episomal_ecdna <- function(ecdna_gr = NULL,
                                 verbose = FALSE,
                                 min_cn_ratio = 3,
                                 seed_gap = 1e6,
-                                seed_min_width = 1e5) {
+                                seed_min_width = 1e5,
+                                flank_baseline = c("chromosome", "ploidy"),
+                                gain_ratio = 1.4) {
 
+  flank_baseline <- match.arg(flank_baseline)
   stopifnot(
     methods::is(breakpoints_gr, "GRanges"),
     methods::is(cnv_gr, "GRanges"),
@@ -363,6 +395,9 @@ call_episomal_ecdna <- function(ecdna_gr = NULL,
       cnv_gr           = cnv_gr,
       cancer_genes_gr  = cancer_genes_gr,
       ext              = ext,
+      flank_baseline   = flank_baseline,
+      gain_ratio       = gain_ratio,
+      min_cn_ratio     = min_cn_ratio,
       verbose          = verbose
     )
   }, mc.cores = mc.cores)

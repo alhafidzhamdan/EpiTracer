@@ -1,9 +1,13 @@
 ## Synthetic-data builders shared across tests.
-## `flank_cn` controls the copy number of the segments flanking the amplicon:
-## low (2) => non-gained flanks (episome); high (10) => gained flanks (not an
-## episome, exercises the corrected boundary-flank logic).
+## `flank_cn` = copy number of the segments IMMEDIATELY flanking the amplicon:
+## low (2) => non-gained flanks (episome); high (10) => flanks gained above the
+## chromosome baseline (not an episome). `chr_baseline` = copy number of the rest
+## of the chromosome (the local baseline): 2 = diploid; higher models a polysomic
+## chromosome (chr7 gain in glioblastoma). flank_cn == chr_baseline models a focal
+## episome on a polysomic chromosome (missed by the "ploidy" flank test, recovered
+## by "chromosome").
 
-make_episome_inputs <- function(flank_cn = 2) {
+make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2) {
   suppressPackageStartupMessages({
     requireNamespace("GenomicRanges")
     requireNamespace("data.table")
@@ -30,15 +34,18 @@ make_episome_inputs <- function(flank_cn = 2) {
   )
   breakpoints_gr <- GenomicRanges::makeGRangesFromDataFrame(bp, keep.extra.columns = TRUE)
 
+  ## chromosome background at `chr_baseline`, immediate flanks at `flank_cn`,
+  ## amplicon at 50. The background establishes the local per-chromosome baseline.
+  seg_cn <- c(chr_baseline, flank_cn, 50, flank_cn, chr_baseline)
   cnv <- data.table::data.table(
     seqnames = "chr7",
-    start    = c(40000000, 55000000, 55500001),
-    end      = c(54999999, 55500000, 70000000),
+    start    = c(1,        40000000, 55000000, 55500001, 70000001),
+    end      = c(39999999, 54999999, 55500000, 70000000, 159000000),
     sample   = "S1",
-    copyNumber = c(flank_cn, 50, flank_cn),
+    copyNumber = seg_cn,
     ploidy     = 2,
-    majorAlleleCopyNumber = c(flank_cn - 1, 49, flank_cn - 1),
-    minorAlleleCopyNumber = c(1, 1, 1)
+    majorAlleleCopyNumber = pmax(1, seg_cn - 1),
+    minorAlleleCopyNumber = 1
   )
   cnv_gr <- GenomicRanges::makeGRangesFromDataFrame(cnv, keep.extra.columns = TRUE)
 

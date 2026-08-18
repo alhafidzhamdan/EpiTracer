@@ -208,13 +208,18 @@ classify_amplicon_episomal <- function(this_amplicon_id,
               }
               flank_thresh <- gain_ratio * chr_baseline
 
+              ## `<=` / `>=` so a flank segment abutting the boundary breakend
+              ## (its end == prox_boundary, or start == dist_boundary) is still
+              ## found -- a strict `<`/`>` here silently dropped the flank when
+              ## the boundary DUP breakend landed exactly on the segment edge,
+              ## failing the not-gained test on otherwise textbook episomes.
               before_prox_boundary_not_gained <- nrow(chr_cn %>%
-                                                         dplyr::filter(end < prox_boundary) %>%
+                                                         dplyr::filter(end <= prox_boundary) %>%
                                                          dplyr::filter(end == max(end)) %>%
                                                          dplyr::filter(copyNumber < flank_thresh)) > 0
 
               after_dist_boundary_not_gained <- nrow(chr_cn %>%
-                                                        dplyr::filter(start > dist_boundary) %>%
+                                                        dplyr::filter(start >= dist_boundary) %>%
                                                         dplyr::filter(start == min(start)) %>%
                                                         dplyr::filter(copyNumber < flank_thresh)) > 0
 

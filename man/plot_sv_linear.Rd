@@ -36,6 +36,8 @@ plot_sv_linear(
   loh_position_ratio = 0.5,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
+  amplicons = NULL,
+  parallel_breakpoints = NULL,
   wgd_sample_col = NULL,
   snv_data = NULL,
   snv_sample_col = NULL,
@@ -161,6 +163,24 @@ column \code{gene_name}); required when \code{displayExon = TRUE}.}
 
 \item{highlight_amp, highlight_hom_del}{Logical; shade amplified / homozygously
 deleted segments.}
+
+\item{amplicons}{Optional distinct-amplicon overlay: a
+\link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} or data.frame of amplicon regions (columns
+\code{seqnames}/\code{chr}, \code{start}, \code{end}, and an optional \code{ID}/\code{label}). Each
+amplicon that falls in the plotted window is drawn as a short horizontal bar
+across the TOP of the plot spanning its extent, in its own colour and with
+its label above, so several distinct amplicons (e.g. a focal episome sitting
+inside a larger, separately detected amplified span) are visually separable
+without washing over the data. Genomic coordinates are mapped through the
+same per-locus transform as the rest of the plot, so the bars align with the
+copy-number track.}
+
+\item{parallel_breakpoints}{Optional data.frame of \emph{adjacent parallel
+breakpoint} pairs to highlight (the breakage-replication/fusion hallmark):
+columns \code{chr}/\code{seqnames}, \code{pos1}, \code{pos2} (the two same-orientation breakends
+of a pair) and an optional \code{strand}. Each pair is drawn near the baseline as
+a bracket joining the two breakends, with a caret marking each, so BRF
+breakpoints stand out among the other junctions.}
 
 \item{wgd_sample_col}{Optional name of the sample column in \code{wgd_data}
 (default: \code{sample}, falling back to \code{WGS_ID}).}
@@ -294,5 +314,5 @@ plot_sv_linear("S1", cnv, sv, wgd, karyotype = K, gene_coord = G,
 }
 }
 \seealso{
-\code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}
+\code{\link[=call_simple_excision]{call_simple_excision()}}
 }

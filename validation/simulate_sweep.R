@@ -72,7 +72,7 @@ run_level <- function(noise) {
   genes    <- GRanges("chr7", IRanges(55019017, 55211628), gene="EGFR")
   truth    <- rbindlist(lapply(amps,`[[`,"truth"))
 
-  res  <- suppressWarnings(suppressMessages(call_episomal_ecdna(ecdna_gr, bp_gr, cnv_gr, genes, ext=1e7)))
+  res  <- suppressWarnings(suppressMessages(call_simple_excision(ecdna_gr, bp_gr, cnv_gr, genes, ext=1e7)))
   pred <- res[, .(pred = any(episomal == "TRUE")), by = ID]
   ev   <- merge(truth, pred, by="ID", all.x=TRUE); ev[is.na(pred), pred := FALSE]
 

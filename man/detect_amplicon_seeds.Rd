@@ -4,7 +4,16 @@
 \alias{detect_amplicon_seeds}
 \title{Detect focal-amplicon seeds from copy number alone}
 \usage{
-detect_amplicon_seeds(cnv_gr, min_cn_ratio = 3, gap = 1e+06, min_width = 1e+05)
+detect_amplicon_seeds(
+  cnv_gr,
+  min_cn_ratio = 3,
+  gap = 2e+06,
+  min_width = 1e+05,
+  merge_gap = 3e+06,
+  cn_ratio = 0.5,
+  breakpoints = NULL,
+  link_tol = 10000
+)
 }
 \arguments{
 \item{cnv_gr}{A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of allele-specific copy-number
@@ -17,23 +26,58 @@ segments with metadata columns \code{sample}, \code{copyNumber}, \code{ploidy}.}
 into one seed (default \code{1e6}).}
 
 \item{min_width}{Integer; drop seeds narrower than this (default \code{1e5}).}
+
+\item{merge_gap}{Integer; after the initial \code{gap} merge, also merge two
+adjacent same-chromosome seeds separated by at most this many bp when their
+representative copy numbers are similar (see \code{cn_ratio}). Models one amplicon
+broken only by internal deletions (default \code{3e6}). Set to \code{gap} to disable
+copy-number-aware merging.}
+
+\item{cn_ratio}{Numeric in \verb{(0, 1]}; two adjacent seeds count as "similar copy
+number" (and are eligible to merge across up to \code{merge_gap}) when
+\code{min(cn1, cn2) / max(cn1, cn2) >= cn_ratio} (default \code{0.5}, i.e. within 2x).}
+
+\item{breakpoints}{Optional per-breakend table (a \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} or
+data.frame with \code{seqnames}/\code{chr}, \code{start}/\code{pos}, \code{WGS_ID}/\code{sample}, \code{event},
+\code{PURPLE_CN}). When supplied the seeds become \strong{SV-aware}: two seeds on the
+same chromosome joined by a structural variant whose \emph{both} breakends sit in
+amplified copy number (\code{PURPLE_CN > min_cn_ratio * ploidy}, the same bar a
+segment must clear to be a seed) are linked into one amplicon, even across a
+large gap (e.g. a centromere) -- so a single rearranged amplicon that
+traverses a centromere is not split. A junction that dips into non-amplified
+sequence on either side does not link. Each returned
+seed also carries \code{cn_only} (\code{TRUE} when no breakend falls inside it, i.e. it
+is called by copy number alone with no supporting junction).}
+
+\item{link_tol}{Integer; tolerance (bp) when mapping a breakend to a seed for
+SV-aware linking and the \code{cn_only} test (default \code{1e4}). A boundary-defining
+breakend typically sits \emph{at} the amplified-segment edge, so the reduced seed
+may begin a base or two after it; strict containment would then miss exactly
+the junction that anchors the boundary. Matching within \code{link_tol} (the same
+window used to read a breakend's \code{PURPLE_CN}) lets an edge-anchored breakend
+map to its seed.}
 }
 \value{
 A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} of amplicon seeds with metadata columns
-\code{ID} and \code{WGS_ID} (empty if no amplification is present).
+\code{ID}, \code{WGS_ID}, and (when \code{breakpoints} is supplied) \code{cn_only} (empty if no
+amplification is present).
 }
 \description{
 Derives candidate focal-amplicon regions ("seeds") directly from
-allele-specific copy-number segments, so \code{call_episomal_ecdna()} can run
+allele-specific copy-number segments, so \code{call_simple_excision()} can run
 \strong{without} an AmpliconArchitect amplicon catalogue. Per sample, segments with
-\code{copyNumber > min_cn_ratio * ploidy} are merged across gaps up to \code{gap} bp and
-regions narrower than \code{min_width} are dropped; each surviving region is
-labelled with an \code{ID} and \code{WGS_ID}, matching the \code{ecdna_gr} contract.
+\code{copyNumber > min_cn_ratio * ploidy} are merged across gaps up to \code{gap} bp;
+adjacent regions of SIMILAR copy number are then merged across larger gaps (up
+to \code{merge_gap}), so a single amplicon split by internal deletions is not
+mistaken for several separate amplicons (which would let a duplication that is
+internal to the true amplicon pass as a boundary DUP). Regions narrower than
+\code{min_width} are dropped; each surviving region is labelled with an \code{ID} and
+\code{WGS_ID}, matching the \code{ecdna_gr} contract.
 }
 \examples{
 seeds <- detect_amplicon_seeds(ex_caller_inputs$cnv_gr)
 seeds
 }
 \seealso{
-\code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}
+\code{\link[=call_simple_excision]{call_simple_excision()}}
 }

@@ -106,6 +106,22 @@
 #'   Layout tuning parameters.
 #' @param highlight_amp,highlight_hom_del Logical; shade amplified / homozygously
 #'   deleted segments.
+#' @param amplicons Optional distinct-amplicon overlay: a
+#'   [GenomicRanges::GRanges] or data.frame of amplicon regions (columns
+#'   `seqnames`/`chr`, `start`, `end`, and an optional `ID`/`label`). Each
+#'   amplicon that falls in the plotted window is drawn as a short horizontal bar
+#'   across the TOP of the plot spanning its extent, in its own colour and with
+#'   its label above, so several distinct amplicons (e.g. a focal episome sitting
+#'   inside a larger, separately detected amplified span) are visually separable
+#'   without washing over the data. Genomic coordinates are mapped through the
+#'   same per-locus transform as the rest of the plot, so the bars align with the
+#'   copy-number track.
+#' @param parallel_breakpoints Optional data.frame of *adjacent parallel
+#'   breakpoint* pairs to highlight (the breakage-replication/fusion hallmark):
+#'   columns `chr`/`seqnames`, `pos1`, `pos2` (the two same-orientation breakends
+#'   of a pair) and an optional `strand`. Each pair is drawn near the baseline as
+#'   a bracket joining the two breakends, with a caret marking each, so BRF
+#'   breakpoints stand out among the other junctions.
 #' @param wgd_sample_col Optional name of the sample column in `wgd_data`
 #'   (default: `sample`, falling back to `WGS_ID`).
 #' @param snv_data Optional SNV/SSM table as a `data.frame` or
@@ -185,7 +201,7 @@
 #' plot_sv_linear("S1", cnv, sv, wgd, karyotype = K, gene_coord = G,
 #'                loci = c("chr4:50e6-64e6", "chr12:57e6-59e6"))
 #' }
-#' @seealso [call_episomal_ecdna()]
+#' @seealso [call_simple_excision()]
 #' @export
 #' @import ggplot2
 #' @importFrom grid unit
@@ -223,6 +239,8 @@ plot_sv_linear <- function(sample,
                            loh_position_ratio = 0.5,
                            highlight_amp = TRUE,
                            highlight_hom_del = TRUE,
+                           amplicons = NULL,
+                           parallel_breakpoints = NULL,
                            wgd_sample_col = NULL,
                            snv_data = NULL,
                            snv_sample_col = NULL,
@@ -473,6 +491,89 @@ plot_sv_linear <- function(sample,
   ## ---- Build plot ---------------------------------------------------------
   p <- ggplot()
 
+  ## ---- Distinct-amplicon bands (background) -------------------------------
+  ## Draw each supplied amplicon as its own full-height translucent band so
+  ## multiple amplicons in one window (e.g. a focal episome enclosed by a larger
+  ## detected span) are visually separable. Mapped through the same per-locus
+  ## `offset + (pos - locus_start)` transform as every other layer.
+  if (!is.null(amplicons)) {
+    amp_df <- if (methods::is(amplicons, "GRanges")) {
+      data.frame(chr = as.character(GenomicRanges::seqnames(amplicons)),
+                 start = GenomicRanges::start(amplicons),
+                 end = GenomicRanges::end(amplicons),
+                 label = if (!is.null(amplicons$ID)) as.character(amplicons$ID)
+                         else as.character(seq_along(amplicons)),
+                 stringsAsFactors = FALSE)
+    } else {
+      dd <- as.data.frame(amplicons)
+      chrc <- if ("chr" %in% names(dd)) dd$chr else dd$seqnames
+      lab  <- if ("ID" %in% names(dd)) dd$ID else if ("label" %in% names(dd)) dd$label
+              else seq_len(nrow(dd))
+      data.frame(chr = as.character(chrc), start = dd$start, end = dd$end,
+                 label = as.character(lab), stringsAsFactors = FALSE)
+    }
+    amp_df$chr <- ifelse(grepl("^chr", amp_df$chr), amp_df$chr, paste0("chr", amp_df$chr))
+    amp_bands <- do.call(rbind, lapply(seq_len(nrow(amp_df)), function(k) {
+      do.call(rbind, lapply(seq_len(nrow(loci)), function(i) {
+        if (amp_df$chr[k] != loci$chr[i]) return(NULL)
+        s <- max(amp_df$start[k], loci$start[i]); e <- min(amp_df$end[k], loci$end[i])
+        if (e < s) return(NULL)
+        data.frame(gx_start = loci$offset[i] + (s - loci$start[i]),
+                   gx_end   = loci$offset[i] + (e - loci$start[i]),
+                   label = amp_df$label[k], ki = k, stringsAsFactors = FALSE)
+      }))
+    }))
+    if (!is.null(amp_bands) && nrow(amp_bands) > 0) {
+      amp_pal <- c("#4C78A8", "#F58518", "#54A24B", "#B279A2", "#E45756",
+                   "#72B7B2", "#EECA3B", "#9D755D")
+      amp_bands$fill <- amp_pal[((amp_bands$ki - 1L) %% length(amp_pal)) + 1L]
+      ## Draw each amplicon as a short horizontal bar across the TOP of the plot
+      ## (spanning its extent), with its label above -- a compact extent marker
+      ## rather than a full-height wash over the data. Placed ABOVE the gene-label
+      ## row (which sits at cn_axis_max * offset_gene) so gene annotations stay
+      ## clear; coord_cartesian(clip = "off") keeps it visible above the panel.
+      amp_y <- cn_axis_max * (offset_gene + 0.12)
+      p <- p +
+        geom_segment(data = amp_bands, aes(x = gx_start, xend = gx_end,
+                  y = amp_y, yend = amp_y),
+                  colour = amp_bands$fill, linewidth = 1.8, lineend = "butt", alpha = 0.55) +
+        geom_text(data = amp_bands, aes(x = (gx_start + gx_end) / 2,
+                  y = amp_y, label = label),
+                  vjust = -0.5, size = 2.3, fontface = "bold", colour = amp_bands$fill, alpha = 0.7)
+    }
+  }
+
+  ## ---- Adjacent parallel breakpoints (BRF hallmark) ----------------------
+  ## Highlight each same-orientation breakend pair with a bracket near the top of
+  ## the copy-number track and a caret at each breakend.
+  if (!is.null(parallel_breakpoints) && nrow(as.data.frame(parallel_breakpoints)) > 0) {
+    pbp <- as.data.frame(parallel_breakpoints)
+    pbp$chr <- as.character(if ("chr" %in% names(pbp)) pbp$chr else pbp$seqnames)
+    pbp$chr <- ifelse(grepl("^chr", pbp$chr), pbp$chr, paste0("chr", pbp$chr))
+    gxof <- function(ch, pos) {
+      for (i in seq_len(nrow(loci)))
+        if (ch == loci$chr[i] && pos >= loci$start[i] && pos <= loci$end[i])
+          return(loci$offset[i] + (pos - loci$start[i]))
+      NA_real_
+    }
+    pb_rows <- do.call(rbind, lapply(seq_len(nrow(pbp)), function(k) {
+      g1 <- gxof(pbp$chr[k], pbp$pos1[k]); g2 <- gxof(pbp$chr[k], pbp$pos2[k])
+      if (is.na(g1) || is.na(g2)) return(NULL)
+      data.frame(g1 = g1, g2 = g2,
+                 strand = if ("strand" %in% names(pbp)) as.character(pbp$strand[k]) else "",
+                 stringsAsFactors = FALSE)
+    }))
+    if (!is.null(pb_rows) && nrow(pb_rows) > 0) {
+      ## Mark each parallel breakpoint with a black down-arrowhead across the TOP
+      ## of the plot, just above the amplicon-bar row so the two overlays coexist.
+      pb_y <- cn_axis_max * (offset_gene + 0.20)
+      p <- p +
+        geom_point(data = data.frame(gx = c(pb_rows$g1, pb_rows$g2)),
+                   aes(x = gx, y = pb_y), shape = 25, size = 1.8,
+                   fill = "black", colour = "black")
+    }
+  }
+
   ideo <- do.call(rbind, lapply(seq_len(nrow(loci)), function(i) {
     d <- karyotype[karyotype$chr == loci$chr[i] & karyotype$end >= loci$start[i] & karyotype$start <= loci$end[i], , drop = FALSE]
     if (nrow(d) == 0) return(NULL)
@@ -485,6 +586,25 @@ plot_sv_linear <- function(sample,
     p <- p + geom_rect(data = ideo, aes(xmin = gx_start, xmax = gx_end,
              ymin = lower_limit_karyotype, ymax = upper_limit_karyotype),
              fill = ideo$color, colour = "black", linewidth = 0.2)
+
+  ## Telomere markers: label a window edge "tel" when it reaches a chromosome
+  ## terminus -- the p-telomere at coordinate ~0 or the q-telomere at the
+  ## chromosome length -- so a reader can tell whether an amplicon's end sits at
+  ## an actual telomere.
+  tel_tol <- 5e5
+  tel_rows <- do.call(rbind, lapply(seq_len(nrow(loci)), function(i) {
+    L <- suppressWarnings(max(karyotype$end[karyotype$chr == loci$chr[i]]))
+    rr <- NULL
+    if (loci$start[i] <= tel_tol)
+      rr <- rbind(rr, data.frame(gx = loci$offset[i]))                     # p-telomere
+    if (is.finite(L) && (L - loci$end[i]) <= tel_tol)
+      rr <- rbind(rr, data.frame(gx = loci$offset[i] + loci$width[i]))     # q-telomere
+    rr
+  }))
+  if (!has_snv && !is.null(tel_rows) && nrow(tel_rows) > 0)
+    p <- p + geom_text(data = tel_rows, aes(x = gx, y = lower_limit_karyotype),
+                       label = "tel", vjust = 1.5, size = 2.4, fontface = "bold",
+                       colour = "#0b6b6b")
 
   if (highlight_amp) {
     d <- cn_plot[cn_plot$copyNumber > 3 * cn_plot$ploidy, , drop = FALSE]

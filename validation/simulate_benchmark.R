@@ -1,7 +1,7 @@
 ## ---------------------------------------------------------------------------
 ## EpiTracer validation — simulation benchmark (sensitivity / specificity / PPV)
 ##
-## Generates focal amplicons with KNOWN origin and scores call_episomal_ecdna():
+## Generates focal amplicons with KNOWN origin and scores call_simple_excision():
 ##   * episomal           — boundary DUP (highest VF), diploid flanks, excision scar
 ##   * gained_flanks      — same boundary DUP + scar, but amplified flanks
 ##                          (a complex / chromothriptic context, NOT episomal)
@@ -99,7 +99,7 @@ truth <- rbindlist(lapply(amps, `[[`, "truth"))
 ## Run EpiTracer on the whole simulated cohort
 message("Calling ", length(ecdna_gr), " simulated amplicons ...")
 res <- suppressWarnings(suppressMessages(
-  call_episomal_ecdna(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
+  call_simple_excision(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
                       ext = 1e7, mc.cores = 1)))
 
 ## Per-amplicon prediction: episomal if any breakpoint of the amplicon is TRUE

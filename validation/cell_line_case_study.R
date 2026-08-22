@@ -10,7 +10,7 @@
 ##   * MYC   — e.g. COLO320-DM (double-minute line)
 ##
 ## Fill in the file paths below (PURPLE SV/CN + AmpliconArchitect amplicons for
-## each line, coerced to the columns documented in ?call_episomal_ecdna) and run.
+## each line, coerced to the columns documented in ?call_simple_excision) and run.
 ## This script is a template — it does not run as-is without those inputs.
 ## ---------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ suppressPackageStartupMessages({
 
 ## ---- 1. Inputs (EDIT THESE) ------------------------------------------------
 ## Each object is a GRanges with the metadata columns listed in
-## ?call_episomal_ecdna. `WGS_ID` / `sample` identify the cell line.
+## ?call_simple_excision. `WGS_ID` / `sample` identify the cell line.
 ##
 ## ecdna_gr        <- readRDS("data/cell_lines/ecdna_amplicons.rds")   # AmpliconArchitect
 ## breakpoints_gr  <- readRDS("data/cell_lines/sv_breakpoints.rds")    # PURPLE (or coerced)
@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 ## )
 
 ## ---- 2. Call episomal ecDNA ------------------------------------------------
-## calls <- call_episomal_ecdna(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
+## calls <- call_simple_excision(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
 ##                              ext = 1e7, mc.cores = 4)
 ##
 ## Per-amplicon summary: is each confirmed-ecDNA line called episomal?

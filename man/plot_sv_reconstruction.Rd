@@ -316,5 +316,5 @@ plot_sv_reconstruction("DUMC12T1", cnv, sv, karyotype = K, gene_coord = G,
 }
 }
 \seealso{
-\code{\link[=plot_sv_linear]{plot_sv_linear()}}, \code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}
+\code{\link[=plot_sv_linear]{plot_sv_linear()}}, \code{\link[=call_simple_excision]{call_simple_excision()}}
 }

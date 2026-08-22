@@ -16,6 +16,59 @@ test_that("single focused locus (chromosome + range) returns a ggplot and writes
   expect_true(file.exists(out))
 })
 
+test_that("amplicons overlay draws distinct-amplicon bands (GRanges and data.frame)", {
+  d <- make_plot_inputs()
+  amp_gr <- GenomicRanges::GRanges(
+    c("chr7", "chr7"), IRanges::IRanges(c(55000000, 55200000), c(55500000, 55300000)),
+    ID = c("amp1", "amp2"))
+  p_gr <- suppressWarnings(suppressMessages(plot_sv_linear(
+    sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+    karyotype = d$karyotype, gene_coord = d$gene_coord,
+    chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+    amplicons = amp_gr, outdir = NULL)))
+  expect_s3_class(p_gr, "ggplot")
+  # the two amplicon bands add geom_text label layers carrying the IDs
+  labels <- unlist(lapply(p_gr$layers, function(l)
+    if (!is.null(l$data) && "label" %in% names(l$data)) as.character(l$data$label)))
+  expect_true(all(c("amp1", "amp2") %in% labels))
+
+  # data.frame form (chr/start/end/ID) is equally accepted
+  amp_df <- data.frame(chr = "chr7", start = 55000000, end = 55500000, ID = "ampX")
+  p_df <- suppressWarnings(suppressMessages(plot_sv_linear(
+    sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+    karyotype = d$karyotype, gene_coord = d$gene_coord,
+    chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+    amplicons = amp_df, outdir = NULL)))
+  expect_s3_class(p_df, "ggplot")
+})
+
+test_that("parallel_breakpoints overlay draws a marker per breakend", {
+  d <- make_plot_inputs()
+  pbp <- data.frame(chr = c("chr7", "chr7"),
+                    pos1 = c(55050000, 55300000),
+                    pos2 = c(55060000, 55310000),
+                    strand = c("+", "-"))
+  p <- suppressWarnings(suppressMessages(plot_sv_linear(
+    sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+    karyotype = d$karyotype, gene_coord = d$gene_coord,
+    chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+    parallel_breakpoints = pbp, outdir = NULL)))
+  expect_s3_class(p, "ggplot")
+  # the overlay adds a geom_point layer carrying one point per breakend (2 pairs -> 4)
+  npts <- vapply(p$layers, function(l)
+    if (inherits(l$geom, "GeomPoint") && !is.null(l$data) && "gx" %in% names(l$data))
+      nrow(l$data) else 0L, integer(1))
+  expect_true(any(npts == 4L))
+
+  # empty / NULL parallel_breakpoints is accepted and draws nothing extra
+  p0 <- suppressWarnings(suppressMessages(plot_sv_linear(
+    sample = "S1", cnv_data = d$cnv_data, sv_data = d$sv_data, wgd_data = d$wgd_data,
+    karyotype = d$karyotype, gene_coord = d$gene_coord,
+    chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+    parallel_breakpoints = pbp[0, ], outdir = NULL)))
+  expect_s3_class(p0, "ggplot")
+})
+
 test_that("flank_pct widens the auto-detected window", {
   d <- make_multilocus_inputs()
   narrow <- suppressWarnings(suppressMessages(

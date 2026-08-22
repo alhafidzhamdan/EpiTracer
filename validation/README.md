@@ -1,6 +1,6 @@
 # EpiTracer validation
 
-Evidence that the episome heuristic in `call_episomal_ecdna()` is **correct**,
+Evidence that the episome heuristic in `call_simple_excision()` is **correct**,
 not merely that it runs — the scientific core of the Bioinformatics Application
 Note. Three complementary lines; the manuscript figure draws on all three.
 
@@ -53,7 +53,7 @@ not precision.
 
 ### Runtime / scaling — `runtime_scaling.R`
 
-Wall-clock of `call_episomal_ecdna()` as the number of amplicons grows, for the
+Wall-clock of `call_simple_excision()` as the number of amplicons grows, for the
 manuscript's availability / implementation note.
 
 ```sh
@@ -73,7 +73,7 @@ evidence the journal expects.
 | :--- | :--- |
 | `aa_to_epitracer.R` | Adapter: AA `_graph.txt` (sequence edges → CN; discordant edges → SV breakpoints with read support) + `_cycles.txt` intervals → EpiTracer's GRanges inputs. Also reads AmpliconClassifier profiles. |
 | `cell_line_panel.tsv` | FISH-validated ground-truth panel (cell line → ecDNA status, oncogene, assay, citation), incl. the matched **COLO320DM (ecDNA⁺) / COLO320HSR (ecDNA⁻)** pair. |
-| `cell_line_benchmark.R` | Driver: builds inputs, runs `call_episomal_ecdna()`, scores gold + silver. |
+| `cell_line_benchmark.R` | Driver: builds inputs, runs `call_simple_excision()`, scores gold + silver. |
 | `fixtures/COLO320DM/` | A synthetic AA-format amplicon used by the self-test. |
 
 **Two evidence tiers**

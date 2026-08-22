@@ -3,10 +3,10 @@
 \docType{data}
 \name{ex_caller_inputs}
 \alias{ex_caller_inputs}
-\title{Example inputs for \code{call_episomal_ecdna()}}
+\title{Example inputs for \code{call_simple_excision()}}
 \format{
 A named \code{list} of four \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} objects, matching the
-four required arguments of \code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}:
+four required arguments of \code{\link[=call_simple_excision]{call_simple_excision()}}:
 \describe{
 \item{\code{ecdna_gr}}{AmpliconArchitect-style ecDNA amplicon region; metadata \code{ID}, \code{WGS_ID}.}
 \item{\code{breakpoints_gr}}{PURPLE-style SV breakpoints; metadata \code{WGS_ID}, \code{event}, \code{svclass}, \code{PURPLE_AF}, \code{PURPLE_JCN}, \code{VF}, \code{PURPLE_CN}, \code{insLen}, \code{HOMLEN}.}
@@ -26,17 +26,17 @@ ecDNA} on chr7 in a fictional sample \code{"EXAMPLE01"}: a focal amplification
 bounded by a high variant-fraction duplication (the circularisation
 junction), excised from otherwise diploid flanks and leaving a low-VF
 deletion "excision scar". The data are synthetic (no patient data) so the
-example runs anywhere in seconds and \code{call_episomal_ecdna()} flags the
+example runs anywhere in seconds and \code{call_simple_excision()} flags the
 amplicon as episomal.
 }
 \examples{
-res <- call_episomal_ecdna(
+res <- call_simple_excision(
   ex_caller_inputs$ecdna_gr, ex_caller_inputs$breakpoints_gr,
   ex_caller_inputs$cnv_gr,   ex_caller_inputs$cancer_genes_gr
 )
 res$episomal
 }
 \seealso{
-\code{\link[=call_episomal_ecdna]{call_episomal_ecdna()}}, \link{ex_plot_inputs}
+\code{\link[=call_simple_excision]{call_simple_excision()}}, \link{ex_plot_inputs}
 }
 \keyword{datasets}

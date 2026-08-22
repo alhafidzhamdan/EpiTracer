@@ -48,7 +48,7 @@ run_one <- function(sid) {
     inp <- tryCatch(aa_to_epitracer_inputs(g, sub("_graph\\.txt$", "_cycles.txt", g), sid,
                                            cnv_bed = cnvb), error = function(e) NULL)
     if (is.null(inp) || !length(inp$cnv_gr)) next
-    r <- tryCatch(call_episomal_ecdna(inp$ecdna_gr, inp$breakpoints_gr, inp$cnv_gr, onc),
+    r <- tryCatch(call_simple_excision(inp$ecdna_gr, inp$breakpoints_gr, inp$cnv_gr, onc),
                   error = function(e) NULL)
     if (!is.null(r) && nrow(as.data.frame(r)) &&
         any(as.data.frame(r)$episomal == "TRUE")) episomal <- TRUE

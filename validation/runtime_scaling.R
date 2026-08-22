@@ -1,7 +1,7 @@
 ## ---------------------------------------------------------------------------
 ## EpiTracer validation — runtime / scaling
 ##
-## Wall-clock of call_episomal_ecdna() as the number of amplicons grows, to show
+## Wall-clock of call_simple_excision() as the number of amplicons grows, to show
 ## the tool runs reliably at cohort scale (for the manuscript's availability /
 ## implementation note). Uses the same synthetic amplicon builder as the
 ## benchmark; each amplicon is an independent sample.
@@ -42,7 +42,7 @@ bench_size <- function(n) {
   bp_gr    <- makeGRangesFromDataFrame(rbindlist(lapply(amps,`[[`,"bp")),    keep.extra.columns=TRUE)
   cnv_gr   <- makeGRangesFromDataFrame(rbindlist(lapply(amps,`[[`,"cnv")),   keep.extra.columns=TRUE)
   t <- system.time(suppressWarnings(suppressMessages(
-    call_episomal_ecdna(ecdna_gr, bp_gr, cnv_gr, genes, ext=1e7, mc.cores=CORES))))[["elapsed"]]
+    call_simple_excision(ecdna_gr, bp_gr, cnv_gr, genes, ext=1e7, mc.cores=CORES))))[["elapsed"]]
   data.table(amplicons = n, seconds = round(t, 3), per_amplicon_ms = round(1000 * t / n, 1))
 }
 

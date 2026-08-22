@@ -56,7 +56,7 @@ call_one_sample <- function(sample_dir, sample_id, flip_dup_del = FALSE) {
                                   cnv_bed = cnv_bed)
     if (!length(inp$cnv_gr)) return(NULL)
     res <- tryCatch(
-      call_episomal_ecdna(ecdna_gr = inp$ecdna_gr,
+      call_simple_excision(ecdna_gr = inp$ecdna_gr,
                           breakpoints_gr = inp$breakpoints_gr,
                           cnv_gr = inp$cnv_gr,
                           cancer_genes_gr = oncogenes_gr),
@@ -99,7 +99,7 @@ run_selftest <- function() {
                   top$svclass, top$VF))
   stopifnot(identical(as.character(top$svclass), "DUP"))
 
-  res <- call_episomal_ecdna(ecdna_gr = inp$ecdna_gr,
+  res <- call_simple_excision(ecdna_gr = inp$ecdna_gr,
                              breakpoints_gr = inp$breakpoints_gr,
                              cnv_gr = inp$cnv_gr,
                              cancer_genes_gr = oncogenes_gr)

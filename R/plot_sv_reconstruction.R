@@ -121,7 +121,7 @@
 #' plot_sv_reconstruction("DUMC12T1", cnv, sv, karyotype = K, gene_coord = G,
 #'               vf_breaks = c(200, 80))
 #' }
-#' @seealso [plot_sv_linear()], [call_episomal_ecdna()]
+#' @seealso [plot_sv_linear()], [call_simple_excision()]
 #' @export
 #' @import ggplot2
 #' @importFrom grid unit

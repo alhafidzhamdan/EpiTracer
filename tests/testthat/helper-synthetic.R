@@ -7,7 +7,16 @@
 ## episome on a polysomic chromosome (missed by the "ploidy" flank test, recovered
 ## by "chromosome").
 
-make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2) {
+## `prox_shoulder_cn` (with `prox_shoulder_width`): insert a narrow gained
+## "segmentation shoulder" segment abutting the proximal boundary (55000000) at
+## this copy number, while the substantive flank beyond it stays at `flank_cn`.
+## Models the sub-kb intermediate segment a CN caller emits at a sharp amplicon
+## edge, which must NOT be read as the flank (min_flank_width). `reverse_boundary`
+## stores the two boundary-DUP breakends in reversed row order, to exercise the
+## position-sorted prox/dist assignment.
+make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2,
+                                prox_shoulder_cn = NULL, prox_shoulder_width = 999L,
+                                reverse_boundary = FALSE) {
   suppressPackageStartupMessages({
     requireNamespace("GenomicRanges")
     requireNamespace("data.table")
@@ -18,10 +27,13 @@ make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2) {
     ID = "S1_amp1", WGS_ID = "S1"
   )
 
+  ## boundary DUP breakends at 55000000 / 55500000, optionally in reversed order
+  dup_pos <- c(55000000, 55500000)
+  if (reverse_boundary) dup_pos <- rev(dup_pos)
   bp <- data.table::data.table(
     seqnames   = "chr7",
-    start      = c(54900000, 55000000, 55500000, 55600000),
-    end        = c(54900000, 55000000, 55500000, 55600000),
+    start      = c(54900000, dup_pos, 55600000),
+    end        = c(54900000, dup_pos, 55600000),
     WGS_ID     = "S1",
     event      = c("DEL1", "DUP1", "DUP1", "DEL1"),
     svclass    = c("DEL", "DUP", "DUP", "DEL"),
@@ -36,11 +48,20 @@ make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2) {
 
   ## chromosome background at `chr_baseline`, immediate flanks at `flank_cn`,
   ## amplicon at 50. The background establishes the local per-chromosome baseline.
-  seg_cn <- c(chr_baseline, flank_cn, 50, flank_cn, chr_baseline)
+  if (is.null(prox_shoulder_cn)) {
+    starts <- c(1,        40000000, 55000000, 55500001, 70000001)
+    ends   <- c(39999999, 54999999, 55500000, 70000000, 159000000)
+    seg_cn <- c(chr_baseline, flank_cn, 50, flank_cn, chr_baseline)
+  } else {
+    sh_start <- 55000000 - prox_shoulder_width           # narrow sliver up to 54999999
+    starts <- c(1,        40000000,     sh_start, 55000000, 55500001, 70000001)
+    ends   <- c(39999999, sh_start - 1, 54999999, 55500000, 70000000, 159000000)
+    seg_cn <- c(chr_baseline, flank_cn, prox_shoulder_cn, 50, flank_cn, chr_baseline)
+  }
   cnv <- data.table::data.table(
     seqnames = "chr7",
-    start    = c(1,        40000000, 55000000, 55500001, 70000001),
-    end      = c(39999999, 54999999, 55500000, 70000000, 159000000),
+    start    = starts,
+    end      = ends,
     sample   = "S1",
     copyNumber = seg_cn,
     ploidy     = 2,
@@ -55,6 +76,22 @@ make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2) {
 
   list(ecdna_gr = ecdna_gr, breakpoints_gr = breakpoints_gr,
        cnv_gr = cnv_gr, cancer_genes_gr = cancer_genes_gr)
+}
+
+## Append a structural variant with BOTH breakends strictly inside the amplicon
+## (55000000-55500000) to a make_episome_inputs() breakpoint set, at amplicon-
+## level copy number, for testing the internal-SV flags. `cls` e.g. "h2hINV" (a
+## fold-back inversion, disqualifying) or "DEL" (an ancestral internal deletion,
+## informational only); `vf` its variant-fragment support.
+add_internal_sv <- function(inputs, cls, vf, pos = c(55150000L, 55350000L)) {
+  gr <- GenomicRanges::GRanges(
+    "chr7", IRanges::IRanges(pos, width = 1L),
+    WGS_ID = "S1", event = "INT1", svclass = cls,
+    PURPLE_AF = 0.9, PURPLE_JCN = 20, VF = as.numeric(vf), PURPLE_CN = 50,
+    insLen = 0L, HOMLEN = 0L
+  )
+  inputs$breakpoints_gr <- c(inputs$breakpoints_gr, gr)
+  inputs
 }
 
 ## Two amplified loci on different chromosomes joined by an inter-chromosomal

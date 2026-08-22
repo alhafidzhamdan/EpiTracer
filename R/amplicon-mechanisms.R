@@ -1,6 +1,7 @@
 ## ---------------------------------------------------------------------------
 ## Standalone amplicon-mechanism callers: breakage-replication/fusion (BRF),
-## micronucleation + chromothripsis, and breakage-fusion-bridge (BFB).
+## micronucleation + chromothripsis, breakage-fusion-bridge (BFB), and
+## translocation-bridge amplification (TBA).
 ##
 ## These sit ALONGSIDE call_simple_excision() rather than inside it: each is a
 ## top-level caller that takes the same inputs (an amplicon catalogue or NULL to
@@ -183,6 +184,105 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
   out
 }
 
+## Translocation-bridge amplification (Lee et al., Nature 2023): an amplicon
+## whose boundary is defined by an inter-chromosomal translocation that is itself
+## amplified (the "boundary translocation" carried within the amplicon), the
+## footprint of a dicentric chromosome bridge formed by translocation.
+##
+## Loss-of-heterozygosity along one arm of a chromosome, the bridge footprint of
+## a translocation-bridge. Returns TRUE when a large contiguous LOH runs to a
+## chromosome landmark on that arm -- the telomere OR the centromere (the bridge
+## can break on either side of the amplicon) -- covering at least `frac` of the
+## arm. `minorAlleleCopyNumber < loh_max` marks an LOH segment.
+.arm_bridge_loh <- function(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, frac) {
+  d <- cn_all[seqnames == chr]
+  if (!nrow(d)) return(FALSE)
+  if (arm == "p") { lo <- 0; hi <- cen_lo } else { lo <- cen_hi; hi <- L }
+  seg <- d[end >= lo & start <= hi]
+  if (!nrow(seg)) return(FALSE)
+  arm_w <- max(1, hi - lo)
+  loh <- seg[minorAlleleCopyNumber < loh_max]
+  loh_w <- if (nrow(loh)) sum(pmax(0, pmin(loh$end, hi) - pmax(loh$start, lo))) else 0
+  tel_seg <- if (arm == "p") seg[which.min(start)] else seg[which.max(end)]   # telomeric end
+  cen_seg <- if (arm == "p") seg[which.max(end)]   else seg[which.min(start)] # centromeric end
+  anchored <- (nrow(tel_seg) && all(tel_seg$minorAlleleCopyNumber < loh_max)) ||
+              (nrow(cen_seg) && all(cen_seg$minorAlleleCopyNumber < loh_max))
+  anchored && (loh_w / arm_w) >= frac
+}
+
+.detect_tba <- function(this_chr, coords, ctx, chr, min_cn_ratio, tb_edge_tol,
+                        centromeres = NULL, chrom_lengths = NULL, loh_max = 0.5,
+                        bridge_loh_min_frac = 0.2, nonbridge_loh_max_frac = 0.1) {
+  out <- list(n_boundary_tra = 0L, tba = "FALSE", tb_partner_chr = "",
+              tb_bridge_arm_loh = "NA", tb_partner_arm_loh = "NA",
+              tb_nonbridge_spared = "NA", tb_confident = "FALSE")
+  if (!isTRUE(coords$has_amp_region)) return(out)
+  pl <- ctx$ploidy
+  min_c <- coords$min_amp_coord; max_c <- coords$max_amp_coord
+  ## breakends amplified as part of the amplicon and anchored at an amplified edge
+  at_edge <- this_chr[PURPLE_CN > min_cn_ratio * pl &
+                        (abs(start - min_c) <= tb_edge_tol | abs(start - max_c) <= tb_edge_tol)]
+  if (!nrow(at_edge)) return(out)
+  tra_ev <- unique(at_edge[svclass == "TRA"]$event)          # boundary translocation(s)
+  if (!length(tra_ev)) return(out)
+  allbp <- gr2dt(ctx$sample_bp)
+  ## partner (translocated) breakends: the other (non-`chr`) end of each boundary TRA
+  partner_bp <- allbp[event %in% tra_ev & !(seqnames %in% chr)]
+  partners <- unique(as.character(partner_bp$seqnames))
+  out$tba <- "TRUE"
+  out$n_boundary_tra <- length(tra_ev)
+  out$tb_partner_chr <- paste(sort(partners), collapse = ",")
+
+  ## --- confirmatory footprint (Lee et al., Nature 2023): a confident TB
+  ## amplification shows the ASYMMETRIC bridge-arm LOH pattern -- a large LOH
+  ## running to a landmark (telomere or centromere) on a "bridge" arm, on the
+  ## amplicon's own arm and/or the translocated partner arm, while the amplicon
+  ## chromosome's opposite ("non-bridge") arm is spared. The asymmetry is what
+  ## distinguishes TB amplification from (symmetric) chromothripsis.
+  if (!is.null(centromeres) && length(centromeres) &&
+      !is.null(chrom_lengths) && chr %in% names(chrom_lengths)) {
+    cendt <- gr2dt(centromeres)
+    cn_all <- gr2dt(ctx$cnv); cn_all[, minorAlleleCopyNumber := as.numeric(minorAlleleCopyNumber)]
+    arm_of <- function(cc, pos) {
+      ce <- cendt[seqnames == cc]; if (!nrow(ce)) return(NA_character_)
+      if (pos <= min(ce$start)) "p" else if (pos >= max(ce$end)) "q" else NA_character_
+    }
+    cen <- cendt[seqnames == chr]
+    if (nrow(cen)) {
+      cen_lo <- min(cen$start); cen_hi <- max(cen$end); L <- chrom_lengths[[chr]]
+      arm <- if (max_c <= cen_lo) "p" else if (min_c >= cen_hi) "q" else NA_character_
+      if (!is.na(arm)) {
+        bridge_loh <- .arm_bridge_loh(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, bridge_loh_min_frac)
+        ## non-bridge (opposite) arm of the amplicon chromosome must be spared
+        nb_arm <- if (arm == "p") "q" else "p"
+        if (nb_arm == "p") { nlo <- 0; nhi <- cen_lo } else { nlo <- cen_hi; nhi <- L }
+        nb <- cn_all[seqnames == chr & end >= nlo & start <= nhi]
+        nb_w <- max(1, nhi - nlo)
+        nb_loh <- nb[minorAlleleCopyNumber < loh_max]
+        nb_loh_w <- if (nrow(nb_loh)) sum(pmax(0, pmin(nb_loh$end, nhi) - pmax(nb_loh$start, nlo))) else 0
+        nb_spared <- (nb_loh_w / nb_w) <= nonbridge_loh_max_frac
+        ## partner (translocated) bridge arm(s): the arm carrying each partner breakend
+        partner_loh <- FALSE
+        for (pc in partners) {
+          if (!(pc %in% names(chrom_lengths))) next
+          pce <- cendt[seqnames == pc]; if (!nrow(pce)) next
+          ppos <- stats::median(partner_bp[seqnames == pc]$start)
+          parm <- arm_of(pc, ppos); if (is.na(parm)) next
+          if (.arm_bridge_loh(cn_all, pc, parm, min(pce$start), max(pce$end),
+                              chrom_lengths[[pc]], loh_max, bridge_loh_min_frac)) {
+            partner_loh <- TRUE; break
+          }
+        }
+        out$tb_bridge_arm_loh   <- if (bridge_loh) "TRUE" else "FALSE"
+        out$tb_partner_arm_loh  <- if (partner_loh) "TRUE" else "FALSE"
+        out$tb_nonbridge_spared <- if (nb_spared) "TRUE" else "FALSE"
+        if ((bridge_loh || partner_loh) && nb_spared) out$tb_confident <- "TRUE"
+      }
+    }
+  }
+  out
+}
+
 ## ---- exported callers ------------------------------------------------------
 
 #' Call breakage-replication/fusion (BRF) amplicons
@@ -251,6 +351,61 @@ call_bfb <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
   det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
     .detect_bfb(this_chr, coords, ctx, ch, min_cn_ratio, centromeres, chrom_lengths,
                 bfb_min_del_width, bfb_min_del_frac, bfb_loss_max, bfb_min_levels, bfb_min_spread)
+  .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
+                         ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, det)
+}
+
+#' Call translocation-bridge amplification (TBA) amplicons
+#'
+#' Standalone caller for translocation-bridge (TB) amplification (Lee, Kim,
+#' ..., Park, *Nature* 2023; doi:10.1038/s41586-023-06057-w): a focal amplicon
+#' whose boundary is defined by an **inter-chromosomal translocation that is
+#' itself amplified** (the "boundary translocation" carried within the amplicon).
+#' In this model an oncogene neighbourhood is translocated in G1, creating a
+#' dicentric chromosome that forms a chromosome bridge in mitosis; its breakage
+#' and repair amplify the fragment (often as ecDNA), leaving an amplified
+#' translocation demarcating the amplicon edge and co-amplifications on the
+#' partner chromosome. Runs independently of the other mechanism callers.
+#'
+#' @inheritParams call_simple_excision
+#' @param tb_edge_tol Integer; how close (bp) a translocation breakend must sit to
+#'   an amplified amplicon edge to count as a boundary translocation (default
+#'   `1e4`).
+#' @param centromeres,chrom_lengths Optional [GenomicRanges::GRanges] of
+#'   centromere spans (e.g. [load_centromeres()]) and named chromosome-length
+#'   vector ([load_chrom_lengths()]). When both are supplied, each TBA amplicon is
+#'   additionally scored for the paper's confirmatory footprint (see `tb_confident`
+#'   in the return value); without them the confidence columns are `"NA"`.
+#' @param loh_max Numeric; a copy-number segment is loss-of-heterozygosity (LOH)
+#'   when its minor-allele copy number is below this (default `0.5`, i.e. ~0).
+#' @param bridge_loh_min_frac Numeric; minimum fraction of a "bridge" arm that
+#'   must be LOH -- running contiguously to a landmark (telomere OR centromere) --
+#'   for that arm to count as a bridge arm (default `0.2`).
+#' @param nonbridge_loh_max_frac Numeric; maximum LOH fraction allowed on the
+#'   amplicon chromosome's opposite ("non-bridge") arm for it to count as spared
+#'   (default `0.1`).
+#' @return A [data.table::data.table] of annotated breakpoints with `tba`
+#'   (`"TRUE"`/`"FALSE"`), `n_boundary_tra` (number of distinct boundary
+#'   translocations) and `tb_partner_chr` (comma-separated partner chromosome(s)).
+#'   When `centromeres` and `chrom_lengths` are supplied it also reports the
+#'   confirmatory footprint of Lee et al. (*Nature* 2023): `tb_bridge_arm_loh`
+#'   (bridge-arm LOH on the amplicon's own arm, to a telomere or centromere),
+#'   `tb_partner_arm_loh` (the same on a translocated partner arm),
+#'   `tb_nonbridge_spared` (the amplicon chromosome's opposite arm retains
+#'   heterozygosity) and `tb_confident` (`"TRUE"` when a bridge arm -- amplicon
+#'   and/or partner -- shows LOH AND the non-bridge arm is spared: the asymmetric
+#'   pattern distinguishing TB amplification from symmetric chromothripsis).
+#' @seealso [call_simple_excision()], [call_bfb()], [call_micronucleation()]
+#' @export
+call_translocation_bridge_amp <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
+                                          ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6,
+                                          seed_min_width = 1e5, tb_edge_tol = 1e4,
+                                          centromeres = NULL, chrom_lengths = NULL,
+                                          loh_max = 0.5, bridge_loh_min_frac = 0.2,
+                                          nonbridge_loh_max_frac = 0.1, mc.cores = 1) {
+  det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
+    .detect_tba(this_chr, coords, ctx, ch, min_cn_ratio, tb_edge_tol,
+                centromeres, chrom_lengths, loh_max, bridge_loh_min_frac, nonbridge_loh_max_frac)
   .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
                          ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, det)
 }

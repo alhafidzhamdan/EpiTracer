@@ -646,7 +646,7 @@ plot_sv_linear <- function(sample,
       cv <- if (same) {
         base <- if (abs(gx2 - gx1) <= total_w * 0.15) curv_intra * 1.4 else curv_intra
         if (sv$strands[i] %in% c("DEL", "h2hINV", "+-", "--")) base else -base
-      } else curv_inter
+      } else if (gx1 <= gx2) -abs(curv_inter) else abs(curv_inter)  # TRA: always bow upward regardless of chrom1/chrom2 order
       ## draw the connecting arc only when the two breakends map to distinct x
       ## positions (geom_curve errors on identical end points); the breakpoint
       ## verticals are drawn regardless.

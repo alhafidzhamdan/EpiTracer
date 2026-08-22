@@ -16,7 +16,7 @@
 ## position-sorted prox/dist assignment.
 make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2,
                                 prox_shoulder_cn = NULL, prox_shoulder_width = 999L,
-                                reverse_boundary = FALSE) {
+                                reverse_boundary = FALSE, boundary_homlen = 0L) {
   suppressPackageStartupMessages({
     requireNamespace("GenomicRanges")
     requireNamespace("data.table")
@@ -42,7 +42,9 @@ make_episome_inputs <- function(flank_cn = 2, chr_baseline = 2,
     VF         = c(200, 1000, 1000, 200),
     PURPLE_CN  = c(2, 50, 50, 2),
     insLen     = 0L,
-    HOMLEN     = 0L
+    ## boundary-DUP breakends carry `boundary_homlen` bp of microhomology (the
+    ## circularisation-junction homology signature); the flanking DELs stay blunt.
+    HOMLEN     = c(0L, boundary_homlen, boundary_homlen, 0L)
   )
   breakpoints_gr <- GenomicRanges::makeGRangesFromDataFrame(bp, keep.extra.columns = TRUE)
 

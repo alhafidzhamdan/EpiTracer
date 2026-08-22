@@ -20,7 +20,9 @@ call_simple_excision(
   min_flank_width = 2000,
   bridge_gap = seed_gap,
   founder_jcn = 30,
-  centromeres = NULL
+  centromeres = NULL,
+  mh_min_homology = 2,
+  hr_min_homology = 14
 )
 }
 \arguments{
@@ -94,6 +96,16 @@ whose amplified edge terminates \emph{within} a centromere (rather than
 traversing across it) is flagged \code{flag_chromosomal_bridge} and excluded from
 the episomal call as a dicentric / chromosomal-bridge event. \code{NULL} (default)
 skips the check.}
+
+\item{mh_min_homology, hr_min_homology}{Numeric; breakpoint-homology (bp)
+thresholds used to classify the circularisation (boundary-DUP) junction into
+an inferred DSB-repair pathway, following Eugen-Olsen et al. (Nucleic Acids
+Res 2025; doi:10.1093/nar/gkaf122). A junction with homology
+\verb{< mh_min_homology} is called \code{"NHEJ"} (near-blunt), \verb{>= mh_min_homology} and
+\verb{< hr_min_homology} is \code{"MMEJ"} (short microhomology / alternative
+end-joining), and \verb{>= hr_min_homology} is \code{"HR"} (long homology / homologous
+recombination). Defaults \code{2} and \code{14} are the human microhomology and HR
+minimum-homology lengths reported in that review.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} combining the annotated breakpoints of all
@@ -105,13 +117,19 @@ amplicons, with per-breakpoint classification columns including
 \code{flag_internal_inversion} (a fold-back inversion does so -- break-fusion-
 bridge), and \code{flag_bridging_amplicon} (a junction fuses two separate
 amplicons) -- all character \code{"TRUE"}/\code{"FALSE"}. An amplicon carrying either
-disqualifying flag is set \code{episomal = "FALSE"}.
+disqualifying flag is set \code{episomal = "FALSE"}. For an amplicon with a
+boundary DUP it also reports the circularisation-junction microhomology as
+\code{boundary_homology} (numeric bp) and \code{junction_homology_class}
+(\code{"NHEJ"}/\code{"MMEJ"}/\code{"HR"}; \code{NA} when no boundary DUP is found), the inferred
+DSB-repair pathway that sealed the circle.
 
 The other amplicon-formation mechanisms are computed by dedicated standalone
 callers, not here: \code{\link[=call_brf]{call_brf()}} (breakage-replication/fusion / adjacent
 parallel breakpoints), \code{\link[=call_micronucleation]{call_micronucleation()}} (high-VF non-homologous
-translocation), and \code{\link[=call_bfb]{call_bfb()}} (breakage-fusion-bridge). Join their output
-to this one by \code{WGS_ID} + \code{ID} to assemble a combined mechanism table.
+translocation), \code{\link[=call_bfb]{call_bfb()}} (breakage-fusion-bridge) and
+\code{\link[=call_translocation_bridge_amp]{call_translocation_bridge_amp()}} (translocation-bridge amplification). Join
+their output to this one by \code{WGS_ID} + \code{ID} to assemble a combined mechanism
+table.
 }
 \description{
 Detects ecDNA amplicons whose structure is consistent with the \emph{episome}

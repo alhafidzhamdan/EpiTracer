@@ -18,6 +18,8 @@ classify_amplicon_episomal(
   bridge_gap = 1e+06,
   founder_jcn = 30,
   centromeres = NULL,
+  mh_min_homology = 2,
+  hr_min_homology = 14,
   verbose = FALSE
 )
 }

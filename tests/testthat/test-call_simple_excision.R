@@ -510,3 +510,29 @@ test_that("boundary-DUP breakends in reversed row order are still called episoma
   expect_true(all(res[res$event == "DUP1", ]$duplication_at_boundary == "TRUE"))
   expect_true(all(res$episomal == "TRUE"))
 })
+
+test_that("circularisation-junction microhomology classifies NHEJ / MMEJ / HR", {
+  # The boundary DUP is the self-ligation junction; its breakpoint homology
+  # length classifies the inferred DSB-repair pathway (Eugen-Olsen et al.,
+  # Nucleic Acids Res 2025, doi:10.1093/nar/gkaf122): < 2 bp = NHEJ (blunt),
+  # 2..<14 bp = MMEJ (microhomology / alt-EJ), >= 14 bp = HR (long homology).
+  for (hl_class in list(c(0L, "NHEJ"), c(5L, "MMEJ"), c(20L, "HR"))) {
+    d <- make_episome_inputs(boundary_homlen = as.integer(hl_class[[1]]))
+    res <- call_simple_excision(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr,
+                               d$cancer_genes_gr, mc.cores = 1)
+    expect_true(all(res$episomal == "TRUE"))
+    bd <- res[res$duplication_at_boundary == "TRUE", ]
+    expect_true(all(bd$boundary_homology == as.numeric(hl_class[[1]])))
+    expect_true(all(bd$junction_homology_class == hl_class[[2]]))
+  }
+})
+
+test_that("junction_homology_class is NA when there is no boundary DUP", {
+  # No boundary DUP -> not episomal, and the homology annotation stays NA.
+  d <- make_episome_inputs(flank_cn = 2)
+  no_dup <- d$breakpoints_gr[d$breakpoints_gr$svclass != "DUP"]
+  res <- call_simple_excision(d$ecdna_gr, no_dup, d$cnv_gr,
+                             d$cancer_genes_gr, mc.cores = 1)
+  expect_true(all(res$episomal == "FALSE"))
+  expect_true(all(is.na(res$junction_homology_class)))
+})

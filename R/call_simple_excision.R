@@ -41,6 +41,8 @@ classify_amplicon_episomal <- function(this_amplicon_id,
                                        bridge_gap = 1e6,
                                        founder_jcn = 30,
                                        centromeres = NULL,
+                                       mh_min_homology = 2,
+                                       hr_min_homology = 14,
                                        verbose = FALSE) {
 
   this_amplicon_gr <- ecdna_gr[ecdna_gr$ID %in% this_amplicon_id]
@@ -117,6 +119,11 @@ classify_amplicon_episomal <- function(this_amplicon_id,
           isTRUE(this_amplicon_gr$cn_only[1])) "TRUE" else "FALSE"
     this_sample_breakpoints_ecdna_annotated$episomal <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$has_excision_scar <- "FALSE"
+    ## Circularisation-junction microhomology signature (Eugen-Olsen et al.,
+    ## Nucleic Acids Res 2025, doi:10.1093/nar/gkaf122): the breakpoint homology
+    ## length of the boundary DUP and the excision repair pathway it implies.
+    this_sample_breakpoints_ecdna_annotated$boundary_homology <- NA_real_
+    this_sample_breakpoints_ecdna_annotated$junction_homology_class <- NA_character_
     ## NOTE: the breakage-replication/fusion (BRF), micronucleation and
     ## breakage-fusion-bridge (BFB) annotations are computed by the standalone
     ## callers [call_brf()], [call_micronucleation()] and [call_bfb()], not here.
@@ -378,6 +385,25 @@ classify_amplicon_episomal <- function(this_amplicon_id,
               ## the boundary DUP, which remains the highest-VF junction.
               bd_vf <- max(this_chr[boundary_index]$VF)
 
+              ## Circularisation-junction microhomology. The boundary DUP is the
+              ## self-ligation junction of the episome; its breakpoint homology
+              ## length discriminates the DSB-repair pathway that sealed the circle
+              ## (Eugen-Olsen, Hariprakash, Oestergaard & Regenberg, Nucleic Acids
+              ## Res 2025; doi:10.1093/nar/gkaf122): near-blunt junctions (< 2 bp)
+              ## are NHEJ, short microhomology (2 to < 14 bp) is alt-EJ / MMEJ, and
+              ## long homology (>= 14 bp, the human HR minimum) is homologous
+              ## recombination. Both breakends of a junction share one HOMLEN, so
+              ## take the (non-missing) boundary-DUP homology.
+              bd_hom <- suppressWarnings(
+                max(as.numeric(this_chr[boundary_index]$homLen), na.rm = TRUE))
+              if (is.finite(bd_hom)) {
+                this_chr$boundary_homology <- bd_hom
+                this_chr$junction_homology_class <-
+                  if (bd_hom < mh_min_homology) "NHEJ"
+                  else if (bd_hom < hr_min_homology) "MMEJ"
+                  else "HR"
+              }
+
               ## Internal SVs: events whose breakends ALL lie strictly inside the
               ## boundary-DUP span (excluding the boundary DUP itself). An internal
               ## SV whose VF exceeds the founder boundary DUP is flagged. A
@@ -610,6 +636,15 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'   traversing across it) is flagged `flag_chromosomal_bridge` and excluded from
 #'   the episomal call as a dicentric / chromosomal-bridge event. `NULL` (default)
 #'   skips the check.
+#' @param mh_min_homology,hr_min_homology Numeric; breakpoint-homology (bp)
+#'   thresholds used to classify the circularisation (boundary-DUP) junction into
+#'   an inferred DSB-repair pathway, following Eugen-Olsen et al. (Nucleic Acids
+#'   Res 2025; doi:10.1093/nar/gkaf122). A junction with homology
+#'   `< mh_min_homology` is called `"NHEJ"` (near-blunt), `>= mh_min_homology` and
+#'   `< hr_min_homology` is `"MMEJ"` (short microhomology / alternative
+#'   end-joining), and `>= hr_min_homology` is `"HR"` (long homology / homologous
+#'   recombination). Defaults `2` and `14` are the human microhomology and HR
+#'   minimum-homology lengths reported in that review.
 #'
 #' @return A [data.table::data.table] combining the annotated breakpoints of all
 #'   amplicons, with per-breakpoint classification columns including
@@ -620,13 +655,19 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'   `flag_internal_inversion` (a fold-back inversion does so -- break-fusion-
 #'   bridge), and `flag_bridging_amplicon` (a junction fuses two separate
 #'   amplicons) -- all character `"TRUE"`/`"FALSE"`. An amplicon carrying either
-#'   disqualifying flag is set `episomal = "FALSE"`.
+#'   disqualifying flag is set `episomal = "FALSE"`. For an amplicon with a
+#'   boundary DUP it also reports the circularisation-junction microhomology as
+#'   `boundary_homology` (numeric bp) and `junction_homology_class`
+#'   (`"NHEJ"`/`"MMEJ"`/`"HR"`; `NA` when no boundary DUP is found), the inferred
+#'   DSB-repair pathway that sealed the circle.
 #'
 #'   The other amplicon-formation mechanisms are computed by dedicated standalone
 #'   callers, not here: [call_brf()] (breakage-replication/fusion / adjacent
 #'   parallel breakpoints), [call_micronucleation()] (high-VF non-homologous
-#'   translocation), and [call_bfb()] (breakage-fusion-bridge). Join their output
-#'   to this one by `WGS_ID` + `ID` to assemble a combined mechanism table.
+#'   translocation), [call_bfb()] (breakage-fusion-bridge) and
+#'   [call_translocation_bridge_amp()] (translocation-bridge amplification). Join
+#'   their output to this one by `WGS_ID` + `ID` to assemble a combined mechanism
+#'   table.
 #'
 #' @examples
 #' \dontrun{
@@ -660,7 +701,9 @@ call_simple_excision <- function(ecdna_gr = NULL,
                                 min_flank_width = 2000,
                                 bridge_gap = seed_gap,
                                 founder_jcn = 30,
-                                centromeres = NULL) {
+                                centromeres = NULL,
+                                mh_min_homology = 2,
+                                hr_min_homology = 14) {
 
   flank_baseline <- match.arg(flank_baseline)
   stopifnot(
@@ -720,6 +763,8 @@ call_simple_excision <- function(ecdna_gr = NULL,
       bridge_gap       = bridge_gap,
       founder_jcn      = founder_jcn,
       centromeres      = centromeres,
+      mh_min_homology  = mh_min_homology,
+      hr_min_homology  = hr_min_homology,
       verbose          = verbose
     )
   }, mc.cores = mc.cores)

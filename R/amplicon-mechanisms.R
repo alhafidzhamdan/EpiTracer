@@ -190,29 +190,36 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
 ## footprint of a dicentric chromosome bridge formed by translocation.
 ##
 ## Loss-of-heterozygosity along one arm of a chromosome, the bridge footprint of
-## a translocation-bridge. Returns TRUE when a large contiguous LOH runs to a
-## chromosome landmark on that arm -- the telomere OR the centromere (the bridge
-## can break on either side of the amplicon) -- covering at least `frac` of the
-## arm. `minorAlleleCopyNumber < loh_max` marks an LOH segment.
-.arm_bridge_loh <- function(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, frac) {
+## a translocation-bridge. Returns TRUE when the arm carries LOH covering at least
+## `frac` of its length AND at least one LOH segment lies within `anchor_tol` bp of
+## a chromosome landmark on that arm -- the telomere OR the centromere (the bridge
+## can break on the telomeric or the centromeric side of the amplicon). The
+## `anchor_tol` window tolerates a small heterozygous segment sitting right at the
+## landmark (e.g. a peri-centromeric sliver) so centromere-proximal LOH that starts
+## a megabase or two past the centromere is still anchored. `minorAlleleCopyNumber
+## < loh_max` marks an LOH segment.
+.arm_bridge_loh <- function(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, frac, anchor_tol = 3e6) {
   d <- cn_all[seqnames == chr]
   if (!nrow(d)) return(FALSE)
-  if (arm == "p") { lo <- 0; hi <- cen_lo } else { lo <- cen_hi; hi <- L }
+  if (arm == "p") { lo <- 0; hi <- cen_lo; tel <- 0; cen <- cen_lo }
+  else            { lo <- cen_hi; hi <- L;  tel <- L; cen <- cen_hi }
   seg <- d[end >= lo & start <= hi]
   if (!nrow(seg)) return(FALSE)
   arm_w <- max(1, hi - lo)
   loh <- seg[minorAlleleCopyNumber < loh_max]
-  loh_w <- if (nrow(loh)) sum(pmax(0, pmin(loh$end, hi) - pmax(loh$start, lo))) else 0
-  tel_seg <- if (arm == "p") seg[which.min(start)] else seg[which.max(end)]   # telomeric end
-  cen_seg <- if (arm == "p") seg[which.max(end)]   else seg[which.min(start)] # centromeric end
-  anchored <- (nrow(tel_seg) && all(tel_seg$minorAlleleCopyNumber < loh_max)) ||
-              (nrow(cen_seg) && all(cen_seg$minorAlleleCopyNumber < loh_max))
-  anchored && (loh_w / arm_w) >= frac
+  if (!nrow(loh)) return(FALSE)
+  loh_w <- sum(pmax(0, pmin(loh$end, hi) - pmax(loh$start, lo)))
+  ## anchored if any LOH segment reaches within anchor_tol of the telomere or the
+  ## centromere end of the arm
+  near_tel <- any(pmin(abs(loh$start - tel), abs(loh$end - tel)) <= anchor_tol)
+  near_cen <- any(pmin(abs(loh$start - cen), abs(loh$end - cen)) <= anchor_tol)
+  (near_tel || near_cen) && (loh_w / arm_w) >= frac
 }
 
 .detect_tba <- function(this_chr, coords, ctx, chr, min_cn_ratio, tb_edge_tol,
                         centromeres = NULL, chrom_lengths = NULL, loh_max = 0.5,
-                        bridge_loh_min_frac = 0.2, nonbridge_loh_max_frac = 0.1) {
+                        bridge_loh_min_frac = 0.15, nonbridge_loh_max_frac = 0.1,
+                        bridge_anchor_tol = 3e6) {
   out <- list(n_boundary_tra = 0L, tba = "FALSE", tb_partner_chr = "",
               tb_bridge_arm_loh = "NA", tb_partner_arm_loh = "NA",
               tb_nonbridge_spared = "NA", tb_confident = "FALSE")
@@ -252,7 +259,7 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
       cen_lo <- min(cen$start); cen_hi <- max(cen$end); L <- chrom_lengths[[chr]]
       arm <- if (max_c <= cen_lo) "p" else if (min_c >= cen_hi) "q" else NA_character_
       if (!is.na(arm)) {
-        bridge_loh <- .arm_bridge_loh(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, bridge_loh_min_frac)
+        bridge_loh <- .arm_bridge_loh(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, bridge_loh_min_frac, bridge_anchor_tol)
         ## non-bridge (opposite) arm of the amplicon chromosome must be spared
         nb_arm <- if (arm == "p") "q" else "p"
         if (nb_arm == "p") { nlo <- 0; nhi <- cen_lo } else { nlo <- cen_hi; nhi <- L }
@@ -269,7 +276,7 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
           ppos <- stats::median(partner_bp[seqnames == pc]$start)
           parm <- arm_of(pc, ppos); if (is.na(parm)) next
           if (.arm_bridge_loh(cn_all, pc, parm, min(pce$start), max(pce$end),
-                              chrom_lengths[[pc]], loh_max, bridge_loh_min_frac)) {
+                              chrom_lengths[[pc]], loh_max, bridge_loh_min_frac, bridge_anchor_tol)) {
             partner_loh <- TRUE; break
           }
         }
@@ -379,11 +386,15 @@ call_bfb <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
 #' @param loh_max Numeric; a copy-number segment is loss-of-heterozygosity (LOH)
 #'   when its minor-allele copy number is below this (default `0.5`, i.e. ~0).
 #' @param bridge_loh_min_frac Numeric; minimum fraction of a "bridge" arm that
-#'   must be LOH -- running contiguously to a landmark (telomere OR centromere) --
-#'   for that arm to count as a bridge arm (default `0.2`).
+#'   must be LOH, with an LOH block anchored near a landmark (telomere OR
+#'   centromere), for that arm to count as a bridge arm (default `0.15`).
 #' @param nonbridge_loh_max_frac Numeric; maximum LOH fraction allowed on the
 #'   amplicon chromosome's opposite ("non-bridge") arm for it to count as spared
 #'   (default `0.1`).
+#' @param bridge_anchor_tol Integer; how close (bp) an LOH block must reach to a
+#'   telomere or centromere to anchor the bridge-arm LOH (default `3e6`). The
+#'   tolerance lets centromere-proximal LOH that starts a megabase or two past the
+#'   centromere (a heterozygous peri-centromeric sliver in between) still anchor.
 #' @return A [data.table::data.table] of annotated breakpoints with `tba`
 #'   (`"TRUE"`/`"FALSE"`), `n_boundary_tra` (number of distinct boundary
 #'   translocations) and `tb_partner_chr` (comma-separated partner chromosome(s)).
@@ -401,11 +412,13 @@ call_translocation_bridge_amp <- function(ecdna_gr = NULL, breakpoints_gr, cnv_g
                                           ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6,
                                           seed_min_width = 1e5, tb_edge_tol = 1e4,
                                           centromeres = NULL, chrom_lengths = NULL,
-                                          loh_max = 0.5, bridge_loh_min_frac = 0.2,
-                                          nonbridge_loh_max_frac = 0.1, mc.cores = 1) {
+                                          loh_max = 0.5, bridge_loh_min_frac = 0.15,
+                                          nonbridge_loh_max_frac = 0.1, bridge_anchor_tol = 3e6,
+                                          mc.cores = 1) {
   det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
     .detect_tba(this_chr, coords, ctx, ch, min_cn_ratio, tb_edge_tol,
-                centromeres, chrom_lengths, loh_max, bridge_loh_min_frac, nonbridge_loh_max_frac)
+                centromeres, chrom_lengths, loh_max, bridge_loh_min_frac,
+                nonbridge_loh_max_frac, bridge_anchor_tol)
   .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
                          ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, det)
 }

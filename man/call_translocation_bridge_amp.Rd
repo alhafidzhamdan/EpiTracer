@@ -17,8 +17,9 @@ call_translocation_bridge_amp(
   centromeres = NULL,
   chrom_lengths = NULL,
   loh_max = 0.5,
-  bridge_loh_min_frac = 0.2,
+  bridge_loh_min_frac = 0.15,
   nonbridge_loh_max_frac = 0.1,
+  bridge_anchor_tol = 3e+06,
   mc.cores = 1
 )
 }
@@ -63,12 +64,17 @@ in the return value); without them the confidence columns are \code{"NA"}.}
 when its minor-allele copy number is below this (default \code{0.5}, i.e. ~0).}
 
 \item{bridge_loh_min_frac}{Numeric; minimum fraction of a "bridge" arm that
-must be LOH -- running contiguously to a landmark (telomere OR centromere) --
-for that arm to count as a bridge arm (default \code{0.2}).}
+must be LOH, with an LOH block anchored near a landmark (telomere OR
+centromere), for that arm to count as a bridge arm (default \code{0.15}).}
 
 \item{nonbridge_loh_max_frac}{Numeric; maximum LOH fraction allowed on the
 amplicon chromosome's opposite ("non-bridge") arm for it to count as spared
 (default \code{0.1}).}
+
+\item{bridge_anchor_tol}{Integer; how close (bp) an LOH block must reach to a
+telomere or centromere to anchor the bridge-arm LOH (default \code{3e6}). The
+tolerance lets centromere-proximal LOH that starts a megabase or two past the
+centromere (a heterozygous peri-centromeric sliver in between) still anchor.}
 
 \item{mc.cores}{Integer; number of cores for \code{\link[parallel:mclapply]{parallel::mclapply()}}
 (default \code{1}). Values > 1 are ignored on Windows.}

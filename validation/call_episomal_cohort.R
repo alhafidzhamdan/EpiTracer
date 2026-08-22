@@ -80,6 +80,7 @@ res <- rbindlist(lapply(samples, function(s) {
   brf <- tryCatch(do.call(call_brf, args), error = function(e) NULL)
   mnc <- tryCatch(do.call(call_micronucleation, args), error = function(e) NULL)
   bfb <- tryCatch(do.call(call_bfb, c(args, list(centromeres = centromeres, chrom_lengths = chrom_lengths))), error = function(e) NULL)
+  tba <- tryCatch(do.call(call_translocation_bridge_amp, c(args, list(centromeres = centromeres, chrom_lengths = chrom_lengths))), error = function(e) NULL)
   de <- as.data.table(as.data.frame(epi))
   agg <- de[, .(episomal = any(episomal == "TRUE"), episomal_type2 = any(episomal_type2 == "TRUE"),
         excision_scar = any(has_excision_scar == "TRUE"),
@@ -92,7 +93,10 @@ res <- rbindlist(lapply(samples, function(s) {
         flag_internal_inversion = any(flag_internal_inversion == "TRUE"),
         flag_bridging = any(flag_bridging_amplicon == "TRUE"),
         flag_internal_sv_high_vf = any(flag_internal_sv_high_vf == "TRUE"),
+        boundary_homology = suppressWarnings(max(boundary_homology, na.rm = TRUE)),
+        junction_homology_class = na.omit(junction_homology_class)[1],
         genes = paste(unique(na.omit(gene)), collapse = ",")), by = .(WGS_ID, ID)]
+  agg[!is.finite(boundary_homology), boundary_homology := NA_real_]
   if (!is.null(brf) && nrow(brf)) agg <- merge(agg,
     as.data.table(as.data.frame(brf))[, .(brf = any(brf == "TRUE"), n_parallel_pairs = max(n_parallel_pairs)), by = .(WGS_ID, ID)],
     by = c("WGS_ID", "ID"), all.x = TRUE)
@@ -102,6 +106,14 @@ res <- rbindlist(lapply(samples, function(s) {
   if (!is.null(bfb) && nrow(bfb)) agg <- merge(agg,
     as.data.table(as.data.frame(bfb))[, .(bfb = any(bfb == "TRUE"), n_foldbacks = max(n_foldbacks),
       bfb_anchor = paste(unique(bfb_anchor[bfb_anchor != "none"]), collapse = ",")), by = .(WGS_ID, ID)],
+    by = c("WGS_ID", "ID"), all.x = TRUE)
+  if (!is.null(tba) && nrow(tba)) agg <- merge(agg,
+    as.data.table(as.data.frame(tba))[, .(tba = any(tba == "TRUE"), n_boundary_tra = max(n_boundary_tra),
+      tb_partner_chr = paste(unique(tb_partner_chr[tb_partner_chr != ""]), collapse = ";"),
+      tb_bridge_arm_loh = any(tb_bridge_arm_loh == "TRUE"),
+      tb_partner_arm_loh = any(tb_partner_arm_loh == "TRUE"),
+      tb_nonbridge_spared = any(tb_nonbridge_spared == "TRUE"),
+      tb_confident = any(tb_confident == "TRUE")), by = .(WGS_ID, ID)],
     by = c("WGS_ID", "ID"), all.x = TRUE)
   ## combined initiation-mechanism label (episomal / micronucleation, mutually exclusive)
   agg[, mechanism := fifelse(episomal & micronucleation, "candidate_episomal_with_micronucleation",
@@ -118,6 +130,12 @@ cat("EPISOMAL amplicons:", nrow(epi), "in", uniqueN(epi$WGS_ID), "samples",
     "(", sum(epi$excision_scar), "with excision scar )\n")
 cat("episomal by oncogene:\n")
 print(sort(table(unlist(strsplit(epi[genes != ""]$genes, ","))), decreasing = TRUE))
+
+cat("\nepisomal circularisation-junction repair pathway",
+    "(boundary-DUP breakpoint homology; Eugen-Olsen et al., NAR 2025):\n")
+print(table(epi$junction_homology_class, useNA = "ifany"))
+cat("  boundary homology (bp) summary among episomal:\n")
+print(summary(epi$boundary_homology))
 
 brf <- res[brf == TRUE]
 cat("\nBRF-annotated amplicons (adjacent parallel breakpoints):", nrow(brf),
@@ -141,3 +159,16 @@ cat("\nBFB amplicons (intrachromosomal terminal fold-back staircase with distal 
 cat("  anchor:"); print(table(bfb$bfb_anchor))
 cat("BFB by oncogene:\n")
 print(sort(table(unlist(strsplit(bfb[genes != ""]$genes, ","))), decreasing = TRUE))
+
+tba <- res[tba == TRUE]
+cat("\nTBA amplicons (amplified boundary translocation; Lee et al., Nature 2023):",
+    nrow(tba), "in", uniqueN(tba$WGS_ID), "samples\n")
+cat("  confident TBA (bridge-arm LOH on amplicon and/or partner arm + non-bridge arm spared):",
+    nrow(tba[tb_confident == TRUE]), "in", uniqueN(tba[tb_confident == TRUE]$WGS_ID), "samples\n")
+cat("    bridge_arm_loh:", nrow(tba[tb_bridge_arm_loh == TRUE]),
+    "| partner_arm_loh:", nrow(tba[tb_partner_arm_loh == TRUE]),
+    "| nonbridge_spared:", nrow(tba[tb_nonbridge_spared == TRUE]), "\n")
+cat("TBA by oncogene:\n")
+print(sort(table(unlist(strsplit(tba[genes != ""]$genes, ","))), decreasing = TRUE))
+cat("confident-TBA by oncogene:\n")
+print(sort(table(unlist(strsplit(tba[tb_confident == TRUE & genes != ""]$genes, ","))), decreasing = TRUE))

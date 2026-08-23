@@ -6,18 +6,16 @@
 ## runs call_simple_excision(ecdna_gr = NULL, ...) per sample, letting the caller
 ## auto-detect amplicon seeds from copy number.
 ##
-## `ploidy_mode`:
-##   "global"  - use the CN table's own (PURPLE) ploidy in every flank test.
-##               This is the caller AS-PUBLISHED. NB: in GBM chr7 is polysomic,
-##               so EGFR-episome flanks read as "gained" and the episome is
-##               missed (the boundary DUP is found, but the diploid-flank test
-##               fails). See GBM39.
-##   "per_chr" - set the per-segment ploidy to the local per-chromosome baseline,
-##               so the flank test is calibrated to a gained chromosome (recovers
-##               the EGFR episomes). Same fix as the per-locus classifier.
+## Ploidy calibration is always PER-CHROMOSOME: each segment's ploidy is set to
+## the local per-chromosome baseline, so the diploid-flank test is calibrated to
+## a gained chromosome. This is essential in GBM, where chr7 is polysomic -- with
+## a single genome-wide ploidy the EGFR-episome flanks read as "gained" and the
+## episome is missed (the boundary DUP is found, but the flank test fails). The
+## per-chromosome baseline recovers those episomes (same fix as the per-locus
+## classifier). There is deliberately no genome-wide ("global") mode.
 ##
 ## USAGE (from the package root):
-##   Rscript validation/call_episomal_cohort.R sv_bedpe.rds cn_segments.rds [global|per_chr]
+##   Rscript validation/call_episomal_cohort.R sv_bedpe.rds cn_segments.rds
 ## ---------------------------------------------------------------------------
 
 suppressPackageStartupMessages({
@@ -26,7 +24,7 @@ suppressPackageStartupMessages({
 
 args <- commandArgs(trailingOnly = TRUE)
 sv <- as.data.table(readRDS(args[1])); cn <- as.data.table(readRDS(args[2]))
-ploidy_mode <- if (length(args) >= 3) args[3] else "global"
+ploidy_mode <- "per_chr"
 
 pfx <- function(x) ifelse(grepl("^chr", x), x, paste0("chr", x))
 sv[, `:=`(chrom1 = pfx(chrom1), chrom2 = pfx(chrom2))]
@@ -40,12 +38,11 @@ chrom_lengths <- load_chrom_lengths("hg38")
 build_inputs <- function(s) {
   cs <- cn[sample == s]; vs <- sv[sample == s]
   if (!nrow(vs) || !nrow(cs)) return(NULL)
-  ploidy_col <- cs$ploidy
-  if (ploidy_mode == "per_chr") {                      # local per-chromosome baseline
-    base <- cs[, .(b = max(2, round(stats::median(copyNumber[copyNumber < 6])))), by = seqnames]
-    ploidy_col <- base$b[match(cs$seqnames, base$seqnames)]
-    ploidy_col[is.na(ploidy_col)] <- 2
-  }
+  ## Per-chromosome ploidy baseline: median CN of the non-amplified (< 6) segments
+  ## on each chromosome, so the flank test is calibrated to a gained chromosome.
+  base <- cs[, .(b = max(2, round(stats::median(copyNumber[copyNumber < 6])))), by = seqnames]
+  ploidy_col <- base$b[match(cs$seqnames, base$seqnames)]
+  ploidy_col[is.na(ploidy_col)] <- 2
   cnv_gr <- GRanges(cs$seqnames, IRanges(cs$start, cs$end), sample = s,
                     copyNumber = cs$copyNumber, ploidy = ploidy_col,
                     majorAlleleCopyNumber = cs$majorAlleleCopyNumber,

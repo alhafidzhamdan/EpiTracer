@@ -157,6 +157,53 @@ make_plot_inputs <- function() {
        cnv_data = cnv_data, sv_data = sv_data)
 }
 
+## Build call_chromoplexy() inputs from a set of junctions. `junctions` is a
+## data.frame with chr1/pos1/chr2/pos2 (optional `svclass`); every junction is
+## reconstructed as two breakends sharing an event. `cn` sets PURPLE_CN on every
+## breakend (raise it above max_cn*ploidy/2 to model an AMPLIFIED, non-chromoplexy
+## chain); `ploidy` sets the per-chromosome baseline. cnv_gr covers each involved
+## chromosome with one diploid segment so breakends resolve a ploidy.
+make_chain_inputs <- function(junctions, cn = 2, ploidy = 2, sample = "S1") {
+  suppressPackageStartupMessages({
+    requireNamespace("GenomicRanges"); requireNamespace("data.table")
+  })
+  n <- nrow(junctions)
+  ev <- paste0("J", seq_len(n))
+  sv <- if (!is.null(junctions$svclass)) as.character(junctions$svclass) else
+    ifelse(junctions$chr1 == junctions$chr2, "DEL", "TRA")
+  bp <- data.table::data.table(
+    seqnames  = c(junctions$chr1, junctions$chr2),
+    start     = as.integer(c(junctions$pos1, junctions$pos2)),
+    end       = as.integer(c(junctions$pos1, junctions$pos2)),
+    WGS_ID    = sample,
+    event     = rep(ev, 2L),
+    svclass   = rep(sv, 2L),
+    PURPLE_CN = cn
+  )
+  breakpoints_gr <- GenomicRanges::makeGRangesFromDataFrame(bp, keep.extra.columns = TRUE)
+  chrs <- unique(c(junctions$chr1, junctions$chr2))
+  cnv <- data.table::data.table(
+    seqnames = chrs, start = 1L, end = 2e8L, sample = sample,
+    copyNumber = 2, ploidy = ploidy,
+    majorAlleleCopyNumber = 1, minorAlleleCopyNumber = 1
+  )
+  cnv_gr <- GenomicRanges::makeGRangesFromDataFrame(cnv, keep.extra.columns = TRUE)
+  list(breakpoints_gr = breakpoints_gr, cnv_gr = cnv_gr)
+}
+
+## A closed 3-chromosome chromoplexy cycle chr1 -> chr5 -> chr12 -> chr1, with the
+## two breakends meeting at each chromosome 5 kb apart (a deletion bridge). Pass
+## `close = FALSE` to send the last junction to chr8 instead (an OPEN chain).
+make_chromoplexy_junctions <- function(close = TRUE) {
+  data.frame(
+    chr1 = c("chr1",     "chr5",     "chr12"),
+    pos1 = c(10000000,   20005000,   30005000),
+    chr2 = c("chr5",     "chr12",    if (close) "chr1" else "chr8"),
+    pos2 = c(20000000,   30000000,   if (close) 10005000 else 40000000),
+    stringsAsFactors = FALSE
+  )
+}
+
 ## Synthetic small mutations for the optional SNV panel of plot_sv_linear().
 ## Uses the SNV column convention (`sampleID` sample, `allelic_freq` VAF, `type`
 ## mutation class). Five S1 SNVs inside the chr7 window (one with an artefactual

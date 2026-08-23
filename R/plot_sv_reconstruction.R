@@ -176,6 +176,10 @@ plot_sv_reconstruction <- function(sample,
                           loh_position_ratio = 0.5,
                           highlight_amp = TRUE,
                           highlight_hom_del = TRUE,
+                          highlight_events = NULL,
+                          highlight_id_col = NULL,
+                          highlight_colour = "#d95f0e",
+                          dim_unhighlighted = FALSE,
                           wgd_sample_col = NULL,
                           outdir = NULL,
                           save = TRUE,
@@ -383,6 +387,17 @@ plot_sv_reconstruction <- function(sample,
                         ifelse(s %in% c("--", "t2tINV"), t2tINV_colour,
                         ifelse(s %in% c("-+", "DUP"), DUP_colour, TRA_colour))))
   sv$colour <- sv_col(sv$strands)
+
+  ## Optional event highlight (shared with plot_sv_linear / plot_sv_circos):
+  ## matched SVs are recoloured to `highlight_colour` and drawn bolder (their
+  ## per-row `hl` feeds the line-width multiplier below); `dim_unhighlighted`
+  ## greys the rest. Carried on `sv` so it survives subsetting into VF strata.
+  sv$hl <- .resolve_highlight(sv, highlight_events, highlight_id_col)
+  if (any(sv$hl)) {
+    if (isTRUE(dim_unhighlighted)) sv$colour[!sv$hl] <- "grey85"
+    sv$colour[sv$hl] <- highlight_colour
+  }
+  highlight_lwd_mult <- 3
 
   ## ---- Cluster junctions into VF (read-support) strata --------------------
   ## Right-skewed counts -> cluster on log scale. Returns integer stratum id per
@@ -798,6 +813,7 @@ plot_sv_reconstruction <- function(sample,
         ## the founder junction is drawn with a slightly bolder line so it stays
         ## legible even where it spans the whole amplicon or is re-drawn faintly.
         fmul <- if (isTRUE(svset$is_founder[i])) founder_lwd_mult else 1
+        if (isTRUE(svset$hl[i])) fmul <- max(fmul, highlight_lwd_mult)   # highlighted events bolder
         lwd_seg <- size_sv_line * fmul
         in1 <- !is.na(svset$l1[i]); in2 <- !is.na(svset$l2[i])
         gx1 <- if (in1) gx_of(svset$l1[i], svset$pos1[i]) else NA

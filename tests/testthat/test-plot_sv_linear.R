@@ -317,3 +317,21 @@ test_that("auto-detection errors when no amplification is present", {
     "amplified"
   )
 })
+
+test_that("highlight_events recolours matched SVs bold (by name)", {
+  d <- make_multilocus_inputs()
+  sv <- d$sv_data
+  sv$name <- paste0("SV", seq_len(nrow(sv)))
+  p <- suppressWarnings(suppressMessages(
+    plot_sv_linear(sample = "S1", cnv_data = d$cnv_data, sv_data = sv, wgd_data = d$wgd_data,
+                   karyotype = d$karyotype, gene_coord = d$gene_coord,
+                   chromosome = c("chr7", "chr12"),
+                   chromosome_range = matrix(c(50e6, 70e6, 55e6, 60e6), ncol = 2, byrow = TRUE),
+                   highlight_events = "SV1", highlight_colour = "#d95f0e",
+                   dim_unhighlighted = TRUE)
+  ))
+  expect_s3_class(p, "ggplot")
+  ## the highlight colour appears among the plotted layers' colour data
+  cols <- unlist(lapply(p$layers, function(L) L$data$colour), use.names = FALSE)
+  expect_true("#d95f0e" %in% cols)
+})

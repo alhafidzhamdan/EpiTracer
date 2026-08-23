@@ -38,6 +38,10 @@ plot_sv_linear(
   highlight_hom_del = TRUE,
   amplicons = NULL,
   parallel_breakpoints = NULL,
+  highlight_events = NULL,
+  highlight_id_col = NULL,
+  highlight_colour = "#d95f0e",
+  dim_unhighlighted = FALSE,
   wgd_sample_col = NULL,
   snv_data = NULL,
   snv_sample_col = NULL,
@@ -181,6 +185,19 @@ columns \code{chr}/\code{seqnames}, \code{pos1}, \code{pos2} (the two same-orien
 of a pair) and an optional \code{strand}. Each pair is drawn near the baseline as
 a bracket joining the two breakends, with a caret marking each, so BRF
 breakpoints stand out among the other junctions.}
+
+\item{highlight_events}{Optional character vector of SV identifiers to draw
+bold on top of the rest (e.g. the junctions of one chromoplexy cycle, a TBA
+boundary, a fold-back set). Matched against \code{highlight_id_col}.}
+
+\item{highlight_id_col}{Optional name of the column in \code{sv_data} holding the
+identifiers matched by \code{highlight_events}; \code{NULL} (default) auto-detects
+\code{name} then \code{event}.}
+
+\item{highlight_colour}{Colour for highlighted SVs (default \code{"#d95f0e"}).}
+
+\item{dim_unhighlighted}{Logical; when \code{TRUE}, non-highlighted SVs are greyed
+so the highlighted set stands out (default \code{FALSE}).}
 
 \item{wgd_sample_col}{Optional name of the sample column in \code{wgd_data}
 (default: \code{sample}, falling back to \code{WGS_ID}).}

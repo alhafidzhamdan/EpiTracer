@@ -37,6 +37,7 @@ Imports:
     grDevices
 Suggests:
     bslib,
+    circlize,
     Ckmeans.1d.dp,
     DT,
     ggrepel,

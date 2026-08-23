@@ -122,6 +122,15 @@
 #'   of a pair) and an optional `strand`. Each pair is drawn near the baseline as
 #'   a bracket joining the two breakends, with a caret marking each, so BRF
 #'   breakpoints stand out among the other junctions.
+#' @param highlight_events Optional character vector of SV identifiers to draw
+#'   bold on top of the rest (e.g. the junctions of one chromoplexy cycle, a TBA
+#'   boundary, a fold-back set). Matched against `highlight_id_col`.
+#' @param highlight_id_col Optional name of the column in `sv_data` holding the
+#'   identifiers matched by `highlight_events`; `NULL` (default) auto-detects
+#'   `name` then `event`.
+#' @param highlight_colour Colour for highlighted SVs (default `"#d95f0e"`).
+#' @param dim_unhighlighted Logical; when `TRUE`, non-highlighted SVs are greyed
+#'   so the highlighted set stands out (default `FALSE`).
 #' @param wgd_sample_col Optional name of the sample column in `wgd_data`
 #'   (default: `sample`, falling back to `WGS_ID`).
 #' @param snv_data Optional SNV/SSM table as a `data.frame` or
@@ -241,6 +250,10 @@ plot_sv_linear <- function(sample,
                            highlight_hom_del = TRUE,
                            amplicons = NULL,
                            parallel_breakpoints = NULL,
+                           highlight_events = NULL,
+                           highlight_id_col = NULL,
+                           highlight_colour = "#d95f0e",
+                           dim_unhighlighted = FALSE,
                            wgd_sample_col = NULL,
                            snv_data = NULL,
                            snv_sample_col = NULL,
@@ -466,6 +479,16 @@ plot_sv_linear <- function(sample,
                         ifelse(s %in% c("-+", "DUP"), DUP_colour, TRA_colour))))
   sv$colour <- sv_col(sv$strands)
 
+  ## Optional event highlight: matched SVs (by `highlight_id_col`, default name/
+  ## event) are recoloured to `highlight_colour` and drawn bolder; when
+  ## `dim_unhighlighted` the rest are greyed so the highlighted set stands out.
+  sv$hl <- .resolve_highlight(sv, highlight_events, highlight_id_col)
+  if (any(sv$hl)) {
+    if (isTRUE(dim_unhighlighted)) sv$colour[!sv$hl] <- "grey85"
+    sv$colour[sv$hl] <- highlight_colour
+  }
+  hl_lwd_mult <- 3
+
   max_vf <- if (nrow(sv) > 0) max(sv$VF, na.rm = TRUE) else 0
   ## Right (read-support / VF) axis. When the loci contain no SVs there is no VF to
   ## scale to, but the axis is still drawn (for a consistent two-axis layout) by
@@ -654,7 +677,8 @@ plot_sv_linear <- function(sample,
       ## verticals are drawn regardless.
       if (abs(gx2 - gx1) >= 1)
         arc_rows[[length(arc_rows) + 1L]] <- data.frame(x = gx1, xend = gx2, y = yv, yend = yv,
-          curvature = cv, colour = col, lwd = if (same) size_sv_line else size_interchr_line)
+          curvature = cv, colour = col,
+          lwd = (if (same) size_sv_line else size_interchr_line) * (if (isTRUE(sv$hl[i])) hl_lwd_mult else 1))
       seg_rows[[length(seg_rows) + 1L]] <- data.frame(x = gx1, xend = gx1, y = 0, yend = yv, colour = col)
       seg_rows[[length(seg_rows) + 1L]] <- data.frame(x = gx2, xend = gx2, y = 0, yend = yv, colour = col)
     } else {
@@ -665,6 +689,7 @@ plot_sv_linear <- function(sample,
   }
   if (length(arc_rows) > 0) {
     arc_df <- as.data.frame(data.table::rbindlist(arc_rows))
+    arc_df <- arc_df[order(arc_df$lwd), , drop = FALSE]   # thicker (highlighted) arcs last -> on top
     arc_df$grp <- paste(arc_df$curvature, arc_df$lwd, sep = "_")
     for (g in unique(arc_df$grp)) {
       d <- arc_df[arc_df$grp == g, , drop = FALSE]

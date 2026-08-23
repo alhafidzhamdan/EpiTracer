@@ -52,6 +52,10 @@ plot_sv_reconstruction(
   loh_position_ratio = 0.5,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
+  highlight_events = NULL,
+  highlight_id_col = NULL,
+  highlight_colour = "#d95f0e",
+  dim_unhighlighted = FALSE,
   wgd_sample_col = NULL,
   outdir = NULL,
   save = TRUE,
@@ -262,6 +266,19 @@ floor of 2 so near-diploid regions still use a full 0-2 axis.}
 
 \item{highlight_amp, highlight_hom_del}{Logical; shade amplified / homozygously
 deleted segments.}
+
+\item{highlight_events}{Optional character vector of SV identifiers to draw
+bold on top of the rest (e.g. the junctions of one chromoplexy cycle, a TBA
+boundary, a fold-back set). Matched against \code{highlight_id_col}.}
+
+\item{highlight_id_col}{Optional name of the column in \code{sv_data} holding the
+identifiers matched by \code{highlight_events}; \code{NULL} (default) auto-detects
+\code{name} then \code{event}.}
+
+\item{highlight_colour}{Colour for highlighted SVs (default \code{"#d95f0e"}).}
+
+\item{dim_unhighlighted}{Logical; when \code{TRUE}, non-highlighted SVs are greyed
+so the highlighted set stands out (default \code{FALSE}).}
 
 \item{wgd_sample_col}{Optional name of the sample column in \code{wgd_data}
 (default: \code{sample}, falling back to \code{WGS_ID}).}

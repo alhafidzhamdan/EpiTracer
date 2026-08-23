@@ -68,7 +68,7 @@ samples <- intersect(unique(sv$sample), unique(cn$sample))
 message("Running call_simple_excision (ploidy_mode=", ploidy_mode, ") on ", length(samples), " samples ...")
 ## Each amplicon-formation mechanism now has its OWN standalone caller; run all
 ## four and join their per-amplicon summaries on WGS_ID + ID.
-res <- rbindlist(lapply(samples, function(s) {
+res_list <- lapply(samples, function(s) {
   inp <- build_inputs(s); if (is.null(inp)) return(NULL)
   args <- list(ecdna_gr = NULL, breakpoints_gr = inp$breakpoints_gr,
                cnv_gr = inp$cnv_gr, cancer_genes_gr = cancer_genes_gr)
@@ -117,11 +117,26 @@ res <- rbindlist(lapply(samples, function(s) {
   agg[, mechanism := fifelse(episomal & micronucleation, "candidate_episomal_with_micronucleation",
                      fifelse(micronucleation, "micronucleation_chromothripsis",
                      fifelse(episomal, "episomal_ecDNA", "unclassified")))]
-  agg
-}), fill = TRUE)
+  ## chromoplexy: sample-level balanced closed rearrangement chains (Baca 2013).
+  ## Cross-link onto amplicons: an amplicon is flagged when any of its own
+  ## breakpoints' events participate in a called chromoplexy cycle.
+  cpx <- tryCatch(call_chromoplexy(inp$breakpoints_gr, inp$cnv_gr), error = function(e) NULL)
+  cpx_events <- if (!is.null(cpx) && nrow(cpx)) unique(unlist(strsplit(cpx$events, ","))) else character(0)
+  if ("event" %in% names(de)) {
+    amp_ev <- de[, .(evset = list(unique(event))), by = .(WGS_ID, ID)]
+    agg <- merge(agg, amp_ev, by = c("WGS_ID", "ID"), all.x = TRUE)
+    agg[, chromoplexy := vapply(evset, function(e) any(e %in% cpx_events), logical(1))]
+    agg[, evset := NULL]
+  } else agg[, chromoplexy := FALSE]
+  list(agg = agg, cpx = cpx)
+})
+res_list <- Filter(Negate(is.null), res_list)
+res <- rbindlist(lapply(res_list, `[[`, "agg"), fill = TRUE)
+cpx_all <- rbindlist(Filter(function(x) !is.null(x) && nrow(x), lapply(res_list, `[[`, "cpx")), fill = TRUE)
 
 dir.create("validation/output", showWarnings = FALSE, recursive = TRUE)
 fwrite(res, sprintf("validation/output/cohort_original_caller_%s.tsv", ploidy_mode), sep = "\t")
+fwrite(cpx_all, sprintf("validation/output/cohort_chromoplexy_%s.tsv", ploidy_mode), sep = "\t")
 epi <- res[episomal == TRUE]
 cat("\namplicons detected:", nrow(res), "in", uniqueN(res$WGS_ID), "samples\n")
 cat("EPISOMAL amplicons:", nrow(epi), "in", uniqueN(epi$WGS_ID), "samples",
@@ -172,3 +187,16 @@ cat("TBA by oncogene:\n")
 print(sort(table(unlist(strsplit(tba[genes != ""]$genes, ","))), decreasing = TRUE))
 cat("confident-TBA by oncogene:\n")
 print(sort(table(unlist(strsplit(tba[tb_confident == TRUE & genes != ""]$genes, ","))), decreasing = TRUE))
+
+cat("\nCHROMOPLEXY (closed balanced rearrangement cycles; Baca et al., Cell 2013):",
+    nrow(cpx_all), "cycles in", uniqueN(cpx_all$WGS_ID), "samples\n")
+if (nrow(cpx_all)) {
+  cat("  cycle length (n junctions = n bridges):\n"); print(table(cpx_all$n_junctions))
+  cat("  chromosomes spanned per cycle:\n"); print(table(cpx_all$n_chromosomes))
+  cat("  cleanliness frac_cp summary:\n"); print(summary(cpx_all$frac_cp))
+}
+cpx_amp <- res[chromoplexy == TRUE]
+cat("  amplicons whose boundary participates in a chromoplexy cycle:", nrow(cpx_amp),
+    "in", uniqueN(cpx_amp$WGS_ID), "samples\n")
+cat("chromoplexy-linked amplicons by oncogene:\n")
+print(sort(table(unlist(strsplit(cpx_amp[genes != ""]$genes, ","))), decreasing = TRUE))

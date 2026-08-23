@@ -191,14 +191,17 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
 ##
 ## Loss-of-heterozygosity along one arm of a chromosome, the bridge footprint of
 ## a translocation-bridge. Returns TRUE when the arm carries LOH covering at least
-## `frac` of its length AND at least one LOH segment lies within `anchor_tol` bp of
-## a chromosome landmark on that arm -- the telomere OR the centromere (the bridge
-## can break on the telomeric or the centromeric side of the amplicon). The
-## `anchor_tol` window tolerates a small heterozygous segment sitting right at the
-## landmark (e.g. a peri-centromeric sliver) so centromere-proximal LOH that starts
-## a megabase or two past the centromere is still anchored. `minorAlleleCopyNumber
+## `frac` of its length AND a SUBSTANTIAL LOH segment (>= `loh_min_seg` bp) reaches
+## within `anchor_tol` bp of a chromosome landmark on that arm -- the telomere OR
+## the centromere (the bridge can break on the telomeric or the centromeric side of
+## the amplicon). The `anchor_tol` window tolerates a small heterozygous segment
+## sitting right at the landmark (e.g. a peri-centromeric sliver) so centromere-
+## proximal LOH that begins a megabase or two past the centromere still anchors;
+## `loh_min_seg` ignores tiny/point LOH slivers so an isolated sub-megabase LOH
+## near an otherwise-heterozygous terminus does NOT anchor. `minorAlleleCopyNumber
 ## < loh_max` marks an LOH segment.
-.arm_bridge_loh <- function(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, frac, anchor_tol = 3e6) {
+.arm_bridge_loh <- function(cn_all, chr, arm, cen_lo, cen_hi, L, loh_max, frac,
+                            anchor_tol = 3e6, loh_min_seg = 2e5) {
   d <- cn_all[seqnames == chr]
   if (!nrow(d)) return(FALSE)
   if (arm == "p") { lo <- 0; hi <- cen_lo; tel <- 0; cen <- cen_lo }
@@ -209,11 +212,16 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
   loh <- seg[minorAlleleCopyNumber < loh_max]
   if (!nrow(loh)) return(FALSE)
   loh_w <- sum(pmax(0, pmin(loh$end, hi) - pmax(loh$start, lo)))
-  ## anchored if any LOH segment reaches within anchor_tol of the telomere or the
-  ## centromere end of the arm
-  near_tel <- any(pmin(abs(loh$start - tel), abs(loh$end - tel)) <= anchor_tol)
-  near_cen <- any(pmin(abs(loh$start - cen), abs(loh$end - cen)) <= anchor_tol)
-  (near_tel || near_cen) && (loh_w / arm_w) >= frac
+  ## anchor only on SUBSTANTIAL LOH segments (ignore tiny slivers/points): a
+  ## substantial LOH block must reach within anchor_tol of the telomere or centromere
+  sub <- loh[(pmin(end, hi) - pmax(start, lo)) >= loh_min_seg]
+  anchored <- FALSE
+  if (nrow(sub)) {
+    gap_tel <- min(pmin(abs(sub$start - tel), abs(sub$end - tel)))
+    gap_cen <- min(pmin(abs(sub$start - cen), abs(sub$end - cen)))
+    anchored <- gap_tel <= anchor_tol || gap_cen <= anchor_tol
+  }
+  anchored && (loh_w / arm_w) >= frac
 }
 
 .detect_tba <- function(this_chr, coords, ctx, chr, min_cn_ratio, tb_edge_tol,
@@ -222,7 +230,8 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
                         bridge_anchor_tol = 3e6) {
   out <- list(n_boundary_tra = 0L, tba = "FALSE", tb_partner_chr = "",
               tb_bridge_arm_loh = "NA", tb_partner_arm_loh = "NA",
-              tb_nonbridge_spared = "NA", tb_confident = "FALSE")
+              tb_nonbridge_spared = "NA", tb_confident = "FALSE",
+              tb_high_confidence = "FALSE")
   if (!isTRUE(coords$has_amp_region)) return(out)
   pl <- ctx$ploidy
   min_c <- coords$min_amp_coord; max_c <- coords$max_amp_coord
@@ -283,7 +292,11 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
         out$tb_bridge_arm_loh   <- if (bridge_loh) "TRUE" else "FALSE"
         out$tb_partner_arm_loh  <- if (partner_loh) "TRUE" else "FALSE"
         out$tb_nonbridge_spared <- if (nb_spared) "TRUE" else "FALSE"
+        ## confident: LOH on either bridge arm (amplicon and/or partner) + non-bridge
+        ## spared. high-confidence: the DUAL-LOH pattern -- LOH on BOTH the amplicon
+        ## and partner bridge arms -- the strongest TB-amplification signature.
         if ((bridge_loh || partner_loh) && nb_spared) out$tb_confident <- "TRUE"
+        if (bridge_loh && partner_loh && nb_spared)   out$tb_high_confidence <- "TRUE"
       }
     }
   }
@@ -403,9 +416,12 @@ call_bfb <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
 #'   (bridge-arm LOH on the amplicon's own arm, to a telomere or centromere),
 #'   `tb_partner_arm_loh` (the same on a translocated partner arm),
 #'   `tb_nonbridge_spared` (the amplicon chromosome's opposite arm retains
-#'   heterozygosity) and `tb_confident` (`"TRUE"` when a bridge arm -- amplicon
+#'   heterozygosity), `tb_confident` (`"TRUE"` when a bridge arm -- amplicon
 #'   and/or partner -- shows LOH AND the non-bridge arm is spared: the asymmetric
-#'   pattern distinguishing TB amplification from symmetric chromothripsis).
+#'   pattern distinguishing TB amplification from symmetric chromothripsis) and
+#'   `tb_high_confidence` (`"TRUE"` only for the dual-LOH pattern: LOH on BOTH the
+#'   amplicon and partner bridge arms with the non-bridge arm spared -- the
+#'   strongest signature of a dicentric translocation bridge).
 #' @seealso [call_simple_excision()], [call_bfb()], [call_micronucleation()]
 #' @export
 call_translocation_bridge_amp <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,

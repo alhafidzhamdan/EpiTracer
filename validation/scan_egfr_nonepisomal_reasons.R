@@ -21,7 +21,7 @@ onc <- read.table(system.file("extdata", "oncogene_coord_hg38.bed", package = "E
                   sep = "\t", col.names = c("chr", "start", "end", "strand", "gene"))
 cancer_genes_gr <- GRanges(onc$chr, IRanges(onc$start, onc$end), gene = onc$gene)
 
-calls <- fread("validation/output/cohort_original_caller_global.tsv")
+calls <- fread("validation/output/cohort_original_caller_per_chr.tsv")
 egfr <- calls[grepl("(^|,)EGFR(,|$)", genes)]
 epi_samples <- unique(egfr[episomal == TRUE]$WGS_ID)
 samples <- sort(setdiff(unique(egfr$WGS_ID), epi_samples))

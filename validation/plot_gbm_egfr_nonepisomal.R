@@ -2,14 +2,14 @@
 ## NOT classify as episomal, drawn at each sample's full EGFR-amplicon extent (so
 ## missed episomes vs genuinely non-episomal EGFR amplifications can be told
 ## apart). Reads the cohort SV BEDPE + allele-specific CN and the caller output
-## (cohort_original_caller_global.tsv). USAGE:
+## (cohort_original_caller_per_chr.tsv). USAGE:
 ##   Rscript validation/plot_gbm_egfr_nonepisomal.R sv_bedpe.rds cn_segments.rds
 suppressPackageStartupMessages({
   library(EpiTracer); library(data.table); library(ggplot2); library(patchwork)
 })
 args <- commandArgs(trailingOnly = TRUE)
 sv <- as.data.table(readRDS(args[1])); cn <- as.data.table(readRDS(args[2]))
-calls <- fread("validation/output/cohort_original_caller_global.tsv")
+calls <- fread("validation/output/cohort_original_caller_per_chr.tsv")
 egfr <- calls[grepl("(^|,)EGFR(,|$)", genes)]
 epi_samples <- unique(egfr[episomal == TRUE]$WGS_ID)
 samples <- sort(setdiff(unique(egfr$WGS_ID), epi_samples))

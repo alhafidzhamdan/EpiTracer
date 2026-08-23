@@ -363,7 +363,8 @@ plot_sv_reconstruction <- function(sample,
     stop("Read-support column '", vf_col, "' not found in `sv_data`. ",
          "Set `vf_col` to one of: ", paste(names(sv), collapse = ", "), ".")
   sv$VF  <- suppressWarnings(as.numeric(sv[[vf_col]]))
-  sv$chr1 <- paste0("chr", sv$chrom1); sv$chr2 <- paste0("chr", sv$chrom2)
+  .chrp <- function(x) ifelse(grepl("^chr", x), x, paste0("chr", x))  # accept 'chr'-prefixed or bare
+  sv$chr1 <- .chrp(sv$chrom1); sv$chr2 <- .chrp(sv$chrom2)
   sv$pos1 <- as.integer(sv$start1);    sv$pos2 <- as.integer(sv$start2)
   sv$strands <- paste0(sv$strand1, sv$strand2)
   sv$strands <- ifelse(sv$svclass == "TRA", "TRA", sv$strands)

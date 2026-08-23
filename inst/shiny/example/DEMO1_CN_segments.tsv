@@ -1,0 +1,9 @@
+seqnames	start	end	copyNumber	minorAlleleCopyNumber	majorAlleleCopyNumber	ploidy	sample
+chr7	1	53999999	2	1	1	2	DEMO1
+chr7	5.4e+07	5.6e+07	42	1	41	2	DEMO1
+chr7	56000001	1.59e+08	2	1	1	2	DEMO1
+chr8	1	1.2e+08	2	1	1	2	DEMO1
+chr8	120000001	1.28e+08	6	1	5	2	DEMO1
+chr8	128000001	1.35e+08	10	1	9	2	DEMO1
+chr8	135000001	1.4e+08	16	1	15	2	DEMO1
+chr8	140000001	145138636	1	0	1	2	DEMO1

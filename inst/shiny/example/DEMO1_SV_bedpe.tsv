@@ -1,0 +1,6 @@
+chrom1	start1	chrom2	start2	strand1	strand2	svclass	name	VF	JCN	homlen	sample
+7	5.4e+07	7	5.6e+07	-	+	DUP	sv1	1800	40	0	DEMO1
+7	54200000	7	55800000	+	-	DEL	sv2	300	2	0	DEMO1
+8	1.28e+08	8	128050000	+	+	h2hINV	sv3	900	20	0	DEMO1
+8	1.35e+08	8	135050000	+	+	h2hINV	sv4	700	16	0	DEMO1
+8	1.4e+08	8	140050000	+	+	h2hINV	sv5	500	12	0	DEMO1

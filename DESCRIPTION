@@ -36,11 +36,15 @@ Imports:
     stats,
     grDevices
 Suggests:
+    bslib,
     Ckmeans.1d.dp,
+    DT,
     ggrepel,
     knitr,
     patchwork,
     rmarkdown,
+    rsconnect,
+    shiny,
     testthat (>= 3.0.0),
     withr
 VignetteBuilder: knitr

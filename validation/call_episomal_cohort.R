@@ -113,7 +113,8 @@ res <- rbindlist(lapply(samples, function(s) {
       tb_bridge_arm_loh = any(tb_bridge_arm_loh == "TRUE"),
       tb_partner_arm_loh = any(tb_partner_arm_loh == "TRUE"),
       tb_nonbridge_spared = any(tb_nonbridge_spared == "TRUE"),
-      tb_confident = any(tb_confident == "TRUE")), by = .(WGS_ID, ID)],
+      tb_confident = any(tb_confident == "TRUE"),
+      tb_high_confidence = any(tb_high_confidence == "TRUE")), by = .(WGS_ID, ID)],
     by = c("WGS_ID", "ID"), all.x = TRUE)
   ## combined initiation-mechanism label (episomal / micronucleation, mutually exclusive)
   agg[, mechanism := fifelse(episomal & micronucleation, "candidate_episomal_with_micronucleation",
@@ -165,6 +166,8 @@ cat("\nTBA amplicons (amplified boundary translocation; Lee et al., Nature 2023)
     nrow(tba), "in", uniqueN(tba$WGS_ID), "samples\n")
 cat("  confident TBA (bridge-arm LOH on amplicon and/or partner arm + non-bridge arm spared):",
     nrow(tba[tb_confident == TRUE]), "in", uniqueN(tba[tb_confident == TRUE]$WGS_ID), "samples\n")
+cat("  HIGH-confidence TBA (dual-LOH: BOTH amplicon and partner bridge arms + non-bridge spared):",
+    nrow(tba[tb_high_confidence == TRUE]), "in", uniqueN(tba[tb_high_confidence == TRUE]$WGS_ID), "samples\n")
 cat("    bridge_arm_loh:", nrow(tba[tb_bridge_arm_loh == TRUE]),
     "| partner_arm_loh:", nrow(tba[tb_partner_arm_loh == TRUE]),
     "| nonbridge_spared:", nrow(tba[tb_nonbridge_spared == TRUE]), "\n")

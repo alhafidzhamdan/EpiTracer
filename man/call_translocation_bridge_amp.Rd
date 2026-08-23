@@ -88,9 +88,12 @@ confirmatory footprint of Lee et al. (\emph{Nature} 2023): \code{tb_bridge_arm_l
 (bridge-arm LOH on the amplicon's own arm, to a telomere or centromere),
 \code{tb_partner_arm_loh} (the same on a translocated partner arm),
 \code{tb_nonbridge_spared} (the amplicon chromosome's opposite arm retains
-heterozygosity) and \code{tb_confident} (\code{"TRUE"} when a bridge arm -- amplicon
+heterozygosity), \code{tb_confident} (\code{"TRUE"} when a bridge arm -- amplicon
 and/or partner -- shows LOH AND the non-bridge arm is spared: the asymmetric
-pattern distinguishing TB amplification from symmetric chromothripsis).
+pattern distinguishing TB amplification from symmetric chromothripsis) and
+\code{tb_high_confidence} (\code{"TRUE"} only for the dual-LOH pattern: LOH on BOTH the
+amplicon and partner bridge arms with the non-bridge arm spared -- the
+strongest signature of a dicentric translocation bridge).
 }
 \description{
 Standalone caller for translocation-bridge (TB) amplification (Lee, Kim,

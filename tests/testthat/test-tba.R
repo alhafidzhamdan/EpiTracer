@@ -145,3 +145,39 @@ test_that("tb_confident TRUE via the translocated PARTNER arm LOH (amplicon arm 
   expect_true(all(r$tb_partner_arm_loh == "TRUE"))   # partner (chr17) arm LOH
   expect_true(all(r$tb_confident == "TRUE"))
 })
+
+test_that("tb_high_confidence TRUE only for DUAL LOH (both amplicon and partner bridge arms)", {
+  # chr8 q-arm amplicon with subtelomeric LOH on chr8 q (bridge) AND on the chr17
+  # partner q arm -> dual-LOH -> high confidence.
+  ecdna_gr <- GenomicRanges::GRanges("chr8", IRanges::IRanges(55000000, 55500000),
+                                     ID = "S1_amp1", WGS_ID = "S1")
+  bp <- GenomicRanges::makeGRangesFromDataFrame(data.table::data.table(
+    seqnames = c("chr8", "chr17"), start = c(55500000, 38000000), end = c(55500000, 38000000),
+    WGS_ID = "S1", event = "TRA1", svclass = "TRA", PURPLE_AF = 0.9, PURPLE_JCN = 40,
+    VF = 800, PURPLE_CN = 50, insLen = 0L, HOMLEN = 0L), keep.extra.columns = TRUE)
+  cnv <- data.table::data.table(
+    seqnames = c("chr8","chr8","chr8","chr8","chr17","chr17"),
+    start = c(1, 45000000, 55000000, 55500001, 1,        60000000),
+    end   = c(44000000, 54999999, 55500000, 145138636, 59999999, 83257441),
+    sample = "S1",
+    copyNumber = c(2,2,50,2, 2,2), ploidy = 2,
+    majorAlleleCopyNumber = c(1,1,49,2, 1,2),
+    minorAlleleCopyNumber = c(1,1,1,0, 1,0))   # chr8 q-telomeric block LOH + chr17 q-telomeric LOH
+  cnv_gr <- GenomicRanges::makeGRangesFromDataFrame(cnv, keep.extra.columns = TRUE)
+  cgg <- GenomicRanges::GRanges("chr8", IRanges::IRanges(55000000, 55100000), gene = "MYC")
+  r <- call_translocation_bridge_amp(ecdna_gr, bp, cnv_gr, cgg, ext = 1e7,
+        centromeres = load_centromeres("hg38"), chrom_lengths = load_chrom_lengths("hg38"), mc.cores = 1)
+  expect_true(all(r$tb_bridge_arm_loh == "TRUE"))
+  expect_true(all(r$tb_partner_arm_loh == "TRUE"))
+  expect_true(all(r$tb_confident == "TRUE"))
+  expect_true(all(r$tb_high_confidence == "TRUE"))
+})
+
+test_that("single-arm LOH is confident but NOT high confidence", {
+  d <- tba_loh_inputs("asymmetric")   # amplicon-arm LOH only, no partner CN defined
+  r <- call_translocation_bridge_amp(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg,
+        ext = 1e7, centromeres = load_centromeres("hg38"),
+        chrom_lengths = load_chrom_lengths("hg38"), mc.cores = 1)
+  expect_true(all(r$tb_confident == "TRUE"))
+  expect_true(all(r$tb_high_confidence == "FALSE"))
+})

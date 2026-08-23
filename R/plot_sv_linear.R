@@ -448,7 +448,9 @@ plot_sv_linear <- function(sample,
 
   ## ---- SVs ----------------------------------------------------------------
   sv <- sv_data[sv_data$sample == this_sample, , drop = FALSE]
-  sv$chr1 <- paste0("chr", sv$chrom1); sv$chr2 <- paste0("chr", sv$chrom2)
+  ## accept SV chromosomes with or without a "chr" prefix (idempotent)
+  .chrp <- function(x) ifelse(grepl("^chr", x), x, paste0("chr", x))
+  sv$chr1 <- .chrp(sv$chrom1); sv$chr2 <- .chrp(sv$chrom2)
   sv$pos1 <- as.integer(sv$start1);    sv$pos2 <- as.integer(sv$start2)
   sv$strands <- paste0(sv$strand1, sv$strand2)
   sv$strands <- ifelse(sv$svclass == "TRA", "TRA", sv$strands)

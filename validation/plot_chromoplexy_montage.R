@@ -2,11 +2,12 @@
 ## Montage of every called CHROMOPLEXY cycle (closed balanced rearrangement
 ## chains; Baca et al., Cell 2013), one panel per cycle.
 ##
-## For each cycle we draw the whole chromosomes it spans, with ONLY the cycle's
-## own junctions overlaid (subset by the caller's `events` list), so the closed
-## ring chr_a -> chr_b -> chr_c -> chr_a is legible rather than buried in the
-## sample's full rearrangement set. amp + LOH events are shaded for context;
-## oncogene labels are suppressed (chromoplexy is not amplicon-centric).
+## For each cycle we draw the whole chromosomes it spans, showing the sample's
+## full rearrangement set with the cycle's OWN junctions highlighted bold (via the
+## generic highlight_events overlay) and everything else greyed -- so the closed
+## ring chr_a -> chr_b -> chr_c -> chr_a stands out against its genomic context.
+## amp + LOH events are shaded; oncogene labels are suppressed (chromoplexy is not
+## amplicon-centric).
 ##
 ## USAGE (from the package root):
 ##   Rscript validation/plot_chromoplexy_montage.R \
@@ -50,20 +51,23 @@ for (i in seq_len(nrow(cpx))) {
   chrs <- chrs[order(match(chrs, chr_order))]
   cs <- cn[sample == s]; vs <- sv[sample == s]
   if (!nrow(cs) || !nrow(vs)) next
-  ev <- sample_events(vs)
+  vs$name <- sample_events(vs)                            # ids matching the caller's `events`
   cyc_ev <- strsplit(cpx$events[i], ",")[[1]]
-  vs_cyc <- as.data.frame(vs[ev %in% cyc_ev])            # only this cycle's junctions
-  if (!nrow(vs_cyc)) next
+  if (!any(vs$name %in% cyc_ev)) next
   cnv_data <- as.data.frame(cs); cnv_data$ploidy <- per_chr_ploidy(cs)
   cr <- do.call(rbind, lapply(chrs, function(c) c(1, as.numeric(cl[[c]]))))
   ttl <- sprintf("%s | %s | %d junctions, %d bridges | frac_cp %.2f",
                  s, cpx$chromosomes[i], cpx$n_junctions[i], cpx$n_bridges[i], cpx$frac_cp[i])
   message(ttl)
+  ## draw the FULL sample rearrangement set on these chromosomes, with the cycle's
+  ## own junctions highlighted bold and everything else greyed (highlight overlay),
+  ## so the closed ring reads against its genomic context.
   p <- tryCatch(
-    plot_sv_linear(sample = s, cnv_data = cnv_data, sv_data = vs_cyc, genome = "hg38",
+    plot_sv_linear(sample = s, cnv_data = cnv_data, sv_data = as.data.frame(vs), genome = "hg38",
                    chromosome = chrs, chromosome_range = cr, events = c("amp", "loh"),
                    genes_to_highlight = NULL, gene_coord = empty_genes,
-                   save = FALSE, verbose = FALSE),
+                   highlight_events = cyc_ev, highlight_colour = "#d95f0e",
+                   dim_unhighlighted = TRUE, save = FALSE, verbose = FALSE),
     error = function(e) { message("  plot failed: ", conditionMessage(e)); NULL })
   if (!is.null(p)) plots[[length(plots) + 1]] <- p +
     ggplot2::ggtitle(ttl) +

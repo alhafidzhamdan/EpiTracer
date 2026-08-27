@@ -416,6 +416,10 @@ plot_sv_reconstruction <- function(sample,
         cl <- Ckmeans.1d.dp::Ckmeans.1d.dp(lv, k = c(1L, kk))$cluster
         return(as.integer(cl))
       }
+      ## too few points for k-means (centres would meet/exceed the point count,
+      ## which stats::kmeans rejects): rank into bins instead
+      if (kk >= length(lv))
+        return(as.integer(factor(rank(lv, ties.method = "min"))))
       ## WSS elbow fallback
       wss <- vapply(seq_len(kk), function(kc) {
         if (kc == 1L) return(sum((lv - mean(lv))^2))
@@ -429,6 +433,7 @@ plot_sv_reconstruction <- function(sample,
     }
     ki <- min(as.integer(k), uniq_n)
     if (ki <= 1L) return(rep(1L, length(vf)))
+    if (ki >= length(lv)) return(as.integer(factor(rank(lv, ties.method = "min"))))
     as.integer(km_seeded(lv, ki)$cluster)
   }
   ## kmeans with a fixed seed that does not disturb the caller's RNG stream

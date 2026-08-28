@@ -132,6 +132,83 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
   list(micronucleation = mn)
 }
 
+## Chromothripsis test over ONE amplicon's internal structural variants
+## (ShatterSeek-style hallmarks; Cortes-Ciriano et al., Nat Genet 2020),
+## restricted to the amplified footprint [min_amp_coord, max_amp_coord] on this
+## chromosome. Intended to be run on amplicons ALREADY called episomal, to flag
+## the subset that have subsequently shattered (ecDNA -> micronucleus ->
+## chromothripsis). Three hallmarks are scored:
+##   (1) prevalence  -- >= `min_sv` distinct SV events with a breakend inside the
+##       footprint (a clean simple episome carries only its boundary junction and
+##       a handful of internal SVs, so it fails here and is called FALSE);
+##   (2) random joins -- the four intrachromosomal junction orientations
+##       (DEL +/-, DUP -/+, h2hINV +/+, t2tINV -/-) are ~equally represented, so a
+##       chi-squared goodness-of-fit against a uniform expectation FAILS to reject
+##       (p >= `join_p`); a mechanism with a dominant orientation (e.g. BFB's
+##       fold-backs) is rejected;
+##   (3) CN oscillation -- the rounded copy-number profile changes direction at
+##       least `min_oscillations` times across the footprint segments (turning
+##       points), the ShatterSeek oscillating-copy-number signature.
+## `loh_interspersed` (allele-specific CN willing) is reported as supporting
+## evidence but is not required. Random fragment joins (2) are required for any
+## positive call; confidence is "high" when copy-number oscillation (3) also
+## holds, "low" with prevalence + joins alone, else "none".
+.detect_chromothripsis <- function(this_chr, coords, ctx, chr, min_cn_ratio,
+                                   min_sv = 6L, min_oscillations = 3L, join_p = 0.05) {
+  out <- list(n_internal_sv = 0L, n_intrachr_sv = 0L, sv_type_pval = NA_real_,
+              cn_oscillations = 0L, loh_interspersed = "FALSE",
+              chromothripsis = "FALSE", chromothripsis_conf = "none")
+  if (!isTRUE(coords$has_amp_region)) return(out)
+  lo <- coords$min_amp_coord; hi <- coords$max_amp_coord
+  intern <- this_chr[start >= lo & start <= hi]
+  if (!nrow(intern)) return(out)
+
+  ## (1) prevalence of clustered internal SVs
+  out$n_internal_sv <- length(unique(intern$event))
+
+  ## (2) randomness of fragment joins: the 4 intrachromosomal orientation classes
+  intra <- intern[svclass %in% c("DEL", "DUP", "h2hINV", "t2tINV")]
+  intra <- intra[!duplicated(event)]
+  out$n_intrachr_sv <- nrow(intra)
+  if (nrow(intra) >= 4) {
+    tab <- table(factor(intra$svclass, levels = c("DEL", "DUP", "h2hINV", "t2tINV")))
+    out$sv_type_pval <- tryCatch(
+      suppressWarnings(stats::chisq.test(tab)$p.value),
+      error = function(e) NA_real_)
+  }
+
+  ## (3) copy-number oscillation across the footprint (turning points in the
+  ## rounded CN profile of the amplicon's own segments)
+  seg <- gr2dt(ctx$cnv)[seqnames == chr & end >= lo & start <= hi]
+  seg <- seg[order(start)]
+  if (nrow(seg) >= 3) {
+    v <- rle(round(seg$copyNumber))$values
+    if (length(v) >= 3) {
+      s <- sign(diff(v)); s <- s[s != 0]
+      if (length(s) >= 2) out$cn_oscillations <- sum(s[-length(s)] != s[-1])
+    }
+    ## supporting: interspersed LOH (het / LOH segments alternate)
+    if ("minorAlleleCopyNumber" %in% names(seg)) {
+      loh_runs <- rle(seg$minorAlleleCopyNumber < 0.5)
+      if (length(loh_runs$lengths) >= 3 && any(loh_runs$values) && any(!loh_runs$values))
+        out$loh_interspersed <- "TRUE"
+    }
+  }
+
+  ## decision -- random fragment joins are required for any positive call (the
+  ## hallmark separating chromothripsis from ordered, orientation-biased
+  ## mechanisms such as BFB); copy-number oscillation upgrades it to high.
+  prevalence_ok <- out$n_internal_sv >= min_sv
+  joins_ok      <- !is.na(out$sv_type_pval) && out$sv_type_pval >= join_p
+  osc_ok        <- out$cn_oscillations >= min_oscillations
+  if (prevalence_ok && joins_ok && osc_ok) {
+    out$chromothripsis <- "TRUE"; out$chromothripsis_conf <- "high"
+  } else if (prevalence_ok && joins_ok) {
+    out$chromothripsis <- "TRUE"; out$chromothripsis_conf <- "low"
+  }
+  out
+}
+
 .detect_bfb <- function(this_chr, coords, ctx, chr, min_cn_ratio, centromeres, chrom_lengths,
                         bfb_min_del_width, bfb_min_del_frac, bfb_loss_max,
                         bfb_min_levels, bfb_min_spread) {
@@ -343,6 +420,50 @@ call_micronucleation <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer
                                  mc.cores = 1) {
   .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
                          ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, .detect_micronucleation)
+}
+
+#' Call chromothripsis within (episomal) amplicons
+#'
+#' Standalone caller that scores each amplicon's INTERNAL structural variants for
+#' chromothripsis, using the ShatterSeek hallmarks (Cortes-Ciriano et al., Nat
+#' Genet 2020) restricted to the amplified footprint. It is designed to be run on
+#' amplicons already called episomal (pass them as `ecdna_gr`) to flag the subset
+#' that have since shattered -- the ecDNA -> micronucleus -> chromothripsis route
+#' -- but works on any amplicon catalogue (or `NULL` to auto-detect seeds).
+#'
+#' A footprint is called chromothriptic when it carries at least `min_sv` distinct
+#' internal SV events, its four intrachromosomal junction orientations are close to
+#' equally represented (chi-squared goodness-of-fit p >= `join_p`, i.e. random
+#' fragment joins), and its rounded copy-number profile changes direction at least
+#' `min_oscillations` times across the footprint (oscillating copy number). All
+#' three give `chromothripsis_conf = "high"`. Random fragment joins are required
+#' for any positive call (they separate chromothripsis from orientation-biased
+#' mechanisms such as BFB); prevalence with random joins but weak oscillation gives
+#' `"low"`. A clean simple episome (one boundary junction, few internal SVs) fails
+#' the prevalence test and is called `"FALSE"`.
+#'
+#' @inheritParams call_simple_excision
+#' @param min_sv Minimum number of distinct internal SV events for the prevalence
+#'   hallmark (default 6).
+#' @param min_oscillations Minimum copy-number direction changes (turning points)
+#'   across the footprint segments for the oscillation hallmark (default 3).
+#' @param join_p Significance threshold for the fragment-join randomness test; the
+#'   junction-orientation distribution must NOT differ from uniform at this level
+#'   (default 0.05).
+#' @return A [data.table::data.table] of annotated breakpoints with `chromothripsis`
+#'   (`"TRUE"`/`"FALSE"`), `chromothripsis_conf` (`"high"`/`"low"`/`"none"`),
+#'   `n_internal_sv`, `n_intrachr_sv`, `sv_type_pval`, `cn_oscillations` and
+#'   `loh_interspersed`.
+#' @seealso [call_simple_excision()], [call_micronucleation()], [call_bfb()]
+#' @export
+call_chromothripsis <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
+                                ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
+                                min_sv = 6L, min_oscillations = 3L, join_p = 0.05, mc.cores = 1) {
+  det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
+    .detect_chromothripsis(this_chr, coords, ctx, ch, min_cn_ratio,
+                           min_sv, min_oscillations, join_p)
+  .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
+                         ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, det)
 }
 
 #' Call breakage-fusion-bridge (BFB) amplicons

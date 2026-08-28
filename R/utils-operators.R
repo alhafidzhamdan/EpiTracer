@@ -39,3 +39,7 @@ NULL
   }
   x
 }
+
+## Null-coalescing default, used by the simulation functions to fall back to a
+## derived value when an argument is left NULL.
+`%||%` <- function(x, y) if (is.null(x)) y else x

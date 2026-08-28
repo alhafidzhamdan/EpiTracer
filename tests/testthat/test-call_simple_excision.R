@@ -457,16 +457,21 @@ test_that("interleaved high-JCN founder DUP+INV across a gap is a micronucleus (
   expect_true(all(res0$episomal == "TRUE"))
 })
 
-test_that("a boundary DUP is episomal even when an internal SV out-VFs it", {
-  # E26T1 / C3N-01856T1 / DO11794T2 pattern: an internal inversion (or internal
-  # DUP/deletion) carries a higher VF than the boundary DUP. Internal
-  # rearrangements do not preclude an episome, so the amplicon is episomal; the
-  # flags are set for review.
+test_that("an internal inversion out-copying the boundary DUP is inverted-duplication (non-episomal)", {
+  # An internal inversion carrying a higher VF than the boundary DUP is the
+  # inverted-duplication signature: the amplicon was founded by an inverted
+  # duplication (a copy-gaining mechanism), not simple excision, so it is NOT an
+  # episome. (GMPS/HMF001167T2, HMF001611T2, DO11794T2 pattern.)
   d_inv <- add_internal_sv(make_episome_inputs(flank_cn = 2), cls = "h2hINV", vf = 1200)
   r_inv <- call_simple_excision(d_inv$ecdna_gr, d_inv$breakpoints_gr, d_inv$cnv_gr, d_inv$cancer_genes_gr, mc.cores = 1)
   expect_true(all(r_inv$flag_internal_inversion == "TRUE"))
-  expect_true(all(r_inv$episomal == "TRUE"))
+  expect_true(all(r_inv$episomal == "FALSE"))
+})
 
+test_that("an internal deletion out-VFing the boundary DUP is ancestral (still episomal)", {
+  # A deletion REMOVES sequence: a high-VF internal deletion is an ancestral /
+  # smaller-circle event, not a rival formation mechanism, so the amplicon stays
+  # episomal; the flag is informational.
   d_del <- add_internal_sv(make_episome_inputs(flank_cn = 2), cls = "DEL", vf = 1200)
   r_del <- call_simple_excision(d_del$ecdna_gr, d_del$breakpoints_gr, d_del$cnv_gr, d_del$cancer_genes_gr, mc.cores = 1)
   expect_true(all(r_del$flag_internal_sv_high_vf == "TRUE"))

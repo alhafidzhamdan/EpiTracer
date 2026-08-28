@@ -17,16 +17,48 @@ navbar:
     right: [search, github]
 
 reference:
-  - title: Detection
-    desc: Call ecDNA amplicons that arose by simple episomal excision.
+  - title: Episomal detection
+    desc: >
+      Call focal amplicons that arose by simple episomal excision, and nominate
+      the founder circularisation junction that bounds them.
     contents:
-      - call_episomal_ecdna
+      - call_simple_excision
+      - call_founder_boundary
       - detect_amplicon_seeds
+  - title: Mechanism callers
+    desc: >
+      Standalone callers for the other routes to a focal amplification, each
+      taking the same inputs and reporting that mechanism's signature.
+    contents:
+      - call_chromothripsis
+      - call_micronucleation
+      - call_bfb
+      - call_brf
+      - call_translocation_bridge_amp
+      - call_chromoplexy
+      - call_wgd
   - title: Visualisation
     desc: Plot the structural rearrangements underlying focal amplifications.
     contents:
       - plot_sv_linear
       - plot_sv_reconstruction
+      - plot_sv_circos
+  - title: Reading inputs
+    desc: >
+      Turn copy-number and structural-variant calls from PURPLE/GRIDSS (or any
+      other source) into the columns EpiTracer expects.
+    contents:
+      - read_cnv
+      - read_sv
+      - read_purple_sv_vcf
+      - prepare_amplicon_inputs
+  - title: Reference data and helpers
+    desc: Bundled genome annotation and small shared utilities.
+    contents:
+      - gene_locus
+      - load_centromeres
+      - load_chrom_lengths
+      - find_parallel_breakpoints
   - title: Simulation
     desc: >
       Generate ecDNA amplicons with known mechanisms — a circle at birth, after
@@ -38,19 +70,20 @@ reference:
       - sim_segregate
       - sim_internal_deletion
       - sim_micronucleation
+      - sim_reconfigure
       - sim_shatter_to_episomes
       - sim_fuse_episomes
       - sim_evolve
       - sim_cohort
+      - sim_benchmark
       - sim_to_epitracer
       - sim_to_plot_inputs
       - sim_noise
-      - sim_benchmark
       - seed_locus
       - ecdna_sim
       - summary.ecdna_sim
   - title: Example data
-    desc: Small bundled datasets used in the vignette and examples.
+    desc: Small bundled datasets used in the vignettes and examples.
     contents:
       - ex_caller_inputs
       - ex_plot_inputs

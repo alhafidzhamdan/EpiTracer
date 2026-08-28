@@ -4,7 +4,15 @@
 \alias{find_parallel_breakpoints}
 \title{Adjacent parallel breakpoints (breakage-replication/fusion hallmark)}
 \usage{
-find_parallel_breakpoints(pos, strand, event, max_dist = 20000)
+find_parallel_breakpoints(
+  pos,
+  strand,
+  event,
+  max_dist = 20000,
+  min_dist = 1,
+  max_indep_p = 0.05,
+  exclude_insertion_adjacency = TRUE
+)
 }
 \arguments{
 \item{pos}{Numeric vector of breakend positions (bp).}
@@ -17,25 +25,77 @@ length as \code{pos}. Breakends with \code{NA} strand are ignored.}
 
 \item{max_dist}{Integer; the maximum distance (bp) between the two breakends of
 a pair (default \code{2e4}, the 20 kb heuristic from the source paper).}
+
+\item{min_dist}{Integer; the minimum distance (bp) between them (default \code{1},
+i.e. the two breakends must be non-identical, as the source paper requires).}
+
+\item{max_indep_p}{Numeric; keep a pair only when its estimated probability of
+having arisen independently, \code{dist / opp_dist}, is at most this (default
+\code{0.05}, the threshold used in the source paper). Set to \code{NULL} or \code{Inf} to
+skip the independence test and return every adjacent same-orientation pair.}
+
+\item{exclude_insertion_adjacency}{Logical; drop breakends involved in a \verb{+/-}
+adjacency within \code{max_dist} before pairing (default \code{TRUE}, as in the source
+paper). Set \code{FALSE} for the geometric pair-finding alone.}
 }
 \value{
 A data.frame with one row per adjacent parallel breakpoint pair and
-columns \code{pos1}, \code{pos2} (with \code{pos1 <= pos2}), \code{strand}, and \code{dist}
-(\code{pos2 - pos1}). Zero rows if no pair qualifies.
+columns \code{pos1}, \code{pos2} (with \code{pos1 <= pos2}), \code{strand}, \code{dist}
+(\code{pos2 - pos1}), \code{opp_dist} (distance to the nearest opposite-orientation
+breakend on the relevant side; \code{Inf} if there is none) and \code{indep_p}
+(\code{dist / opp_dist}, the bound on the chance of independent origin). Zero
+rows if no pair qualifies.
 }
 \description{
-Finds pairs of structural-variant breakends that are the SAME orientation,
-within \code{max_dist} bp of each other, and from DISTINCT junctions -- "adjacent
-parallel breakpoints", the hallmark footprint of the breakage-replication/
-fusion process, in which a broken DNA end is replicated before repair to yield
-two same-orientation sister ends a short distance apart (Mendez-Dorantes,
-Zhang, Burns & Pellman, \emph{Nat Genet} 2026; doi:10.1038/s41588-025-02434-5).
+Finds \strong{adjacent parallel breakpoints} --- the hallmark footprint of the
+breakage-replication/fusion (BRF) process, in which a staggered DNA end is
+replicated before repair, so that a single ancestral end yields two
+same-orientation sister ends a short distance apart (Zhang, Mendez-Dorantes,
+Burns & Pellman, \emph{Nat Genet} \strong{58}, 88-99, 2026;
+doi:10.1038/s41588-025-02434-5).
 }
 \details{
-Used both by \code{\link[=call_simple_excision]{call_simple_excision()}} (to set the \code{brf} annotation and
-\code{n_parallel_pairs} count) and by plotting code to mark the pairs.
+The source paper's procedure has three parts, all applied here:
+\enumerate{
+\item \strong{Insertion / overlap exclusion.} Breakends that participate in a \verb{+/-}
+adjacency within \code{max_dist} (an insertion or an overlapping-segment
+junction) are removed \emph{first}. The paper is explicit that this is necessary,
+because the breakends of adjacent insertions also fall inside the distance
+threshold but arise by a different process.
+\item \strong{Adjacency and orientation.} From what remains, pairs of breakends with
+the SAME orientation (\verb{+/+} or \verb{-/-}), between \code{min_dist} and \code{max_dist} bp
+apart, and from DISTINCT junctions are collected. The paper's sister ends
+are "adjacent but \strong{non-identical}", separated by the resection tract
+(429 bp and 2,059 bp in its worked examples), so breakends reported at the
+\emph{same} coordinate are one DNA end joined to two partners, not two
+replicated ends, and are excluded by \code{min_dist}.
+\item \strong{Independence test.} Two same-orientation breakends can also land near
+each other by chance. The paper bounds that probability by the ratio of the
+distance between the parallel breakends to the size of the ancestral
+segment they would have come from; that segment must be at least as long as
+the distance out to the nearest OPPOSITE-orientation breakend --- to the
+right of a \verb{+/+} pair, to the left of a \verb{-/-} pair. A pair is kept when
+\code{dist / opp_dist <= max_indep_p}.
+}
+
+Step 3 is what separates a genuine BRF footprint from coincidence, and it
+matters most exactly where it is easiest to get wrong: inside a junction-dense
+amplicon, same-orientation breakends fall within 20 kb of each other
+constantly by chance, but so does the nearest opposite-orientation breakend,
+so the ratio stays large and the pair is correctly rejected. Applying steps 1
+and 2 alone makes BRF fire on essentially any heavily rearranged amplicon.
 }
 \examples{
-find_parallel_breakpoints(pos = c(100, 110, 500), strand = c("+", "+", "-"),
+## two + breakends 10 bp apart from distinct junctions, with the nearest
+## - breakend far away: a confident BRF footprint
+find_parallel_breakpoints(pos = c(100, 110, 5e5), strand = c("+", "+", "-"),
                           event = c("J1", "J2", "J3"))
+
+## the same pair inside a junction-dense region is rejected: the nearest
+## opposite-orientation breakend is close, so independent origin is likely
+find_parallel_breakpoints(pos = c(100, 110, 300), strand = c("+", "+", "-"),
+                          event = c("J1", "J2", "J3"))
+}
+\seealso{
+\code{\link[=call_brf]{call_brf()}}, \code{\link[=call_simple_excision]{call_simple_excision()}}
 }

@@ -642,3 +642,50 @@ test_that("reconfiguration falls back gracefully when the junction is gone", {
   expect_false(attr(rc, "preserved_founder"))
   expect_gt(length(EpiTracer:::.sim_population(rc)[[1]]$fragments), 1L)
 })
+
+test_that("call_brf does not fire on chromothriptic amplicons with no BRF event", {
+  ## Regression for the false-positive rate this suite exposed: with only the
+  ## adjacency+orientation criterion, call_brf() fired on 100% of simulated
+  ## chromothriptic amplicons, none of which contains a breakage-replication/
+  ## fusion event by construction. The source paper's insertion-adjacency
+  ## exclusion, non-identical-breakpoint rule and independence test remove them.
+  clean <- sim_noise(fp_rate = 0, dropout = 0)
+  hit <- vapply(1:8, function(i) {
+    ev <- sim_evolve(sim_episome(seed_locus("EGFR"), sample = sprintf("BR%02d", i),
+                                 copies = 60, seed = 1000 + i),
+                     rounds = 2, n_breaks = 20L, seed = 2000 + i)
+    inp <- sim_to_epitracer(ev, noise = clean, seed = 900 + i)
+    b <- q(call_brf(inp$ecdna_gr, inp$breakpoints_gr, inp$cnv_gr, inp$cancer_genes_gr))
+    nrow(b) > 0 && any(b$brf == "TRUE")
+  }, logical(1))
+  expect_equal(mean(hit), 0)
+
+  ## a clean episome likewise carries no BRF footprint
+  ec <- sim_episome(seed_locus("EGFR"), sample = "BR00", copies = 60, seed = 5)
+  inp <- sim_to_epitracer(ec, noise = clean, seed = 5)
+  b0 <- q(call_brf(inp$ecdna_gr, inp$breakpoints_gr, inp$cnv_gr, inp$cancer_genes_gr))
+  expect_false(any(b0$brf == "TRUE"))
+})
+
+test_that("call_brf still detects a planted breakage-replication/fusion footprint", {
+  clean <- sim_noise(fp_rate = 0, dropout = 0)
+  ec <- sim_episome(seed_locus("EGFR"), sample = "POS", copies = 60, seed = 7)
+  inp <- sim_to_epitracer(ec, noise = clean, seed = 7)
+  bp <- gr2dt(inp$breakpoints_gr)
+
+  ## two same-orientation sister ends 429 bp apart (the resection tract measured
+  ## in the source paper), from distinct junctions, inside the amplicon
+  tmpl <- bp[PURPLE_CN > 6][1]
+  add <- rbind(tmpl, tmpl)
+  add$start <- c(55.10e6, 55.10e6 + 429); add$end <- add$start
+  add$bp_strand <- "+"; add$svclass <- "h2hINV"
+  add$event <- c("BRF_a", "BRF_b"); add$VF <- 40; add$PURPLE_JCN <- 5
+  partner <- data.table::copy(add)
+  partner$start <- c(55.28e6, 55.28e6 + 429); partner$end <- partner$start
+
+  g <- GenomicRanges::makeGRangesFromDataFrame(rbind(bp, add, partner),
+                                               keep.extra.columns = TRUE)
+  b <- q(call_brf(inp$ecdna_gr, g, inp$cnv_gr, inp$cancer_genes_gr))
+  expect_true(any(b$brf == "TRUE"))
+  expect_gt(max(b$n_parallel_pairs), 0L)
+})

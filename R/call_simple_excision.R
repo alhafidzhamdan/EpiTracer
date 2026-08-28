@@ -111,6 +111,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
     this_sample_breakpoints_ecdna_annotated$flag_no_boundary_sv <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_inv_at_boundary <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_tra_at_boundary <- "FALSE"
+    this_sample_breakpoints_ecdna_annotated$flag_tra_recombination <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$episomal_type2 <- "FALSE"
     ## Amplicon called by copy number alone (no supporting junction inside it),
     ## propagated from the SV-aware seed detector.
@@ -185,6 +186,21 @@ classify_amplicon_episomal <- function(this_amplicon_id,
           if (inv_jcn > dup_jcn) this_chr$flag_inv_at_boundary <- "TRUE"
           if (tra_jcn > dup_jcn) this_chr$flag_tra_at_boundary <- "TRUE"
         }
+
+        ## Two-ecDNA recombination flag: an amplified inter-chromosomal
+        ## translocation joining this amplicon to ANOTHER amplified locus (both
+        ## breakends at amplicon-level copy number) is the signature of two
+        ## episomal ecDNAs recombining inside a micronucleus (chromothripsis). It
+        ## does NOT disqualify this locus -- each locus is assessed on its own
+        ## boundary DUP -- but is reported for the recombination hypothesis.
+        allbp_tra <- gr2dt(this_sample_breakpoints)
+        allbp_tra[, PURPLE_CN := as.numeric(PURPLE_CN)]
+        tra_ev <- allbp_tra[svclass == "TRA", .(
+          in_amp = any(seqnames %in% unique_chrs[i] & start >= min_amp_coord & start <= max_amp_coord),
+          partner_amp = any(!(seqnames %in% unique_chrs[i]) &
+                              PURPLE_CN > min_cn_ratio * this_sample_ploidy)), by = event]
+        if (nrow(tra_ev[in_amp == TRUE & partner_amp == TRUE]))
+          this_chr$flag_tra_recombination <- "TRUE"
 
 
         ## Chromosomal-bridge exclusion: if the amplified region's edge terminates
@@ -533,13 +549,22 @@ classify_amplicon_episomal <- function(this_amplicon_id,
       if (nrow(this_chr %>% dplyr::filter(episome_region == "TRUE")) > 0) {
         this_chr$episomal <- "TRUE"
       }
-      ## The internal-inversion / bridging / internal-high-VF-SV flags are
-      ## informational only -- they no longer override the episome call. But a
-      ## MICRONUCLEUS (interleaved high-JCN founder DUP+INV) is disqualifying: it
-      ## marks intra-micronucleus chromothripsis rather than a circularised
-      ## episome, so it overrides the call to non-episomal.
+      ## The bridging and internal-high-VF-SV flags are informational only -- an
+      ## internal DELETION that out-copies the boundary DUP is an ANCESTRAL event
+      ## (a smaller-circle / pre-excision deletion), not a rival formation
+      ## mechanism, so it does not override the episome call. Two signatures ARE
+      ## disqualifying:
+      ##  (i) a MICRONUCLEUS (interleaved high-JCN founder DUP+INV across a gap) --
+      ##      intra-micronucleus chromothripsis, not a circularised episome; and
+      ## (ii) an internal INVERSION that out-copies the boundary DUP -- the
+      ##      inverted-duplication signature: the amplicon was founded by an
+      ##      inverted duplication (a copy-gaining mechanism), not simple excision.
       if (any(this_chr$flag_micronucleus == "TRUE")) {
         this_chr$episomal <- "FALSE"
+      }
+      if (any(this_chr$flag_internal_inversion == "TRUE")) {
+        this_chr$episomal <- "FALSE"
+        this_chr$episomal_type2 <- "FALSE"
       }
       ## A chromosomal-bridge amplicon (edge terminates in a centromere) is
       ## excluded from the episomal call (and from the type-2 candidate set).

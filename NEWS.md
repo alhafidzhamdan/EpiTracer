@@ -1,3 +1,66 @@
+# EpiTracer (development)
+
+* **ecDNA simulation suite.** A generative simulator for episomal ecDNA in which
+  an amplicon is an ordered list of genomic fragments; copy number is the
+  coverage of that list and the structural variants are read off consecutive
+  fragment pairs, so the two are consistent by construction. The mechanism
+  operators compose, so an amplicon can be followed along its life:
+    * `sim_episome()` — birth by simple excision and circularisation, carrying
+      the boundary duplication, non-gained flanks and excision scar that
+      `call_simple_excision()` looks for.
+    * `sim_replicate()` — rounds of replication that change the copy level and
+      nothing else, so the boundary duplication gains read support while no new
+      junction appears.
+    * `sim_internal_deletion()` — a single molecule loses an interval and
+      re-seals, splitting the amplicon into a **population of circle species**.
+      Because a junction's copy number is the abundance of the circles carrying
+      it, a deletion that arose late is emitted far below the boundary
+      duplication it lies inside — which is what makes the *order* of events
+      recoverable from read support alone.
+    * `sim_shatter_to_episomes()` — shattering whose fragments religate into
+      SEVERAL new circles rather than one. The founder boundary duplication does
+      not survive (it would have to be rejoined end-for-end), so the products are
+      genuinely episomal but are no longer recognised by `call_simple_excision()`
+      once the daughters become mosaic — see
+      `validation/simulate_episome_fission.R` for where that boundary falls.
+    * `sim_segregate()` — copy number derived from generations of division under
+      an explicit `Binom(2k, 1/2)` segregation model plus dosage selection,
+      instead of being set by hand. With `selection = 0` the population mean does
+      not move however many generations elapse: random segregation is
+      copy-number-neutral in expectation, so **cell division rate does not raise
+      read support**. Only selection does. `sim_replicate()`'s `fold` is
+      documented accordingly as a selection-driven growth factor whose neutral
+      value is `1`, not a cell division.
+    * `sim_micronucleation()` / `sim_evolve()` — one or several rounds of
+      micronuclear encapsulation, shattering and random religation, generating
+      the random-join and oscillating-copy-number hallmarks
+      `call_chromothripsis()` scores.
+    * `sim_fuse_episomes()` — two episomes co-encapsulated in one micronucleus
+      forming a chimeric circle, giving the amplified inter-chromosomal
+      junctions `call_micronucleation()` detects, and co-amplifying two
+      oncogenes on one circle.
+    * `sim_to_epitracer()` / `sim_to_plot_inputs()` — render an amplicon as
+      PURPLE-style caller inputs or plotter inputs, through a `sim_noise()`
+      model of tumour purity, depth, copy-number segmentation error, junction
+      dropout and repair-pathway microhomology. `sim_noise(0)` is exact.
+    * Circle species carry a `fitness`, and `sim_replicate()` grows each at its
+      own rate. This matters because a NEUTRAL minority species keeps a fixed
+      share of the population forever, so a single-molecule internal deletion
+      would sit ~32-fold below the boundary junction indefinitely; real amplicons
+      show internal junctions at a half to a twentieth of the founder's support,
+      which needs the shortened circle to expand.
+    * Junction read support is drawn as a fragment COUNT (negative binomial,
+      variance `mu + (vf_cv * mu)^2`) rather than from a constant-CV log-normal,
+      so expected support stays strictly proportionate to junction copy number
+      while weakly supported junctions are relatively noisy and strongly
+      supported ones are tight. `sim_noise(vf_cv = )` now means extra-Poisson
+      dispersion and defaults to `0.1`.
+    * `sim_cohort()` / `sim_benchmark()` — draw a labelled cohort from a mixture
+      of trajectories and score the callers against the known truth.
+  The fragment-list formulation follows Bernhard *et al.*'s seismic-amplification
+  simulator (Nature 2022); `validation/simulate_trajectories.R` uses the suite to
+  chart where each caller fires along an ecDNA's life.
+
 # EpiTracer 0.0.1 (alpha)
 
 * **AmpliconArchitect-optional.** `call_episomal_ecdna(ecdna_gr = NULL, ...)`

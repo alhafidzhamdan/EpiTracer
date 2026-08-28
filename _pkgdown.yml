@@ -27,6 +27,28 @@ reference:
     contents:
       - plot_sv_linear
       - plot_sv_reconstruction
+  - title: Simulation
+    desc: >
+      Generate ecDNA amplicons with known mechanisms — a circle at birth, after
+      rounds of micronucleation and chromothripsis, or fused from two episomes —
+      and render them as caller or plotter inputs.
+    contents:
+      - sim_episome
+      - sim_replicate
+      - sim_segregate
+      - sim_internal_deletion
+      - sim_micronucleation
+      - sim_shatter_to_episomes
+      - sim_fuse_episomes
+      - sim_evolve
+      - sim_cohort
+      - sim_to_epitracer
+      - sim_to_plot_inputs
+      - sim_noise
+      - sim_benchmark
+      - seed_locus
+      - ecdna_sim
+      - summary.ecdna_sim
   - title: Example data
     desc: Small bundled datasets used in the vignette and examples.
     contents:

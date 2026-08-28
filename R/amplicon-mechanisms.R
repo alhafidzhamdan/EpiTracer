@@ -104,15 +104,24 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
 
 ## ---- detectors -------------------------------------------------------------
 
-.detect_brf <- function(this_chr, coords, ctx, chr, min_cn_ratio) {
-  if (!isTRUE(coords$has_amp_region)) return(list(n_parallel_pairs = 0L, brf = "FALSE"))
+.detect_brf <- function(this_chr, coords, ctx, chr, min_cn_ratio,
+                        max_dist = 2e4, min_dist = 1, max_indep_p = 0.05,
+                        exclude_insertion_adjacency = TRUE) {
+  none <- list(n_parallel_pairs = 0L, min_indep_p = NA_real_, brf = "FALSE")
+  if (!isTRUE(coords$has_amp_region)) return(none)
   pl <- ctx$ploidy
-  pb <- this_chr[start >= coords$min_amp_coord - 2e4 & start <= coords$max_amp_coord + 2e4 &
+  pb <- this_chr[start >= coords$min_amp_coord - max_dist &
+                   start <= coords$max_amp_coord + max_dist &
                    PURPLE_CN > min_cn_ratio * pl]
   ori <- if ("bp_strand" %in% names(pb) && any(!is.na(pb$bp_strand))) pb$bp_strand
          else ifelse(pb$svclass == "h2hINV", "+", ifelse(pb$svclass == "t2tINV", "-", NA_character_))
-  n <- nrow(find_parallel_breakpoints(pb$start, ori, pb$event))
-  list(n_parallel_pairs = n, brf = if (n >= 1) "TRUE" else "FALSE")
+  pp <- find_parallel_breakpoints(pb$start, ori, pb$event, max_dist = max_dist,
+                                  min_dist = min_dist, max_indep_p = max_indep_p,
+                                  exclude_insertion_adjacency = exclude_insertion_adjacency)
+  n <- nrow(pp)
+  if (!n) return(none)
+  list(n_parallel_pairs = n, min_indep_p = min(pp$indep_p),
+       brf = "TRUE")
 }
 
 .detect_micronucleation <- function(this_chr, coords, ctx, chr, min_cn_ratio) {
@@ -385,21 +394,40 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
 #' Call breakage-replication/fusion (BRF) amplicons
 #'
 #' Standalone caller for the BRF annotation: an amplicon carrying *adjacent
-#' parallel breakpoints* (two breakends of the same orientation within 20 kb, from
-#' distinct junctions), the hallmark of breakage-replication/fusion
-#' (Mendez-Dorantes, Zhang, Burns & Pellman, *Nat Genet* 2026;
+#' parallel breakpoints*, the hallmark of breakage-replication/fusion (Zhang,
+#' Mendez-Dorantes, Burns & Pellman, *Nat Genet* **58**, 88-99, 2026;
 #' doi:10.1038/s41588-025-02434-5). Runs independently of the episomal call.
 #'
+#' A pair qualifies only when it clears all three of the source paper's tests:
+#' the breakends are not part of a `+/-` insertion or overlap adjacency, they
+#' share an orientation and sit within `max_dist` of one another, and their
+#' estimated probability of independent origin --- the distance between them
+#' divided by the distance out to the nearest opposite-orientation breakend ---
+#' is at most `max_indep_p`. See [find_parallel_breakpoints()].
+#'
+#' The independence test is what keeps this specific. Without it the caller fires
+#' on essentially any junction-dense amplicon, because same-orientation breakends
+#' land within 20 kb of each other by chance once a footprint carries tens of
+#' junctions; `validation/simulate_trajectories.R` shows the failure mode on
+#' simulated chromothriptic amplicons that contain no BRF event by construction.
+#'
 #' @inheritParams call_simple_excision
+#' @param max_dist,min_dist,max_indep_p,exclude_insertion_adjacency Passed to
+#'   [find_parallel_breakpoints()]; the defaults follow the source paper.
 #' @return A [data.table::data.table] of annotated breakpoints with `brf`
-#'   (`"TRUE"`/`"FALSE"`) and `n_parallel_pairs`.
+#'   (`"TRUE"`/`"FALSE"`), `n_parallel_pairs` and `min_indep_p` (the most
+#'   confident pair's independence bound; `NA` when there is no pair).
 #' @seealso [find_parallel_breakpoints()], [call_simple_excision()]
 #' @export
 call_brf <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                      ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
-                     mc.cores = 1) {
+                     max_dist = 2e4, min_dist = 1, max_indep_p = 0.05,
+                     exclude_insertion_adjacency = TRUE, mc.cores = 1) {
+  det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
+    .detect_brf(this_chr, coords, ctx, ch, min_cn_ratio,
+                max_dist, min_dist, max_indep_p, exclude_insertion_adjacency)
   .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                         ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, .detect_brf)
+                         ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, det)
 }
 
 #' Call micronucleation + chromothripsis amplicons

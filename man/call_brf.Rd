@@ -13,6 +13,10 @@ call_brf(
   min_cn_ratio = 3,
   seed_gap = 1e+06,
   seed_min_width = 1e+05,
+  max_dist = 20000,
+  min_dist = 1,
+  max_indep_p = 0.05,
+  exclude_insertion_adjacency = TRUE,
   mc.cores = 1
 )
 }
@@ -43,19 +47,36 @@ searching for boundary breakpoints (default \code{1e7}).}
 threshold \code{copyNumber > min_cn_ratio * ploidy}, gap to merge across, and
 minimum seed width). Ignored when \code{ecdna_gr} is supplied.}
 
+\item{max_dist, min_dist, max_indep_p, exclude_insertion_adjacency}{Passed to
+\code{\link[=find_parallel_breakpoints]{find_parallel_breakpoints()}}; the defaults follow the source paper.}
+
 \item{mc.cores}{Integer; number of cores for \code{\link[parallel:mclapply]{parallel::mclapply()}}
 (default \code{1}). Values > 1 are ignored on Windows.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} of annotated breakpoints with \code{brf}
-(\code{"TRUE"}/\code{"FALSE"}) and \code{n_parallel_pairs}.
+(\code{"TRUE"}/\code{"FALSE"}), \code{n_parallel_pairs} and \code{min_indep_p} (the most
+confident pair's independence bound; \code{NA} when there is no pair).
 }
 \description{
 Standalone caller for the BRF annotation: an amplicon carrying \emph{adjacent
-parallel breakpoints} (two breakends of the same orientation within 20 kb, from
-distinct junctions), the hallmark of breakage-replication/fusion
-(Mendez-Dorantes, Zhang, Burns & Pellman, \emph{Nat Genet} 2026;
+parallel breakpoints}, the hallmark of breakage-replication/fusion (Zhang,
+Mendez-Dorantes, Burns & Pellman, \emph{Nat Genet} \strong{58}, 88-99, 2026;
 doi:10.1038/s41588-025-02434-5). Runs independently of the episomal call.
+}
+\details{
+A pair qualifies only when it clears all three of the source paper's tests:
+the breakends are not part of a \verb{+/-} insertion or overlap adjacency, they
+share an orientation and sit within \code{max_dist} of one another, and their
+estimated probability of independent origin --- the distance between them
+divided by the distance out to the nearest opposite-orientation breakend ---
+is at most \code{max_indep_p}. See \code{\link[=find_parallel_breakpoints]{find_parallel_breakpoints()}}.
+
+The independence test is what keeps this specific. Without it the caller fires
+on essentially any junction-dense amplicon, because same-orientation breakends
+land within 20 kb of each other by chance once a footprint carries tens of
+junctions; \code{validation/simulate_trajectories.R} shows the failure mode on
+simulated chromothriptic amplicons that contain no BRF event by construction.
 }
 \seealso{
 \code{\link[=find_parallel_breakpoints]{find_parallel_breakpoints()}}, \code{\link[=call_simple_excision]{call_simple_excision()}}

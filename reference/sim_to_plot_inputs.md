@@ -52,14 +52,7 @@ arguments.
 ec <- sim_evolve(sim_episome(seed_locus("EGFR"), sample = "SIM04"),
                  rounds = 2, n_breaks = 15, seed = 1)
 pin <- sim_to_plot_inputs(ec, seed = 1)
-#> Error in S4Vectors:::load_package_gracefully("XVector", "by the range() method ",     "for CompressedIRangesList objects"): Could not load package XVector. Is it installed?
-#> 
-#>   Note that the XVector package is required by the range() method for
-#>   CompressedIRangesList objects. Please install it with:
-#> 
-#>     BiocManager::install("XVector")
 p <- plot_sv_linear(sample = "SIM04", cnv_data = pin$cnv_data,
                     sv_data = pin$sv_data, wgd_data = pin$wgd_data,
                     chromosome = "chr7")
-#> Error: object 'pin' not found
 ```

@@ -99,17 +99,10 @@ The first four can be passed straight to any EpiTracer caller.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">ec</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_episome.html">sim_episome</a></span><span class="op">(</span><span class="fu"><a href="seed_locus.html">seed_locus</a></span><span class="op">(</span><span class="st">"EGFR"</span><span class="op">)</span>, sample <span class="op">=</span> <span class="st">"SIM01"</span>, copies <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">inp</span> <span class="op">&lt;-</span> <span class="fu">sim_to_epitracer</span><span class="op">(</span><span class="va">ec</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in S4Vectors:::load_package_gracefully("XVector", "by the range() method ",     "for CompressedIRangesList objects"):</span> Could not load package XVector. Is it installed?</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-err co"><span class="r-pr">#&gt;</span>   Note that the XVector package is required by the range() method for</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span>   CompressedIRangesList objects. Please install it with:</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-err co"><span class="r-pr">#&gt;</span>     BiocManager::install("XVector")</span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="call_simple_excision.html">call_simple_excision</a></span><span class="op">(</span><span class="va">inp</span><span class="op">$</span><span class="va">ecdna_gr</span>, <span class="va">inp</span><span class="op">$</span><span class="va">breakpoints_gr</span>,</span></span>
 <span class="r-in"><span>                            <span class="va">inp</span><span class="op">$</span><span class="va">cnv_gr</span>, <span class="va">inp</span><span class="op">$</span><span class="va">cancer_genes_gr</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'inp' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">episomal</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "TRUE"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

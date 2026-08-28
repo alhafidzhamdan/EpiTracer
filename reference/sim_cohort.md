@@ -129,12 +129,25 @@ co <- sim_cohort(n = 6, seed = 1)
 #>   suppressWarnings() to suppress this warning.)
 #> Warning: The 2 combined objects have no sequence levels in common. (Use
 #>   suppressWarnings() to suppress this warning.)
-#> Error in S4Vectors:::load_package_gracefully("XVector", "by the range() method ",     "for CompressedIRangesList objects"): Could not load package XVector. Is it installed?
-#> 
-#>   Note that the XVector package is required by the range() method for
-#>   CompressedIRangesList objects. Please install it with:
-#> 
-#>     BiocManager::install("XVector")
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
 co$truth[, .(WGS_ID, class, rounds, chimeric, truth_max_cn)]
-#> Error: object 'co' not found
+#>     WGS_ID          class rounds chimeric truth_max_cn
+#>     <char>         <char>  <int>   <lgcl>        <num>
+#> 1: SIM0001 chromothriptic      3    FALSE    200.00000
+#> 2: SIM0002       chimeric      1     TRUE    146.60006
+#> 3: SIM0003       chimeric      1     TRUE     77.72181
+#> 4: SIM0004       episomal      0    FALSE     15.51498
+#> 5: SIM0005 chromothriptic      2    FALSE    200.00000
+#> 6: SIM0006       episomal      0    FALSE     67.70956
 ```

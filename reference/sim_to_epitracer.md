@@ -63,15 +63,8 @@ passed straight to any EpiTracer caller.
 ``` r
 ec <- sim_episome(seed_locus("EGFR"), sample = "SIM01", copies = 50)
 inp <- sim_to_epitracer(ec, seed = 1)
-#> Error in S4Vectors:::load_package_gracefully("XVector", "by the range() method ",     "for CompressedIRangesList objects"): Could not load package XVector. Is it installed?
-#> 
-#>   Note that the XVector package is required by the range() method for
-#>   CompressedIRangesList objects. Please install it with:
-#> 
-#>     BiocManager::install("XVector")
 res <- call_simple_excision(inp$ecdna_gr, inp$breakpoints_gr,
                             inp$cnv_gr, inp$cancer_genes_gr)
-#> Error: object 'inp' not found
 unique(res$episomal)
-#> Error: object 'res' not found
+#> [1] "TRUE"
 ```

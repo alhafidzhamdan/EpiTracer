@@ -73,14 +73,23 @@ co <- sim_cohort(n = 6, seed = 1)
 #>   suppressWarnings() to suppress this warning.)
 #> Warning: The 2 combined objects have no sequence levels in common. (Use
 #>   suppressWarnings() to suppress this warning.)
-#> Error in S4Vectors:::load_package_gracefully("XVector", "by the range() method ",     "for CompressedIRangesList objects"): Could not load package XVector. Is it installed?
-#> 
-#>   Note that the XVector package is required by the range() method for
-#>   CompressedIRangesList objects. Please install it with:
-#> 
-#>     BiocManager::install("XVector")
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
+#> Warning: The 2 combined objects have no sequence levels in common. (Use
+#>   suppressWarnings() to suppress this warning.)
 bm <- sim_benchmark(co)
-#> Error: object 'co' not found
 bm$summary
-#> Error: object 'bm' not found
+#>             class     n simple_excision chromothripsis micronucleation
+#>            <char> <int>           <num>          <num>           <num>
+#> 1: chromothriptic     2               0              1               0
+#> 2:       chimeric     2               0              1               1
+#> 3:       episomal     2               1              0               0
 ```

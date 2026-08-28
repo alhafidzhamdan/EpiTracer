@@ -89,16 +89,9 @@ set reproduces the look of a patient amplicon.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">ec</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_evolve.html">sim_evolve</a></span><span class="op">(</span><span class="fu"><a href="sim_episome.html">sim_episome</a></span><span class="op">(</span><span class="fu"><a href="seed_locus.html">seed_locus</a></span><span class="op">(</span><span class="st">"EGFR"</span><span class="op">)</span>, sample <span class="op">=</span> <span class="st">"SIM04"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                 rounds <span class="op">=</span> <span class="fl">2</span>, n_breaks <span class="op">=</span> <span class="fl">15</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pin</span> <span class="op">&lt;-</span> <span class="fu">sim_to_plot_inputs</span><span class="op">(</span><span class="va">ec</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in S4Vectors:::load_package_gracefully("XVector", "by the range() method ",     "for CompressedIRangesList objects"):</span> Could not load package XVector. Is it installed?</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-err co"><span class="r-pr">#&gt;</span>   Note that the XVector package is required by the range() method for</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span>   CompressedIRangesList objects. Please install it with:</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-err co"><span class="r-pr">#&gt;</span>     BiocManager::install("XVector")</span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="plot_sv_linear.html">plot_sv_linear</a></span><span class="op">(</span>sample <span class="op">=</span> <span class="st">"SIM04"</span>, cnv_data <span class="op">=</span> <span class="va">pin</span><span class="op">$</span><span class="va">cnv_data</span>,</span></span>
 <span class="r-in"><span>                    sv_data <span class="op">=</span> <span class="va">pin</span><span class="op">$</span><span class="va">sv_data</span>, wgd_data <span class="op">=</span> <span class="va">pin</span><span class="op">$</span><span class="va">wgd_data</span>,</span></span>
 <span class="r-in"><span>                    chromosome <span class="op">=</span> <span class="st">"chr7"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'pin' not found</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

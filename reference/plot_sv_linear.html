@@ -90,6 +90,12 @@ of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.</p>
 <span>  loh_position_ratio <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  highlight_amp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  highlight_hom_del <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  amplicons <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  parallel_breakpoints <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  highlight_events <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  highlight_id_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  highlight_colour <span class="op">=</span> <span class="st">"#d95f0e"</span>,</span>
+<span>  dim_unhighlighted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  wgd_sample_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  snv_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  snv_sample_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -274,6 +280,49 @@ column <code>gene_name</code>); required when <code>displayExon = TRUE</code>.</
 deleted segments.</p></dd>
 
 
+<dt id="arg-amplicons">amplicons<a class="anchor" aria-label="anchor" href="#arg-amplicons"></a></dt>
+<dd><p>Optional distinct-amplicon overlay: a
+<a href="https://rdrr.io/pkg/GenomicRanges/man/GRanges-class.html" class="external-link">GenomicRanges::GRanges</a> or data.frame of amplicon regions (columns
+<code>seqnames</code>/<code>chr</code>, <code>start</code>, <code>end</code>, and an optional <code>ID</code>/<code>label</code>). Each
+amplicon that falls in the plotted window is drawn as a short horizontal bar
+across the TOP of the plot spanning its extent, in its own colour and with
+its label above, so several distinct amplicons (e.g. a focal episome sitting
+inside a larger, separately detected amplified span) are visually separable
+without washing over the data. Genomic coordinates are mapped through the
+same per-locus transform as the rest of the plot, so the bars align with the
+copy-number track.</p></dd>
+
+
+<dt id="arg-parallel-breakpoints">parallel_breakpoints<a class="anchor" aria-label="anchor" href="#arg-parallel-breakpoints"></a></dt>
+<dd><p>Optional data.frame of <em>adjacent parallel
+breakpoint</em> pairs to highlight (the breakage-replication/fusion hallmark):
+columns <code>chr</code>/<code>seqnames</code>, <code>pos1</code>, <code>pos2</code> (the two same-orientation breakends
+of a pair) and an optional <code>strand</code>. Each pair is drawn near the baseline as
+a bracket joining the two breakends, with a caret marking each, so BRF
+breakpoints stand out among the other junctions.</p></dd>
+
+
+<dt id="arg-highlight-events">highlight_events<a class="anchor" aria-label="anchor" href="#arg-highlight-events"></a></dt>
+<dd><p>Optional character vector of SV identifiers to draw
+bold on top of the rest (e.g. the junctions of one chromoplexy cycle, a TBA
+boundary, a fold-back set). Matched against <code>highlight_id_col</code>.</p></dd>
+
+
+<dt id="arg-highlight-id-col">highlight_id_col<a class="anchor" aria-label="anchor" href="#arg-highlight-id-col"></a></dt>
+<dd><p>Optional name of the column in <code>sv_data</code> holding the
+identifiers matched by <code>highlight_events</code>; <code>NULL</code> (default) auto-detects
+<code>name</code> then <code>event</code>.</p></dd>
+
+
+<dt id="arg-highlight-colour">highlight_colour<a class="anchor" aria-label="anchor" href="#arg-highlight-colour"></a></dt>
+<dd><p>Colour for highlighted SVs (default <code>"#d95f0e"</code>).</p></dd>
+
+
+<dt id="arg-dim-unhighlighted">dim_unhighlighted<a class="anchor" aria-label="anchor" href="#arg-dim-unhighlighted"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, non-highlighted SVs are greyed
+so the highlighted set stands out (default <code>FALSE</code>).</p></dd>
+
+
 <dt id="arg-wgd-sample-col">wgd_sample_col<a class="anchor" aria-label="anchor" href="#arg-wgd-sample-col"></a></dt>
 <dd><p>Optional name of the sample column in <code>wgd_data</code>
 (default: <code>sample</code>, falling back to <code>WGS_ID</code>).</p></dd>
@@ -417,7 +466,7 @@ extent is the min-max of amplified segments on the chromosome, padded by
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="call_episomal_ecdna.html">call_episomal_ecdna()</a></code></p></div>
+    <div class="dont-index"><p><code><a href="call_simple_excision.html">call_simple_excision()</a></code></p></div>
     </div>
 
     <div class="section level2">

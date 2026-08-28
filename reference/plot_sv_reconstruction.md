@@ -60,6 +60,10 @@ plot_sv_reconstruction(
   loh_position_ratio = 0.5,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
+  highlight_events = NULL,
+  highlight_id_col = NULL,
+  highlight_colour = "#d95f0e",
+  dim_unhighlighted = FALSE,
   wgd_sample_col = NULL,
   outdir = NULL,
   save = TRUE,
@@ -369,6 +373,27 @@ plot_sv_reconstruction(
 
   Logical; shade amplified / homozygously deleted segments.
 
+- highlight_events:
+
+  Optional character vector of SV identifiers to draw bold on top of the
+  rest (e.g. the junctions of one chromoplexy cycle, a TBA boundary, a
+  fold-back set). Matched against `highlight_id_col`.
+
+- highlight_id_col:
+
+  Optional name of the column in `sv_data` holding the identifiers
+  matched by `highlight_events`; `NULL` (default) auto-detects `name`
+  then `event`.
+
+- highlight_colour:
+
+  Colour for highlighted SVs (default `"#d95f0e"`).
+
+- dim_unhighlighted:
+
+  Logical; when `TRUE`, non-highlighted SVs are greyed so the
+  highlighted set stands out (default `FALSE`).
+
 - wgd_sample_col:
 
   Optional name of the sample column in `wgd_data` (default: `sample`,
@@ -419,7 +444,7 @@ or auto-detection of all amplified loci).
 ## See also
 
 [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md),
-[`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
+[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
 
 ## Examples
 

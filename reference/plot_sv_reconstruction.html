@@ -109,6 +109,10 @@ decomposition of amplicon evolution.</p>
 <span>  loh_position_ratio <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  highlight_amp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  highlight_hom_del <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  highlight_events <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  highlight_id_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  highlight_colour <span class="op">=</span> <span class="st">"#d95f0e"</span>,</span>
+<span>  dim_unhighlighted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  wgd_sample_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  outdir <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -410,6 +414,27 @@ floor of 2 so near-diploid regions still use a full 0-2 axis.</p></dd>
 deleted segments.</p></dd>
 
 
+<dt id="arg-highlight-events">highlight_events<a class="anchor" aria-label="anchor" href="#arg-highlight-events"></a></dt>
+<dd><p>Optional character vector of SV identifiers to draw
+bold on top of the rest (e.g. the junctions of one chromoplexy cycle, a TBA
+boundary, a fold-back set). Matched against <code>highlight_id_col</code>.</p></dd>
+
+
+<dt id="arg-highlight-id-col">highlight_id_col<a class="anchor" aria-label="anchor" href="#arg-highlight-id-col"></a></dt>
+<dd><p>Optional name of the column in <code>sv_data</code> holding the
+identifiers matched by <code>highlight_events</code>; <code>NULL</code> (default) auto-detects
+<code>name</code> then <code>event</code>.</p></dd>
+
+
+<dt id="arg-highlight-colour">highlight_colour<a class="anchor" aria-label="anchor" href="#arg-highlight-colour"></a></dt>
+<dd><p>Colour for highlighted SVs (default <code>"#d95f0e"</code>).</p></dd>
+
+
+<dt id="arg-dim-unhighlighted">dim_unhighlighted<a class="anchor" aria-label="anchor" href="#arg-dim-unhighlighted"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, non-highlighted SVs are greyed
+so the highlighted set stands out (default <code>FALSE</code>).</p></dd>
+
+
 <dt id="arg-wgd-sample-col">wgd_sample_col<a class="anchor" aria-label="anchor" href="#arg-wgd-sample-col"></a></dt>
 <dd><p>Optional name of the sample column in <code>wgd_data</code>
 (default: <code>sample</code>, falling back to <code>WGS_ID</code>).</p></dd>
@@ -457,7 +482,7 @@ amplified loci).</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="plot_sv_linear.html">plot_sv_linear()</a></code>, <code><a href="call_episomal_ecdna.html">call_episomal_ecdna()</a></code></p></div>
+    <div class="dont-index"><p><code><a href="plot_sv_linear.html">plot_sv_linear()</a></code>, <code><a href="call_simple_excision.html">call_simple_excision()</a></code></p></div>
     </div>
 
     <div class="section level2">

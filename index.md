@@ -28,9 +28,8 @@ documentation:
 > across tumour niches), with genome profiles drawn in the EpiTracer
 > style.
 
-> \[!IMPORTANT\]
-> [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
-> works best with focal amplicon calls from
+> \[!IMPORTANT\] `call_episomal_ecdna()` works best with focal amplicon
+> calls from
 > [AmpliconArchitect](https://github.com/AmpliconSuite/AmpliconArchitect)
 > together with allele-specific copy-number (CNV) and structural-variant
 > (SV) calls from

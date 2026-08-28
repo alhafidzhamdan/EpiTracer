@@ -11,10 +11,8 @@ bundled, synthetic example data (no patient data):
 
 1.  **[Calling episomal
     ecDNA](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.md)**
-    —
-    [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md):
-    flag amplicons that fit the episome model (with or without
-    AmpliconArchitect seeds).
+    — `call_episomal_ecdna()`: flag amplicons that fit the episome model
+    (with or without AmpliconArchitect seeds).
 2.  **[Plotting copy number, SVs and
     kataegis](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.md)**
     —
@@ -43,9 +41,8 @@ data(package = "EpiTracer")$results[, "Item"]
 #> [1] "ex_caller_inputs" "ex_plot_inputs"   "ex_recon_inputs"  "ex_snv"
 ```
 
-- `ex_caller_inputs` — inputs for
-  [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
-  (an episomal EGFR ecDNA).
+- `ex_caller_inputs` — inputs for `call_episomal_ecdna()` (an episomal
+  EGFR ecDNA).
 - `ex_plot_inputs` / `ex_snv` — inputs for
   [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
   (an EGFR amplicon and a kataegis SNV set).

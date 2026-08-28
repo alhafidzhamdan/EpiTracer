@@ -28,9 +28,8 @@ documentation:
 > across tumour niches), with genome profiles drawn in the EpiTracer
 > style.
 
-> \[!IMPORTANT\]
-> [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
-> works best with focal amplicon calls from
+> \[!IMPORTANT\] `call_episomal_ecdna()` works best with focal amplicon
+> calls from
 > [AmpliconArchitect](https://github.com/AmpliconSuite/AmpliconArchitect)
 > together with allele-specific copy-number (CNV) and structural-variant
 > (SV) calls from
@@ -97,14 +96,37 @@ Alhafidz Hamdan.
 
 # Package index
 
-## Detection
+## Episomal detection
 
-Call ecDNA amplicons that arose by simple episomal excision.
+Call focal amplicons that arose by simple episomal excision, and
+nominate the founder circularisation junction that bounds them.
 
-- [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
+- [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
   : Call episomal extrachromosomal DNA from WGS structural variants
+- [`call_founder_boundary()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_founder_boundary.md)
+  : Nominate episomes by a VF-early circularisation DUP
 - [`detect_amplicon_seeds()`](https://alhafidzhamdan.github.io/EpiTracer/reference/detect_amplicon_seeds.md)
   : Detect focal-amplicon seeds from copy number alone
+
+## Mechanism callers
+
+Standalone callers for the other routes to a focal amplification, each
+taking the same inputs and reporting that mechanism’s signature.
+
+- [`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md)
+  : Call chromothripsis within (episomal) amplicons
+- [`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md)
+  : Call micronucleation + chromothripsis amplicons
+- [`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md)
+  : Call breakage-fusion-bridge (BFB) amplicons
+- [`call_brf()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_brf.md)
+  : Call breakage-replication/fusion (BRF) amplicons
+- [`call_translocation_bridge_amp()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_translocation_bridge_amp.md)
+  : Call translocation-bridge amplification (TBA) amplicons
+- [`call_chromoplexy()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromoplexy.md)
+  : Call chromoplexy (closed balanced rearrangement chains)
+- [`call_wgd()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_wgd.md)
+  : Call whole-genome doubling (WGD) from allele-specific copy number
 
 ## Visualisation
 
@@ -115,16 +137,87 @@ Plot the structural rearrangements underlying focal amplifications.
 - [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md)
   : Temporally-stratified rearrangement plot (SV+CN grouped by read
   support)
+- [`plot_sv_circos()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_circos.md)
+  : Whole-genome SV circos plot for one sample
+
+## Reading inputs
+
+Turn copy-number and structural-variant calls from PURPLE/GRIDSS (or any
+other source) into the columns EpiTracer expects.
+
+- [`read_cnv()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_cnv.md)
+  : Read and reformat copy-number segments for EpiTracer
+- [`read_sv()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_sv.md)
+  : Read and reformat structural variants for EpiTracer
+- [`read_purple_sv_vcf()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_purple_sv_vcf.md)
+  : Convert a PURPLE / GRIDSS breakend VCF to BEDPE, keeping VF and JCN
+- [`prepare_amplicon_inputs()`](https://alhafidzhamdan.github.io/EpiTracer/reference/prepare_amplicon_inputs.md)
+  : Build EpiTracer caller inputs from copy-number and SV tables
+
+## Reference data and helpers
+
+Bundled genome annotation and small shared utilities.
+
+- [`gene_locus()`](https://alhafidzhamdan.github.io/EpiTracer/reference/gene_locus.md)
+  : Resolve gene symbol(s) to a plotting locus
+- [`load_centromeres()`](https://alhafidzhamdan.github.io/EpiTracer/reference/load_centromeres.md)
+  : Centromere regions for a bundled genome
+- [`load_chrom_lengths()`](https://alhafidzhamdan.github.io/EpiTracer/reference/load_chrom_lengths.md)
+  : Chromosome lengths for a bundled genome
+- [`find_parallel_breakpoints()`](https://alhafidzhamdan.github.io/EpiTracer/reference/find_parallel_breakpoints.md)
+  : Adjacent parallel breakpoints (breakage-replication/fusion hallmark)
+
+## Simulation
+
+Generate ecDNA amplicons with known mechanisms — a circle at birth,
+after rounds of micronucleation and chromothripsis, or fused from two
+episomes — and render them as caller or plotter inputs.
+
+- [`sim_episome()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_episome.md)
+  : Simulate the birth of an episomal ecDNA
+- [`sim_replicate()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_replicate.md)
+  : Simulate rounds of ecDNA amplification
+- [`sim_segregate()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_segregate.md)
+  : Grow an ecDNA population by segregation and selection
+- [`sim_internal_deletion()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_internal_deletion.md)
+  : Simulate an internal deletion arising within an ecDNA
+- [`sim_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_micronucleation.md)
+  : Simulate one round of micronucleation and chromothripsis
+- [`sim_reconfigure()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_reconfigure.md)
+  : Reconfigure an ecDNA while preserving its founder junction
+- [`sim_shatter_to_episomes()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_shatter_to_episomes.md)
+  : Simulate shattering into several new episomes
+- [`sim_fuse_episomes()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_fuse_episomes.md)
+  : Simulate chimeric ecDNA formation by co-encapsulation of two
+  episomes
+- [`sim_evolve()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_evolve.md)
+  : Evolve a simulated ecDNA through several rounds
+- [`sim_cohort()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_cohort.md)
+  : Simulate a cohort of ecDNA amplicons with known mechanisms
+- [`sim_benchmark()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_benchmark.md)
+  : Score EpiTracer's mechanism callers against simulated ground truth
+- [`sim_to_epitracer()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_to_epitracer.md)
+  : Render a simulated amplicon as EpiTracer caller inputs
+- [`sim_to_plot_inputs()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_to_plot_inputs.md)
+  : Render a simulated amplicon as plotter inputs
+- [`sim_noise()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_noise.md)
+  : Sequencing and calling noise for simulated amplicons
+- [`seed_locus()`](https://alhafidzhamdan.github.io/EpiTracer/reference/seed_locus.md)
+  : A seed locus for simulation
+- [`ecdna_sim`](https://alhafidzhamdan.github.io/EpiTracer/reference/ecdna_sim.md)
+  : Simulated ecDNA amplicon
+- [`summary(`*`<ecdna_sim>`*`)`](https://alhafidzhamdan.github.io/EpiTracer/reference/summary.ecdna_sim.md)
+  : Summarise a simulated amplicon
 
 ## Example data
 
-Small bundled datasets used in the vignette and examples.
+Small bundled datasets used in the vignettes and examples.
 
 - [`ex_caller_inputs`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_caller_inputs.md)
   :
 
   Example inputs for
-  [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
+  [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
 
 - [`ex_plot_inputs`](https://alhafidzhamdan.github.io/EpiTracer/reference/ex_plot_inputs.md)
   :

@@ -1,7 +1,7 @@
 # Classify a single ecDNA amplicon as episomal or not
 
 Internal worker called once per amplicon by
-[`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md).
+[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md).
 It annotates the structural variant breakpoints falling within (or just
 outside) an ecDNA amplicon, then applies the episome heuristic:
 
@@ -27,6 +27,15 @@ classify_amplicon_episomal(
   cnv_gr,
   cancer_genes_gr,
   ext = 1e+07,
+  flank_baseline = "chromosome",
+  gain_ratio = 1.4,
+  min_cn_ratio = 3,
+  min_flank_width = 2000,
+  bridge_gap = 1e+06,
+  founder_jcn = 30,
+  centromeres = NULL,
+  mh_min_homology = 2,
+  hr_min_homology = 14,
   verbose = FALSE
 )
 ```
@@ -40,7 +49,7 @@ classify_amplicon_episomal(
 - ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr:
 
   See
-  [`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md).
+  [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md).
 
 - ext:
 

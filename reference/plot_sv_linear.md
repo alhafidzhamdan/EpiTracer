@@ -42,6 +42,12 @@ plot_sv_linear(
   loh_position_ratio = 0.5,
   highlight_amp = TRUE,
   highlight_hom_del = TRUE,
+  amplicons = NULL,
+  parallel_breakpoints = NULL,
+  highlight_events = NULL,
+  highlight_id_col = NULL,
+  highlight_colour = "#d95f0e",
+  dim_unhighlighted = FALSE,
   wgd_sample_col = NULL,
   snv_data = NULL,
   snv_sample_col = NULL,
@@ -231,6 +237,50 @@ plot_sv_linear(
 
   Logical; shade amplified / homozygously deleted segments.
 
+- amplicons:
+
+  Optional distinct-amplicon overlay: a
+  [GenomicRanges::GRanges](https://rdrr.io/pkg/GenomicRanges/man/GRanges-class.html)
+  or data.frame of amplicon regions (columns `seqnames`/`chr`, `start`,
+  `end`, and an optional `ID`/`label`). Each amplicon that falls in the
+  plotted window is drawn as a short horizontal bar across the TOP of
+  the plot spanning its extent, in its own colour and with its label
+  above, so several distinct amplicons (e.g. a focal episome sitting
+  inside a larger, separately detected amplified span) are visually
+  separable without washing over the data. Genomic coordinates are
+  mapped through the same per-locus transform as the rest of the plot,
+  so the bars align with the copy-number track.
+
+- parallel_breakpoints:
+
+  Optional data.frame of *adjacent parallel breakpoint* pairs to
+  highlight (the breakage-replication/fusion hallmark): columns
+  `chr`/`seqnames`, `pos1`, `pos2` (the two same-orientation breakends
+  of a pair) and an optional `strand`. Each pair is drawn near the
+  baseline as a bracket joining the two breakends, with a caret marking
+  each, so BRF breakpoints stand out among the other junctions.
+
+- highlight_events:
+
+  Optional character vector of SV identifiers to draw bold on top of the
+  rest (e.g. the junctions of one chromoplexy cycle, a TBA boundary, a
+  fold-back set). Matched against `highlight_id_col`.
+
+- highlight_id_col:
+
+  Optional name of the column in `sv_data` holding the identifiers
+  matched by `highlight_events`; `NULL` (default) auto-detects `name`
+  then `event`.
+
+- highlight_colour:
+
+  Colour for highlighted SVs (default `"#d95f0e"`).
+
+- dim_unhighlighted:
+
+  Logical; when `TRUE`, non-highlighted SVs are greyed so the
+  highlighted set stands out (default `FALSE`).
+
 - wgd_sample_col:
 
   Optional name of the sample column in `wgd_data` (default: `sample`,
@@ -388,7 +438,7 @@ dropped.
 
 ## See also
 
-[`call_episomal_ecdna()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_ecdna.md)
+[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
 
 ## Examples
 

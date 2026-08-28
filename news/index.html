@@ -51,7 +51,7 @@
 <h2 class="pkg-version" data-toc-text="0.0.0.9000" id="epitracer-0009000">EpiTracer 0.0.0.9000<a class="anchor" aria-label="anchor" href="#epitracer-0009000"></a></h2>
 <ul><li>Initial development version.</li>
 <li>
-<code><a href="../reference/call_episomal_ecdna.html">call_episomal_ecdna()</a></code>: episomal (breakage-independent) ecDNA caller, refactored from the original cohort analysis script into a function taking ecDNA / SV / CNV / cancer-gene <code>GRanges</code> as arguments.
+<code>call_episomal_ecdna()</code>: episomal (breakage-independent) ecDNA caller, refactored from the original cohort analysis script into a function taking ecDNA / SV / CNV / cancer-gene <code>GRanges</code> as arguments.
 <ul><li>
 <strong>Bug fix:</strong> the original script’s boundary-flank check compared <code>after_dist_boundary_not_gained</code> to itself (always <code>TRUE</code>). It now correctly requires <em>both</em> flanks to be non-gained before calling an episome region.</li>
 </ul></li>

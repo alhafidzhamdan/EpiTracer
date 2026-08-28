@@ -39,9 +39,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="detection">Detection<a class="anchor" aria-label="anchor" href="#detection"></a></h2>
+      <h2 id="episomal-detection">Episomal detection<a class="anchor" aria-label="anchor" href="#episomal-detection"></a></h2>
 
-      <div class="section-desc"><p>Call ecDNA amplicons that arose by simple episomal excision.</p></div>
+      <div class="section-desc"><p>Call focal amplicons that arose by simple episomal excision, and nominate the founder circularisation junction that bounds them.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -50,10 +50,17 @@
 
       <dl><dt>
 
-          <code><a href="call_episomal_ecdna.html">call_episomal_ecdna()</a></code>
+          <code><a href="call_simple_excision.html">call_simple_excision()</a></code>
 
         </dt>
         <dd>Call episomal extrachromosomal DNA from WGS structural variants</dd>
+
+        <dt>
+
+          <code><a href="call_founder_boundary.html">call_founder_boundary()</a></code>
+
+        </dt>
+        <dd>Nominate episomes by a VF-early circularisation DUP</dd>
 
         <dt>
 
@@ -61,6 +68,64 @@
 
         </dt>
         <dd>Detect focal-amplicon seeds from copy number alone</dd>
+      </dl></div><div class="section level2">
+      <h2 id="mechanism-callers">Mechanism callers<a class="anchor" aria-label="anchor" href="#mechanism-callers"></a></h2>
+
+      <div class="section-desc"><p>Standalone callers for the other routes to a focal amplification, each taking the same inputs and reporting that mechanism’s signature.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="call_chromothripsis.html">call_chromothripsis()</a></code>
+
+        </dt>
+        <dd>Call chromothripsis within (episomal) amplicons</dd>
+
+        <dt>
+
+          <code><a href="call_micronucleation.html">call_micronucleation()</a></code>
+
+        </dt>
+        <dd>Call micronucleation + chromothripsis amplicons</dd>
+
+        <dt>
+
+          <code><a href="call_bfb.html">call_bfb()</a></code>
+
+        </dt>
+        <dd>Call breakage-fusion-bridge (BFB) amplicons</dd>
+
+        <dt>
+
+          <code><a href="call_brf.html">call_brf()</a></code>
+
+        </dt>
+        <dd>Call breakage-replication/fusion (BRF) amplicons</dd>
+
+        <dt>
+
+          <code><a href="call_translocation_bridge_amp.html">call_translocation_bridge_amp()</a></code>
+
+        </dt>
+        <dd>Call translocation-bridge amplification (TBA) amplicons</dd>
+
+        <dt>
+
+          <code><a href="call_chromoplexy.html">call_chromoplexy()</a></code>
+
+        </dt>
+        <dd>Call chromoplexy (closed balanced rearrangement chains)</dd>
+
+        <dt>
+
+          <code><a href="call_wgd.html">call_wgd()</a></code>
+
+        </dt>
+        <dd>Call whole-genome doubling (WGD) from allele-specific copy number</dd>
       </dl></div><div class="section level2">
       <h2 id="visualisation">Visualisation<a class="anchor" aria-label="anchor" href="#visualisation"></a></h2>
 
@@ -84,10 +149,219 @@
 
         </dt>
         <dd>Temporally-stratified rearrangement plot (SV+CN grouped by read support)</dd>
+
+        <dt>
+
+          <code><a href="plot_sv_circos.html">plot_sv_circos()</a></code>
+
+        </dt>
+        <dd>Whole-genome SV circos plot for one sample</dd>
+      </dl></div><div class="section level2">
+      <h2 id="reading-inputs">Reading inputs<a class="anchor" aria-label="anchor" href="#reading-inputs"></a></h2>
+
+      <div class="section-desc"><p>Turn copy-number and structural-variant calls from PURPLE/GRIDSS (or any other source) into the columns EpiTracer expects.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="read_cnv.html">read_cnv()</a></code>
+
+        </dt>
+        <dd>Read and reformat copy-number segments for EpiTracer</dd>
+
+        <dt>
+
+          <code><a href="read_sv.html">read_sv()</a></code>
+
+        </dt>
+        <dd>Read and reformat structural variants for EpiTracer</dd>
+
+        <dt>
+
+          <code><a href="read_purple_sv_vcf.html">read_purple_sv_vcf()</a></code>
+
+        </dt>
+        <dd>Convert a PURPLE / GRIDSS breakend VCF to BEDPE, keeping VF and JCN</dd>
+
+        <dt>
+
+          <code><a href="prepare_amplicon_inputs.html">prepare_amplicon_inputs()</a></code>
+
+        </dt>
+        <dd>Build EpiTracer caller inputs from copy-number and SV tables</dd>
+      </dl></div><div class="section level2">
+      <h2 id="reference-data-and-helpers">Reference data and helpers<a class="anchor" aria-label="anchor" href="#reference-data-and-helpers"></a></h2>
+
+      <div class="section-desc"><p>Bundled genome annotation and small shared utilities.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="gene_locus.html">gene_locus()</a></code>
+
+        </dt>
+        <dd>Resolve gene symbol(s) to a plotting locus</dd>
+
+        <dt>
+
+          <code><a href="load_centromeres.html">load_centromeres()</a></code>
+
+        </dt>
+        <dd>Centromere regions for a bundled genome</dd>
+
+        <dt>
+
+          <code><a href="load_chrom_lengths.html">load_chrom_lengths()</a></code>
+
+        </dt>
+        <dd>Chromosome lengths for a bundled genome</dd>
+
+        <dt>
+
+          <code><a href="find_parallel_breakpoints.html">find_parallel_breakpoints()</a></code>
+
+        </dt>
+        <dd>Adjacent parallel breakpoints (breakage-replication/fusion hallmark)</dd>
+      </dl></div><div class="section level2">
+      <h2 id="simulation">Simulation<a class="anchor" aria-label="anchor" href="#simulation"></a></h2>
+
+      <div class="section-desc"><p>Generate ecDNA amplicons with known mechanisms — a circle at birth, after rounds of micronucleation and chromothripsis, or fused from two episomes — and render them as caller or plotter inputs.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="sim_episome.html">sim_episome()</a></code>
+
+        </dt>
+        <dd>Simulate the birth of an episomal ecDNA</dd>
+
+        <dt>
+
+          <code><a href="sim_replicate.html">sim_replicate()</a></code>
+
+        </dt>
+        <dd>Simulate rounds of ecDNA amplification</dd>
+
+        <dt>
+
+          <code><a href="sim_segregate.html">sim_segregate()</a></code>
+
+        </dt>
+        <dd>Grow an ecDNA population by segregation and selection</dd>
+
+        <dt>
+
+          <code><a href="sim_internal_deletion.html">sim_internal_deletion()</a></code>
+
+        </dt>
+        <dd>Simulate an internal deletion arising within an ecDNA</dd>
+
+        <dt>
+
+          <code><a href="sim_micronucleation.html">sim_micronucleation()</a></code>
+
+        </dt>
+        <dd>Simulate one round of micronucleation and chromothripsis</dd>
+
+        <dt>
+
+          <code><a href="sim_reconfigure.html">sim_reconfigure()</a></code>
+
+        </dt>
+        <dd>Reconfigure an ecDNA while preserving its founder junction</dd>
+
+        <dt>
+
+          <code><a href="sim_shatter_to_episomes.html">sim_shatter_to_episomes()</a></code>
+
+        </dt>
+        <dd>Simulate shattering into several new episomes</dd>
+
+        <dt>
+
+          <code><a href="sim_fuse_episomes.html">sim_fuse_episomes()</a></code>
+
+        </dt>
+        <dd>Simulate chimeric ecDNA formation by co-encapsulation of two episomes</dd>
+
+        <dt>
+
+          <code><a href="sim_evolve.html">sim_evolve()</a></code>
+
+        </dt>
+        <dd>Evolve a simulated ecDNA through several rounds</dd>
+
+        <dt>
+
+          <code><a href="sim_cohort.html">sim_cohort()</a></code>
+
+        </dt>
+        <dd>Simulate a cohort of ecDNA amplicons with known mechanisms</dd>
+
+        <dt>
+
+          <code><a href="sim_benchmark.html">sim_benchmark()</a></code>
+
+        </dt>
+        <dd>Score EpiTracer's mechanism callers against simulated ground truth</dd>
+
+        <dt>
+
+          <code><a href="sim_to_epitracer.html">sim_to_epitracer()</a></code>
+
+        </dt>
+        <dd>Render a simulated amplicon as EpiTracer caller inputs</dd>
+
+        <dt>
+
+          <code><a href="sim_to_plot_inputs.html">sim_to_plot_inputs()</a></code>
+
+        </dt>
+        <dd>Render a simulated amplicon as plotter inputs</dd>
+
+        <dt>
+
+          <code><a href="sim_noise.html">sim_noise()</a></code>
+
+        </dt>
+        <dd>Sequencing and calling noise for simulated amplicons</dd>
+
+        <dt>
+
+          <code><a href="seed_locus.html">seed_locus()</a></code>
+
+        </dt>
+        <dd>A seed locus for simulation</dd>
+
+        <dt>
+
+          <code><a href="ecdna_sim.html">ecdna_sim</a></code>
+
+        </dt>
+        <dd>Simulated ecDNA amplicon</dd>
+
+        <dt>
+
+          <code><a href="summary.ecdna_sim.html">summary(<i>&lt;ecdna_sim&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summarise a simulated amplicon</dd>
       </dl></div><div class="section level2">
       <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a></h2>
 
-      <div class="section-desc"><p>Small bundled datasets used in the vignette and examples.</p></div>
+      <div class="section-desc"><p>Small bundled datasets used in the vignettes and examples.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -99,7 +373,7 @@
           <code><a href="ex_caller_inputs.html">ex_caller_inputs</a></code>
 
         </dt>
-        <dd>Example inputs for <code><a href="../reference/call_episomal_ecdna.html">call_episomal_ecdna()</a></code></dd>
+        <dd>Example inputs for <code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code></dd>
 
         <dt>
 

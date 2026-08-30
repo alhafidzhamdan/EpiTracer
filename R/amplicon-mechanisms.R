@@ -432,16 +432,26 @@ call_brf <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
 
 #' Call micronucleation + chromothripsis amplicons
 #'
-#' Standalone caller for the micronucleation signature: an amplicon joined to a
-#' NON-HOMOLOGOUS chromosome by a high-VF interchromosomal translocation with both
-#' breakends amplified ("high VF" = top quartile of the amplicon's own junctions)
-#' -- the amplicon incorporates a fragment of another chromosome, the hallmark of
-#' assembly inside a micronucleus after chromosome shattering.
+#' Standalone caller for the two-ecDNA micronucleation signature: an amplicon
+#' joined to **another amplified locus on a non-homologous chromosome** by a
+#' high-VF interchromosomal translocation, with both breakends amplified ("high
+#' VF" = top quartile of the amplicon's own junctions). Fusing fragments of two
+#' different chromosomes into one amplicon is only possible if both were present
+#' together, so this is the signature of **two episomal ecDNAs co-encapsulated in
+#' a micronucleus and recombined** after chromosome shattering (chromothripsis).
+#'
+#' Micronucleation need **not** involve a non-homologous chromosome: a single
+#' chromosome -- or two homologous copies of one -- can be mis-segregated into a
+#' micronucleus, shattered and rejoined, which presents as clustered
+#' *intrachromosomal* rearrangements rather than an interchromosomal
+#' translocation. This caller keys on the interchromosomal two-ecDNA-fusion
+#' flavour; for the intrachromosomal shattering hallmarks (clustered breakpoints,
+#' random fragment joins, copy-number oscillation) use [call_chromothripsis()].
 #'
 #' @inheritParams call_simple_excision
 #' @return A [data.table::data.table] of annotated breakpoints with
 #'   `micronucleation` (`"TRUE"`/`"FALSE"`).
-#' @seealso [call_simple_excision()]
+#' @seealso [call_simple_excision()], [call_chromothripsis()]
 #' @export
 call_micronucleation <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                                  ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,

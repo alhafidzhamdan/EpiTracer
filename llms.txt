@@ -63,7 +63,6 @@ reference**](https://alhafidzhamdan.github.io/EpiTracer/reference/index.html#sim
 |:---|:---|
 | [**Get started**](https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.html) | The end-to-end walk-through, from inputs to a first episomal call and figure. |
 | [**Calling episomal ecDNA**](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.html) | [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md) in depth — the episome heuristic, the excision scar, and running with or without AmpliconArchitect. |
-| [**Calling rearrangement mechanisms**](https://alhafidzhamdan.github.io/EpiTracer/articles/mechanisms.html) | Call + plot for each mechanism — [`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md), [`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md), [`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md), [`call_brf()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_brf.md) and [`call_chromoplexy()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromoplexy.md). |
 | [**Plotting copy number, structural variants and kataegis**](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.html) | Building [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md) figures, including the stacked SNV/kataegis panel. |
 | [**Reconstructing a focal amplicon wave by wave**](https://alhafidzhamdan.github.io/EpiTracer/articles/reconstruction.html) | Using [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md) to order rearrangements by read support and read off the founder junction. |
 
@@ -295,8 +294,6 @@ Small bundled datasets used in the vignettes and examples.
 
 - [Calling episomal
   ecDNA](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.md):
-- [Calling rearrangement
-  mechanisms](https://alhafidzhamdan.github.io/EpiTracer/articles/mechanisms.md):
 - [Plotting copy number, structural variants and
   kataegis](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.md):
 - [Reconstructing a focal amplicon wave by

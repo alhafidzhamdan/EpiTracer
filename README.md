@@ -64,7 +64,7 @@ callers above. See the
 | :--- | :--- |
 | [**Get started**](https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.html) | The end-to-end walk-through, from inputs to a first episomal call and figure. |
 | [**Calling episomal ecDNA**](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.html) | `call_simple_excision()` in depth — the episome heuristic, the excision scar, and running with or without AmpliconArchitect. |
-| [**Calling amplicon-formation mechanisms**](https://alhafidzhamdan.github.io/EpiTracer/articles/mechanisms.html) | Runnable examples for `call_chromothripsis()`, `call_micronucleation()`, `call_bfb()`, `call_brf()` and `call_chromoplexy()` — each mechanism's structural signature. |
+| [**Calling rearrangement mechanisms**](https://alhafidzhamdan.github.io/EpiTracer/articles/mechanisms.html) | Call + plot for each mechanism — `call_chromothripsis()`, `call_micronucleation()`, `call_bfb()`, `call_brf()` and `call_chromoplexy()`. |
 | [**Plotting copy number, structural variants and kataegis**](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.html) | Building `plot_sv_linear()` figures, including the stacked SNV/kataegis panel. |
 | [**Reconstructing a focal amplicon wave by wave**](https://alhafidzhamdan.github.io/EpiTracer/articles/reconstruction.html) | Using `plot_sv_reconstruction()` to order rearrangements by read support and read off the founder junction. |
 

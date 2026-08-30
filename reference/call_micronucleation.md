@@ -1,11 +1,13 @@
 # Call micronucleation + chromothripsis amplicons
 
-Standalone caller for the micronucleation signature: an amplicon joined
-to a NON-HOMOLOGOUS chromosome by a high-VF interchromosomal
-translocation with both breakends amplified ("high VF" = top quartile of
-the amplicon's own junctions) – the amplicon incorporates a fragment of
-another chromosome, the hallmark of assembly inside a micronucleus after
-chromosome shattering.
+Standalone caller for the two-ecDNA micronucleation signature: an
+amplicon joined to **another amplified locus on a non-homologous
+chromosome** by a high-VF interchromosomal translocation, with both
+breakends amplified ("high VF" = top quartile of the amplicon's own
+junctions). Fusing fragments of two different chromosomes into one
+amplicon is only possible if both were present together, so this is the
+signature of **two episomal ecDNAs co-encapsulated in a micronucleus and
+recombined** after chromosome shattering (chromothripsis).
 
 ## Usage
 
@@ -84,6 +86,19 @@ A
 [data.table::data.table](https://rdrr.io/pkg/data.table/man/data.table.html)
 of annotated breakpoints with `micronucleation` (`"TRUE"`/`"FALSE"`).
 
+## Details
+
+Micronucleation need **not** involve a non-homologous chromosome: a
+single chromosome – or two homologous copies of one – can be
+mis-segregated into a micronucleus, shattered and rejoined, which
+presents as clustered *intrachromosomal* rearrangements rather than an
+interchromosomal translocation. This caller keys on the interchromosomal
+two-ecDNA-fusion flavour; for the intrachromosomal shattering hallmarks
+(clustered breakpoints, random fragment joins, copy-number oscillation)
+use
+[`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md).
+
 ## See also
 
-[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
+[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md),
+[`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md)

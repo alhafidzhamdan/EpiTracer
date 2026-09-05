@@ -420,7 +420,7 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
 #' @seealso [find_parallel_breakpoints()], [call_simple_excision()]
 #' @export
 call_brf <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                     ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
+                     ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 5e3,
                      max_dist = 2e4, min_dist = 1, max_indep_p = 0.05,
                      exclude_insertion_adjacency = TRUE, mc.cores = 1) {
   det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
@@ -453,7 +453,7 @@ call_brf <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
 #' @seealso [call_simple_excision()], [call_chromothripsis()]
 #' @export
 call_chimeric_amplicon <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                                 ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
+                                 ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 5e3,
                                  mc.cores = 1) {
   .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
                          ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, .detect_chimeric_amplicon)
@@ -494,7 +494,7 @@ call_chimeric_amplicon <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, canc
 #' @seealso [call_simple_excision()], [call_chimeric_amplicon()], [call_bfb()]
 #' @export
 call_chromothripsis <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                                ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
+                                ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 5e3,
                                 min_sv = 6L, min_oscillations = 3L, join_p = 0.05, mc.cores = 1) {
   det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
     .detect_chromothripsis(this_chr, coords, ctx, ch, min_cn_ratio,
@@ -522,7 +522,7 @@ call_chromothripsis <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_
 #' @seealso [load_centromeres()], [load_chrom_lengths()], [call_simple_excision()]
 #' @export
 call_bfb <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                     ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
+                     ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 5e3,
                      centromeres = NULL, chrom_lengths = NULL,
                      bfb_min_del_width = 1e6, bfb_min_del_frac = 0.7, bfb_loss_max = 1.5,
                      bfb_min_levels = 3, bfb_min_spread = 0.3, mc.cores = 1) {
@@ -584,7 +584,7 @@ call_bfb <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
 #' @export
 call_translocation_bridge_amp <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                                           ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6,
-                                          seed_min_width = 1e5, tb_edge_tol = 1e4,
+                                          seed_min_width = 5e3, tb_edge_tol = 1e4,
                                           centromeres = NULL, chrom_lengths = NULL,
                                           loh_max = 0.5, bridge_loh_min_frac = 0.15,
                                           nonbridge_loh_max_frac = 0.1, bridge_anchor_tol = 3e6,

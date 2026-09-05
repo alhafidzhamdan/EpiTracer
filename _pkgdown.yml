@@ -31,7 +31,7 @@ reference:
       taking the same inputs and reporting that mechanism's signature.
     contents:
       - call_chromothripsis
-      - call_micronucleation
+      - call_chimeric_amplicon
       - call_bfb
       - call_brf
       - call_translocation_bridge_amp

@@ -3,7 +3,7 @@
 ## breakends meet in "deletion bridges" (Baca et al., Cell 2013; ChainFinder).
 ##
 ## Unlike the amplicon-formation callers (call_simple_excision / call_brf /
-## call_bfb / call_micronucleation / call_translocation_bridge_amp), chromoplexy
+## call_bfb / call_chimeric_amplicon / call_translocation_bridge_amp), chromoplexy
 ## is NOT amplicon-centric: it is a sample-level event over the whole genome, and
 ## it is defined by LOW copy number (a balanced rearrangement, not an
 ## amplification). It therefore runs on its own sample-level engine rather than

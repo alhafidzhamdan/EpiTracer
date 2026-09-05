@@ -6,7 +6,7 @@
 \usage{
 sim_benchmark(
   cohort,
-  callers = c("simple_excision", "chromothripsis", "micronucleation"),
+  callers = c("simple_excision", "chromothripsis", "chimeric"),
   mc.cores = 1L
 )
 }
@@ -14,7 +14,7 @@ sim_benchmark(
 \item{cohort}{The list returned by \code{\link[=sim_cohort]{sim_cohort()}}.}
 
 \item{callers}{Character vector naming which callers to run; any of
-\code{"simple_excision"}, \code{"chromothripsis"}, \code{"micronucleation"}, \code{"brf"},
+\code{"simple_excision"}, \code{"chromothripsis"}, \code{"chimeric"}, \code{"brf"},
 \code{"bfb"}. Defaults to the first three, the mechanisms this suite generates.}
 
 \item{mc.cores}{Cores passed to the callers (default \code{1}).}

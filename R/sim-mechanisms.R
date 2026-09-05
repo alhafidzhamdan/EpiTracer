@@ -10,7 +10,7 @@
 ## born, shattered once, shattered again, and fused with a second episome, and
 ## the junction ledger accumulates the scars of every step with the round and
 ## mechanism that produced it. That ledger is the ground truth against which
-## call_simple_excision(), call_micronucleation() and call_chromothripsis() are
+## call_simple_excision(), call_chimeric_amplicon() and call_chromothripsis() are
 ## scored.
 ##
 ## The biology being modelled (Shoshani et al., Nature 2021; Rosswog et al., Nat
@@ -633,7 +633,7 @@ sim_shatter_to_episomes <- function(x, n_breaks = 20L, n_circles = 3L,
 #'
 #' When the two episomes come from different chromosomes the chimera necessarily
 #' carries **inter-chromosomal junctions with both breakends inside amplified
-#' copy number**, which is precisely the signature [call_micronucleation()]
+#' copy number**, which is precisely the signature [call_chimeric_amplicon()]
 #' detects. It also puts two oncogenes on one circle, the co-amplification
 #' (e.g. *EGFR* with *CDK4*, or *MYC* with a distant enhancer) that is common in
 #' patient amplicons and cannot arise from a single excision.
@@ -665,7 +665,7 @@ sim_shatter_to_episomes <- function(x, n_breaks = 20L, n_circles = 3L,
 #' b <- sim_episome(seed_locus("CDK4"), sample = "SIM02", copies = 30)
 #' ch <- sim_fuse_episomes(a, b, seed = 1)
 #' summary(ch)   # n_chr == 2, n_tra > 0
-#' @seealso [sim_micronucleation()], [call_micronucleation()]
+#' @seealso [sim_micronucleation()], [call_chimeric_amplicon()]
 #' @export
 sim_fuse_episomes <- function(x, y, n_breaks = 10L, del_p = 0.15, inv_p = 0.5,
                               dup_p = 0.2, max_dup = 3L, copies = NULL,

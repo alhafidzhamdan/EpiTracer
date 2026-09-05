@@ -127,7 +127,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
     this_sample_breakpoints_ecdna_annotated$junction_homology_class <- NA_character_
     ## NOTE: the breakage-replication/fusion (BRF), micronucleation and
     ## breakage-fusion-bridge (BFB) annotations are computed by the standalone
-    ## callers [call_brf()], [call_micronucleation()] and [call_bfb()], not here.
+    ## callers [call_brf()], [call_chimeric_amplicon()] and [call_bfb()], not here.
 
     ## The same amplicon can span >1 chromosome, so classify per chromosome:
     unique_chrs <- unique(this_sample_breakpoints_ecdna_annotated$seqnames)
@@ -549,23 +549,16 @@ classify_amplicon_episomal <- function(this_amplicon_id,
       if (nrow(this_chr %>% dplyr::filter(episome_region == "TRUE")) > 0) {
         this_chr$episomal <- "TRUE"
       }
-      ## The bridging and internal-high-VF-SV flags are informational only -- an
-      ## internal DELETION that out-copies the boundary DUP is an ANCESTRAL event
-      ## (a smaller-circle / pre-excision deletion), not a rival formation
-      ## mechanism, so it does not override the episome call. Two signatures ARE
-      ## disqualifying:
-      ##  (i) a MICRONUCLEUS (interleaved high-JCN founder DUP+INV across a gap) --
-      ##      intra-micronucleus chromothripsis, not a circularised episome; and
-      ## (ii) an internal INVERSION that out-copies the boundary DUP -- the
-      ##      inverted-duplication signature: the amplicon was founded by an
-      ##      inverted duplication (a copy-gaining mechanism), not simple excision.
-      if (any(this_chr$flag_micronucleus == "TRUE")) {
-        this_chr$episomal <- "FALSE"
-      }
-      if (any(this_chr$flag_internal_inversion == "TRUE")) {
-        this_chr$episomal <- "FALSE"
-        this_chr$episomal_type2 <- "FALSE"
-      }
+      ## Internal-structure flags are ANNOTATION ONLY and never override the
+      ## episome call: an internal DELETION that out-copies the boundary DUP is an
+      ## ANCESTRAL (pre-excision / smaller-circle) event; a MICRONUCLEUS signature
+      ## (interleaved high-JCN founder DUP+INV across a gap) and an internal
+      ## INVERSION that out-copies the boundary DUP are recorded for the
+      ## chromothripsis-within-an-episome / inverted-duplication hypotheses but do
+      ## NOT disqualify -- an episome can be internally rearranged. The only
+      ## disqualifying signatures are a boundary DEFINED by an INV/TRA
+      ## (flag_inv_at_boundary / flag_tra_at_boundary) and a chromosomal bridge
+      ## (flag_chromosomal_bridge); both mean the edge is not a circularisation.
       ## A chromosomal-bridge amplicon (edge terminates in a centromere) is
       ## excluded from the episomal call (and from the type-2 candidate set).
       if (any(this_chr$flag_chromosomal_bridge == "TRUE")) {
@@ -675,12 +668,16 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'   amplicons, with per-breakpoint classification columns including
 #'   `duplication_at_boundary`, `duplication_at_boundary_has_highest_VF`,
 #'   `episome_region`, `deletion_flanking_boundary`, `episomal`,
-#'   `has_excision_scar`, and the diagnostic flags `flag_internal_sv_high_vf`
-#'   (an internal SV out-VFs the boundary DUP; informational), the disqualifying
-#'   `flag_internal_inversion` (a fold-back inversion does so -- break-fusion-
-#'   bridge), and `flag_bridging_amplicon` (a junction fuses two separate
-#'   amplicons) -- all character `"TRUE"`/`"FALSE"`. An amplicon carrying either
-#'   disqualifying flag is set `episomal = "FALSE"`. For an amplicon with a
+#'   `has_excision_scar`, and the annotation-only flags `flag_internal_sv_high_vf`
+#'   (an internal SV out-VFs the boundary DUP), `flag_internal_inversion` (a
+#'   fold-back inversion does so), `flag_micronucleus` (interleaved high-JCN
+#'   DUP+INV) and `flag_bridging_amplicon` (a junction fuses two separate
+#'   amplicons) -- all character `"TRUE"`/`"FALSE"` and none of which override the
+#'   call. The only disqualifying flags are `flag_inv_at_boundary` /
+#'   `flag_tra_at_boundary` (an edge is defined by an INV/TRA, not a
+#'   circularisation) and `flag_chromosomal_bridge` (an edge terminates in a
+#'   centromere); an amplicon carrying any of these is set `episomal = "FALSE"`.
+#'   For an amplicon with a
 #'   boundary DUP it also reports the circularisation-junction microhomology as
 #'   `boundary_homology` (numeric bp) and `junction_homology_class`
 #'   (`"NHEJ"`/`"MMEJ"`/`"HR"`; `NA` when no boundary DUP is found), the inferred
@@ -688,7 +685,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'
 #'   The other amplicon-formation mechanisms are computed by dedicated standalone
 #'   callers, not here: [call_brf()] (breakage-replication/fusion / adjacent
-#'   parallel breakpoints), [call_micronucleation()] (high-VF non-homologous
+#'   parallel breakpoints), [call_chimeric_amplicon()] (high-VF non-homologous
 #'   translocation), [call_bfb()] (breakage-fusion-bridge) and
 #'   [call_translocation_bridge_amp()] (translocation-bridge amplification). Join
 #'   their output to this one by `WGS_ID` + `ID` to assemble a combined mechanism

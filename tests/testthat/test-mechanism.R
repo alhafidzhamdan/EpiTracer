@@ -1,5 +1,5 @@
-## Micronucleation + chromothripsis: the standalone call_micronucleation() caller,
-## and its independence from the episomal call (the combined `mechanism` label is
+## Chimeric amplicon (cross-chromosome fusion): the standalone call_chimeric_amplicon()
+## caller, and its independence from the episomal call (the combined `mechanism` label is
 ## assembled downstream by joining the caller outputs, so it is not tested here).
 
 mn_inputs <- function(partner_cn = 50, boundary_dup = FALSE) {
@@ -28,22 +28,22 @@ mn_inputs <- function(partner_cn = 50, boundary_dup = FALSE) {
        cnv_gr = GenomicRanges::makeGRangesFromDataFrame(cnv, keep.extra.columns = TRUE), cgg = cgg)
 }
 
-test_that("call_micronucleation flags a high-VF cross-chromosome amplified TRA", {
+test_that("call_chimeric_amplicon flags a high-VF cross-chromosome amplified TRA", {
   d <- mn_inputs(partner_cn = 50)
-  r <- call_micronucleation(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
-  expect_true(all(r$micronucleation == "TRUE"))
+  r <- call_chimeric_amplicon(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
+  expect_true(all(r$chimeric == "TRUE"))
 })
 
-test_that("call_micronucleation does NOT flag a TRA to a non-amplified partner", {
+test_that("call_chimeric_amplicon does NOT flag a TRA to a non-amplified partner", {
   d <- mn_inputs(partner_cn = 2)   # chr12 partner diploid
-  r <- call_micronucleation(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
-  expect_true(all(r$micronucleation == "FALSE"))
+  r <- call_chimeric_amplicon(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
+  expect_true(all(r$chimeric == "FALSE"))
 })
 
-test_that("micronucleation and episomal are independent (an amplicon can be both)", {
+test_that("chimeric amplicon and episomal are independent (an amplicon can be both)", {
   d <- mn_inputs(partner_cn = 50, boundary_dup = TRUE)   # boundary DUP + cross-chr amplified TRA
-  mn  <- call_micronucleation(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
+  mn  <- call_chimeric_amplicon(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
   epi <- call_simple_excision(d$ecdna_gr, d$breakpoints_gr, d$cnv_gr, d$cgg, ext = 1e7, mc.cores = 1)
-  expect_true(all(mn$micronucleation == "TRUE"))
+  expect_true(all(mn$chimeric == "TRUE"))
   expect_true(all(epi$episomal == "TRUE"))
 })

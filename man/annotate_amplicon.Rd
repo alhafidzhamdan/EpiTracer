@@ -27,7 +27,7 @@ amplicon has no breakpoints in range.
 }
 \description{
 Internal helper shared by \code{\link[=call_simple_excision]{call_simple_excision()}} and the standalone mechanism
-callers (\code{\link[=call_brf]{call_brf()}}, \code{\link[=call_micronucleation]{call_micronucleation()}}, \code{\link[=call_bfb]{call_bfb()}}). For one
+callers (\code{\link[=call_brf]{call_brf()}}, \code{\link[=call_chimeric_amplicon]{call_chimeric_amplicon()}}, \code{\link[=call_bfb]{call_bfb()}}). For one
 amplicon it builds the structural-variant breakpoint table falling within (or
 just outside, by \code{ext}) the amplicon, annotated with oncogene overlap and
 allele-specific copy number, and returns it together with the sample's full

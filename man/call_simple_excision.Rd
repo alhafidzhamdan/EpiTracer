@@ -112,12 +112,16 @@ A \link[data.table:data.table]{data.table::data.table} combining the annotated b
 amplicons, with per-breakpoint classification columns including
 \code{duplication_at_boundary}, \code{duplication_at_boundary_has_highest_VF},
 \code{episome_region}, \code{deletion_flanking_boundary}, \code{episomal},
-\code{has_excision_scar}, and the diagnostic flags \code{flag_internal_sv_high_vf}
-(an internal SV out-VFs the boundary DUP; informational), the disqualifying
-\code{flag_internal_inversion} (a fold-back inversion does so -- break-fusion-
-bridge), and \code{flag_bridging_amplicon} (a junction fuses two separate
-amplicons) -- all character \code{"TRUE"}/\code{"FALSE"}. An amplicon carrying either
-disqualifying flag is set \code{episomal = "FALSE"}. For an amplicon with a
+\code{has_excision_scar}, and the annotation-only flags \code{flag_internal_sv_high_vf}
+(an internal SV out-VFs the boundary DUP), \code{flag_internal_inversion} (a
+fold-back inversion does so), \code{flag_micronucleus} (interleaved high-JCN
+DUP+INV) and \code{flag_bridging_amplicon} (a junction fuses two separate
+amplicons) -- all character \code{"TRUE"}/\code{"FALSE"} and none of which override the
+call. The only disqualifying flags are \code{flag_inv_at_boundary} /
+\code{flag_tra_at_boundary} (an edge is defined by an INV/TRA, not a
+circularisation) and \code{flag_chromosomal_bridge} (an edge terminates in a
+centromere); an amplicon carrying any of these is set \code{episomal = "FALSE"}.
+For an amplicon with a
 boundary DUP it also reports the circularisation-junction microhomology as
 \code{boundary_homology} (numeric bp) and \code{junction_homology_class}
 (\code{"NHEJ"}/\code{"MMEJ"}/\code{"HR"}; \code{NA} when no boundary DUP is found), the inferred
@@ -125,7 +129,7 @@ DSB-repair pathway that sealed the circle.
 
 The other amplicon-formation mechanisms are computed by dedicated standalone
 callers, not here: \code{\link[=call_brf]{call_brf()}} (breakage-replication/fusion / adjacent
-parallel breakpoints), \code{\link[=call_micronucleation]{call_micronucleation()}} (high-VF non-homologous
+parallel breakpoints), \code{\link[=call_chimeric_amplicon]{call_chimeric_amplicon()}} (high-VF non-homologous
 translocation), \code{\link[=call_bfb]{call_bfb()}} (breakage-fusion-bridge) and
 \code{\link[=call_translocation_bridge_amp]{call_translocation_bridge_amp()}} (translocation-bridge amplification). Join
 their output to this one by \code{WGS_ID} + \code{ID} to assemble a combined mechanism

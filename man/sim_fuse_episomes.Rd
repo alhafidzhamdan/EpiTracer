@@ -50,7 +50,7 @@ second, non-homologous locus.
 \details{
 When the two episomes come from different chromosomes the chimera necessarily
 carries \strong{inter-chromosomal junctions with both breakends inside amplified
-copy number}, which is precisely the signature \code{\link[=call_micronucleation]{call_micronucleation()}}
+copy number}, which is precisely the signature \code{\link[=call_chimeric_amplicon]{call_chimeric_amplicon()}}
 detects. It also puts two oncogenes on one circle, the co-amplification
 (e.g. \emph{EGFR} with \emph{CDK4}, or \emph{MYC} with a distant enhancer) that is common in
 patient amplicons and cannot arise from a single excision.
@@ -75,5 +75,5 @@ Hung, K. L. \emph{et al.} ecDNA hubs drive cooperative intermolecular
 oncogene expression. \emph{Nature} \strong{600}, 731-736 (2021).
 }
 \seealso{
-\code{\link[=sim_micronucleation]{sim_micronucleation()}}, \code{\link[=call_micronucleation]{call_micronucleation()}}
+\code{\link[=sim_micronucleation]{sim_micronucleation()}}, \code{\link[=call_chimeric_amplicon]{call_chimeric_amplicon()}}
 }

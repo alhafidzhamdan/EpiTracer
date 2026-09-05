@@ -420,11 +420,12 @@ test_that("a boundary DUP is anchored at the edge, not to a neighbouring amplifi
   expect_true(all(res[res$event == "DUP1", ]$duplication_at_boundary == "TRUE"))
 })
 
-test_that("interleaved high-JCN founder DUP+INV across a gap is a micronucleus (non-episomal)", {
+test_that("interleaved high-JCN founder DUP+INV across a gap is flagged a micronucleus (annotation only, still episomal)", {
   # BCCA29T1 pattern: two amplified boxes fused by a founder DUP that spans the
   # diploid gap between them, with a high-JCN inversion starting INSIDE that DUP.
-  # Interleaved founder DUP+INV across a gap = intra-micronucleus chromothripsis,
-  # not a circularised episome. (Without the inversion it would be episomal.)
+  # Interleaved founder DUP+INV across a gap = intra-micronucleus chromothripsis;
+  # this is RECORDED (flag_micronucleus) but is annotation only and does NOT
+  # disqualify -- an episome can be internally rearranged. The call stays episomal.
   ecdna_gr <- GenomicRanges::GRanges("chr7", IRanges::IRanges(54000000, 56000000),
                                      ID = "S1_amp1", WGS_ID = "S1")
   cnv <- data.table::data.table(
@@ -449,7 +450,7 @@ test_that("interleaved high-JCN founder DUP+INV across a gap is a micronucleus (
   }
   res <- call_simple_excision(ecdna_gr, mkbp(TRUE), cnv_gr, cgg, mc.cores = 1)
   expect_true(all(res$flag_micronucleus == "TRUE"))
-  expect_true(all(res$episomal == "FALSE"))
+  expect_true(all(res$episomal == "TRUE"))   # annotation only; no longer disqualifying
 
   # same gap-spanning boundary DUP WITHOUT the interleaving inversion -> episomal
   res0 <- call_simple_excision(ecdna_gr, mkbp(FALSE), cnv_gr, cgg, mc.cores = 1)
@@ -457,15 +458,16 @@ test_that("interleaved high-JCN founder DUP+INV across a gap is a micronucleus (
   expect_true(all(res0$episomal == "TRUE"))
 })
 
-test_that("an internal inversion out-copying the boundary DUP is inverted-duplication (non-episomal)", {
+test_that("an internal inversion out-copying the boundary DUP is flagged (annotation only, still episomal)", {
   # An internal inversion carrying a higher VF than the boundary DUP is the
-  # inverted-duplication signature: the amplicon was founded by an inverted
-  # duplication (a copy-gaining mechanism), not simple excision, so it is NOT an
-  # episome. (GMPS/HMF001167T2, HMF001611T2, DO11794T2 pattern.)
+  # inverted-duplication signature (GMPS/HMF001167T2, HMF001611T2, DO11794T2
+  # pattern). This is RECORDED (flag_internal_inversion) but is annotation only
+  # and does NOT disqualify -- an episome can be internally rearranged -- so the
+  # amplicon stays episomal.
   d_inv <- add_internal_sv(make_episome_inputs(flank_cn = 2), cls = "h2hINV", vf = 1200)
   r_inv <- call_simple_excision(d_inv$ecdna_gr, d_inv$breakpoints_gr, d_inv$cnv_gr, d_inv$cancer_genes_gr, mc.cores = 1)
   expect_true(all(r_inv$flag_internal_inversion == "TRUE"))
-  expect_true(all(r_inv$episomal == "FALSE"))
+  expect_true(all(r_inv$episomal == "TRUE"))   # annotation only; no longer disqualifying
 })
 
 test_that("an internal deletion out-VFing the boundary DUP is ancestral (still episomal)", {

@@ -86,5 +86,5 @@ mechanisms such as BFB); prevalence with random joins but weak oscillation gives
 the prevalence test and is called \code{"FALSE"}.
 }
 \seealso{
-\code{\link[=call_simple_excision]{call_simple_excision()}}, \code{\link[=call_micronucleation]{call_micronucleation()}}, \code{\link[=call_bfb]{call_bfb()}}
+\code{\link[=call_simple_excision]{call_simple_excision()}}, \code{\link[=call_chimeric_amplicon]{call_chimeric_amplicon()}}, \code{\link[=call_bfb]{call_bfb()}}
 }

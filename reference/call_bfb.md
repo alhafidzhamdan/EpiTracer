@@ -19,7 +19,7 @@ call_bfb(
   ext = 1e+07,
   min_cn_ratio = 3,
   seed_gap = 1e+06,
-  seed_min_width = 1e+05,
+  seed_min_width = 5000,
   centromeres = NULL,
   chrom_lengths = NULL,
   bfb_min_del_width = 1e+06,

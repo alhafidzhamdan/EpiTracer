@@ -22,7 +22,7 @@ call_translocation_bridge_amp(
   ext = 1e+07,
   min_cn_ratio = 3,
   seed_gap = 1e+06,
-  seed_min_width = 1e+05,
+  seed_min_width = 5000,
   tb_edge_tol = 10000,
   centromeres = NULL,
   chrom_lengths = NULL,

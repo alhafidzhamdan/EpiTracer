@@ -19,7 +19,7 @@ call_simple_excision(
   verbose = FALSE,
   min_cn_ratio = 3,
   seed_gap = 1e+06,
-  seed_min_width = 1e+05,
+  seed_min_width = 5000,
   flank_baseline = c("chromosome", "ploidy"),
   gain_ratio = 1.4,
   min_flank_width = 2000,

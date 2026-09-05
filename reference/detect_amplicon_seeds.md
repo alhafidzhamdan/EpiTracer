@@ -20,7 +20,7 @@ detect_amplicon_seeds(
   cnv_gr,
   min_cn_ratio = 3,
   gap = 2e+06,
-  min_width = 1e+05,
+  min_width = 5000,
   merge_gap = 3e+06,
   cn_ratio = 0.5,
   breakpoints = NULL,
@@ -49,7 +49,7 @@ detect_amplicon_seeds(
 
 - min_width:
 
-  Integer; drop seeds narrower than this (default `1e5`).
+  Integer; drop seeds narrower than this (default `5e3`).
 
 - merge_gap:
 
@@ -78,9 +78,14 @@ detect_amplicon_seeds(
   clear to be a seed) are linked into one amplicon, even across a large
   gap (e.g. a centromere) – so a single rearranged amplicon that
   traverses a centromere is not split. A junction that dips into
-  non-amplified sequence on either side does not link. Each returned
-  seed also carries `cn_only` (`TRUE` when no breakend falls inside it,
-  i.e. it is called by copy number alone with no supporting junction).
+  non-amplified sequence on either side does not link. In addition, when
+  one breakend of such a junction falls in a seed and the other is
+  amplified but sits in a block too narrow to have seeded
+  (`< min_width`), the seed is **extended** to reach that far breakend –
+  so a boundary DUP that spans a small distal amplified block is
+  recognised rather than lost. Each returned seed also carries `cn_only`
+  (`TRUE` when no breakend falls inside it, i.e. it is called by copy
+  number alone with no supporting junction).
 
 - link_tol:
 

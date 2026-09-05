@@ -19,7 +19,7 @@ call_founder_boundary(
   ext = 1e+07,
   min_cn_ratio = 3,
   seed_gap = 1e+06,
-  seed_min_width = 1e+05,
+  seed_min_width = 5000,
   max_k = 4L,
   span_frac = 0.8,
   early_strata = 2L,

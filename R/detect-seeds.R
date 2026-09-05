@@ -17,7 +17,7 @@
 #'   `copyNumber > min_cn_ratio * ploidy` (default `3`).
 #' @param gap Integer; merge amplified segments separated by at most this many bp
 #'   into one seed (default `1e6`).
-#' @param min_width Integer; drop seeds narrower than this (default `1e5`).
+#' @param min_width Integer; drop seeds narrower than this (default `5e3`).
 #' @param merge_gap Integer; after the initial `gap` merge, also merge two
 #'   adjacent same-chromosome seeds separated by at most this many bp when their
 #'   representative copy numbers are similar (see `cn_ratio`). Models one amplicon
@@ -34,7 +34,11 @@
 #'   segment must clear to be a seed) are linked into one amplicon, even across a
 #'   large gap (e.g. a centromere) -- so a single rearranged amplicon that
 #'   traverses a centromere is not split. A junction that dips into non-amplified
-#'   sequence on either side does not link. Each returned
+#'   sequence on either side does not link. In addition, when one breakend of such
+#'   a junction falls in a seed and the other is amplified but sits in a block too
+#'   narrow to have seeded (`< min_width`), the seed is **extended** to reach that
+#'   far breakend -- so a boundary DUP that spans a small distal amplified block is
+#'   recognised rather than lost. Each returned
 #'   seed also carries `cn_only` (`TRUE` when no breakend falls inside it, i.e. it
 #'   is called by copy number alone with no supporting junction).
 #' @param link_tol Integer; tolerance (bp) when mapping a breakend to a seed for
@@ -55,7 +59,7 @@
 #' @export
 #' @importFrom GenomicRanges reduce width start end seqnames findOverlaps
 detect_amplicon_seeds <- function(cnv_gr, min_cn_ratio = 3,
-                                  gap = 2e6, min_width = 1e5,
+                                  gap = 2e6, min_width = 5e3,
                                   merge_gap = 3e6, cn_ratio = 0.5,
                                   breakpoints = NULL, link_tol = 1e4) {
   stopifnot(methods::is(cnv_gr, "GRanges"),
@@ -157,22 +161,65 @@ detect_amplicon_seeds <- function(cnv_gr, min_cn_ratio = 3,
         d <- pmax(reg$start[w] - p, p - reg$end[w], 0)
         w[which.min(d)]
       }
-      if (nrow(reg) >= 2 && nrow(bp_s)) {
-        parent <- seq_len(nrow(reg))
-        root <- function(x) { while (parent[x] != x) { parent[x] <<- parent[parent[x]]; x <- parent[x] }; x }
-        for (e in split(bp_s, bp_s$event)) {
-          if (nrow(e) < 2 || length(unique(e$chr)) != 1) next
-          if (any(is.na(e$cn)) || !all(e$cn > min_cn_ratio * pl)) next  # both breakends amplified
-          sids <- unique(stats::na.omit(mapply(seed_of, e$chr, e$pos)))
-          if (length(sids) >= 2) for (k in 2:length(sids)) parent[root(sids[k])] <- root(sids[1])
+      ## both-breakends-amplified, intra-chromosomal junctions (the only ones that
+      ## can bound/join an amplicon).
+      amp_ev <- Filter(function(e) nrow(e) >= 2 && length(unique(e$chr)) == 1 &&
+                         !any(is.na(e$cn)) && all(e$cn > min_cn_ratio * pl),
+                       split(bp_s, bp_s$event))
+      if (length(amp_ev)) {
+        ## (A) link two seeds joined by such a junction (both ends land in a seed).
+        if (nrow(reg) >= 2) {
+          parent <- seq_len(nrow(reg))
+          root <- function(x) { while (parent[x] != x) { parent[x] <<- parent[parent[x]]; x <- parent[x] }; x }
+          for (e in amp_ev) {
+            sids <- unique(stats::na.omit(mapply(seed_of, e$chr, e$pos)))
+            if (length(sids) >= 2) for (k in 2:length(sids)) parent[root(sids[k])] <- root(sids[1])
+          }
+          comp <- vapply(seq_len(nrow(reg)), root, integer(1))
+          reg <- do.call(rbind, lapply(unique(comp), function(cc) {
+            rr <- reg[comp == cc, , drop = FALSE]
+            data.frame(chr = rr$chr[1], start = min(rr$start), end = max(rr$end),
+                       cn = stats::weighted.mean(rr$cn, rr$end - rr$start + 1), stringsAsFactors = FALSE)
+          }))
+          reg <- reg[order(reg$chr, reg$start), , drop = FALSE]
         }
-        comp <- vapply(seq_len(nrow(reg)), root, integer(1))
-        reg <- do.call(rbind, lapply(unique(comp), function(cc) {
-          rr <- reg[comp == cc, , drop = FALSE]
-          data.frame(chr = rr$chr[1], start = min(rr$start), end = max(rr$end),
-                     cn = stats::weighted.mean(rr$cn, rr$end - rr$start + 1), stringsAsFactors = FALSE)
-        }))
-        reg <- reg[order(reg$chr, reg$start), , drop = FALSE]
+        ## (B) extend a seed to an amplified junction breakend whose own amplified
+        ## block was too narrow to seed (< min_width): if one breakend of such a
+        ## junction sits in a seed and the other is amplified but seedless, grow the
+        ## seed to reach that breakend, so a boundary DUP spanning a small distal
+        ## block is recognised rather than lost. Iterate to convergence.
+        repeat {
+          extended <- FALSE
+          for (e in amp_ev) {
+            sids <- mapply(seed_of, e$chr, e$pos)
+            ins <- which(!is.na(sids)); out <- which(is.na(sids))
+            if (length(ins) >= 1 && length(out) >= 1) {
+              si <- sids[ins[1]]; far <- e$pos[out[1]]
+              if (reg$chr[si] == e$chr[1] && (far < reg$start[si] || far > reg$end[si])) {
+                reg$start[si] <- min(reg$start[si], far)
+                reg$end[si]   <- max(reg$end[si], far)
+                extended <- TRUE
+              }
+            }
+          }
+          if (!extended) break
+        }
+        ## merge any seeds that overlap after extension.
+        if (nrow(reg) > 1) {
+          reg <- reg[order(reg$chr, reg$start), , drop = FALSE]
+          repeat {
+            merged <- FALSE
+            for (i in seq_len(nrow(reg) - 1L)) {
+              if (reg$chr[i] == reg$chr[i + 1L] && reg$start[i + 1L] <= reg$end[i]) {
+                wi <- reg$end[i] - reg$start[i] + 1; wj <- reg$end[i + 1L] - reg$start[i + 1L] + 1
+                reg$cn[i]  <- (reg$cn[i] * wi + reg$cn[i + 1L] * wj) / (wi + wj)
+                reg$end[i] <- max(reg$end[i], reg$end[i + 1L])
+                reg <- reg[-(i + 1L), , drop = FALSE]; merged <- TRUE; break
+              }
+            }
+            if (!merged) break
+          }
+        }
       }
       ## cn_only: no breakend falls inside the (final) seed (within link_tol, so
       ## an edge-anchored junction still counts as supporting the seed)

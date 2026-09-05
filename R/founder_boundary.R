@@ -124,7 +124,7 @@
 #' @seealso [plot_sv_reconstruction()], [call_simple_excision()]
 #' @export
 call_founder_boundary <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                                  ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
+                                  ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 5e3,
                                   max_k = 4L, span_frac = 0.8, early_strata = 2L, mc.cores = 1) {
   det <- function(this_chr, coords, ctx, ch, min_cn_ratio)
     .detect_founder_boundary(this_chr, coords, ctx, ch, min_cn_ratio, max_k, span_frac, early_strata)

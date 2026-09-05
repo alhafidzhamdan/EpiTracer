@@ -71,7 +71,7 @@ each came from, so the chimeric contribution is traceable.
 When the two episomes come from different chromosomes the chimera
 necessarily carries **inter-chromosomal junctions with both breakends
 inside amplified copy number**, which is precisely the signature
-[`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md)
+[`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md)
 detects. It also puts two oncogenes on one circle, the co-amplification
 (e.g. *EGFR* with *CDK4*, or *MYC* with a distant enhancer) that is
 common in patient amplicons and cannot arise from a single excision.
@@ -94,7 +94,7 @@ oncogene expression. *Nature* **600**, 731-736 (2021).
 ## See also
 
 [`sim_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/sim_micronucleation.md),
-[`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md)
+[`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md)
 
 ## Examples
 

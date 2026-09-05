@@ -73,8 +73,8 @@ taking the same inputs and reporting that mechanism’s signature.
 
 - [`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md)
   : Call chromothripsis within (episomal) amplicons
-- [`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md)
-  : Call micronucleation + chromothripsis amplicons
+- [`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md)
+  : Call chimeric (cross-chromosome fusion) amplicons
 - [`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md)
   : Call breakage-fusion-bridge (BFB) amplicons
 - [`call_brf()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_brf.md)

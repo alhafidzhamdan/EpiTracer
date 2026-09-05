@@ -4,7 +4,7 @@ Internal helper shared by
 [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
 and the standalone mechanism callers
 ([`call_brf()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_brf.md),
-[`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md),
+[`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md),
 [`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md)).
 For one amplicon it builds the structural-variant breakpoint table
 falling within (or just outside, by `ext`) the amplicon, annotated with

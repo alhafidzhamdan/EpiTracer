@@ -12,7 +12,7 @@ it.
 ``` r
 sim_benchmark(
   cohort,
-  callers = c("simple_excision", "chromothripsis", "micronucleation"),
+  callers = c("simple_excision", "chromothripsis", "chimeric"),
   mc.cores = 1L
 )
 ```
@@ -27,7 +27,7 @@ sim_benchmark(
 - callers:
 
   Character vector naming which callers to run; any of
-  `"simple_excision"`, `"chromothripsis"`, `"micronucleation"`, `"brf"`,
+  `"simple_excision"`, `"chromothripsis"`, `"chimeric"`, `"brf"`,
   `"bfb"`. Defaults to the first three, the mechanisms this suite
   generates.
 
@@ -87,9 +87,9 @@ co <- sim_cohort(n = 6, seed = 1)
 #>   suppressWarnings() to suppress this warning.)
 bm <- sim_benchmark(co)
 bm$summary
-#>             class     n simple_excision chromothripsis micronucleation
-#>            <char> <int>           <num>          <num>           <num>
-#> 1: chromothriptic     2               0              1               0
-#> 2:       chimeric     2               0              1               1
-#> 3:       episomal     2               1              0               0
+#>             class     n simple_excision chromothripsis chimeric
+#>            <char> <int>           <num>          <num>    <num>
+#> 1: chromothriptic     2               0              1        0
+#> 2:       chimeric     2               0              1        1
+#> 3:       episomal     2               1              0        0
 ```

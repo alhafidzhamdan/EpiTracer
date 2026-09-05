@@ -1,17 +1,18 @@
-# Call chromothripsis within (episomal) amplicons
+# Call chimeric (cross-chromosome fusion) amplicons
 
-Standalone caller that scores each amplicon's INTERNAL structural
-variants for chromothripsis, using the ShatterSeek hallmarks
-(Cortes-Ciriano et al., Nat Genet 2020) restricted to the amplified
-footprint. It is designed to be run on amplicons already called episomal
-(pass them as `ecdna_gr`) to flag the subset that have since shattered –
-the ecDNA -\> micronucleus -\> chromothripsis route – but works on any
-amplicon catalogue (or `NULL` to auto-detect seeds).
+Standalone caller for the two-ecDNA chimeric signature: an amplicon
+joined to **another amplified locus on a non-homologous chromosome** by
+a high-VF interchromosomal translocation, with both breakends amplified
+("high VF" = top quartile of the amplicon's own junctions). Fusing
+fragments of two different chromosomes into one amplicon is only
+possible if both were present together, so this is the signature of
+**two episomal ecDNAs co-encapsulated and recombined** into one chimeric
+circle.
 
 ## Usage
 
 ``` r
-call_chromothripsis(
+call_chimeric_amplicon(
   ecdna_gr = NULL,
   breakpoints_gr,
   cnv_gr,
@@ -20,9 +21,6 @@ call_chromothripsis(
   min_cn_ratio = 3,
   seed_gap = 1e+06,
   seed_min_width = 1e+05,
-  min_sv = 6L,
-  min_oscillations = 3L,
-  join_p = 0.05,
   mc.cores = 1
 )
 ```
@@ -76,22 +74,6 @@ call_chromothripsis(
   `copyNumber > min_cn_ratio * ploidy`, gap to merge across, and minimum
   seed width). Ignored when `ecdna_gr` is supplied.
 
-- min_sv:
-
-  Minimum number of distinct internal SV events for the prevalence
-  hallmark (default 6).
-
-- min_oscillations:
-
-  Minimum copy-number direction changes (turning points) across the
-  footprint segments for the oscillation hallmark (default 3).
-
-- join_p:
-
-  Significance threshold for the fragment-join randomness test; the
-  junction-orientation distribution must NOT differ from uniform at this
-  level (default 0.05).
-
 - mc.cores:
 
   Integer; number of cores for
@@ -102,28 +84,19 @@ call_chromothripsis(
 
 A
 [data.table::data.table](https://rdrr.io/pkg/data.table/man/data.table.html)
-of annotated breakpoints with `chromothripsis` (`"TRUE"`/`"FALSE"`),
-`chromothripsis_conf` (`"high"`/`"low"`/`"none"`), `n_internal_sv`,
-`n_intrachr_sv`, `sv_type_pval`, `cn_oscillations` and
-`loh_interspersed`.
+of annotated breakpoints with `chimeric` (`"TRUE"`/`"FALSE"`).
 
 ## Details
 
-A footprint is called chromothriptic when it carries at least `min_sv`
-distinct internal SV events, its four intrachromosomal junction
-orientations are close to equally represented (chi-squared
-goodness-of-fit p \>= `join_p`, i.e. random fragment joins), and its
-rounded copy-number profile changes direction at least
-`min_oscillations` times across the footprint (oscillating copy number).
-All three give `chromothripsis_conf = "high"`. Random fragment joins are
-required for any positive call (they separate chromothripsis from
-orientation-biased mechanisms such as BFB); prevalence with random joins
-but weak oscillation gives `"low"`. A clean simple episome (one boundary
-junction, few internal SVs) fails the prevalence test and is called
-`"FALSE"`.
+The interchromosomal fusion is the discriminating hallmark: a single
+chromosome – or two homologous copies of one – mis-segregated, shattered
+and rejoined presents as clustered *intrachromosomal* rearrangements
+rather than a cross-chromosome translocation, and is captured by
+[`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md)
+(clustered breakpoints, random fragment joins, copy-number oscillation),
+not here.
 
 ## See also
 
 [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md),
-[`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md),
-[`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md)
+[`call_chromothripsis()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.md)

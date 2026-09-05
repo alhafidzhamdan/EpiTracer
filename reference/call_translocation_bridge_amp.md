@@ -155,4 +155,4 @@ signature of a dicentric translocation bridge).
 
 [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md),
 [`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md),
-[`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md)
+[`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md)

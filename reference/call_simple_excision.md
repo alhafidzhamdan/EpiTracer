@@ -165,23 +165,27 @@ combining the annotated breakpoints of all amplicons, with
 per-breakpoint classification columns including
 `duplication_at_boundary`, `duplication_at_boundary_has_highest_VF`,
 `episome_region`, `deletion_flanking_boundary`, `episomal`,
-`has_excision_scar`, and the diagnostic flags `flag_internal_sv_high_vf`
-(an internal SV out-VFs the boundary DUP; informational), the
-disqualifying `flag_internal_inversion` (a fold-back inversion does so –
-break-fusion- bridge), and `flag_bridging_amplicon` (a junction fuses
-two separate amplicons) – all character `"TRUE"`/`"FALSE"`. An amplicon
-carrying either disqualifying flag is set `episomal = "FALSE"`. For an
-amplicon with a boundary DUP it also reports the
-circularisation-junction microhomology as `boundary_homology` (numeric
-bp) and `junction_homology_class` (`"NHEJ"`/`"MMEJ"`/`"HR"`; `NA` when
-no boundary DUP is found), the inferred DSB-repair pathway that sealed
-the circle.
+`has_excision_scar`, and the annotation-only flags
+`flag_internal_sv_high_vf` (an internal SV out-VFs the boundary DUP),
+`flag_internal_inversion` (a fold-back inversion does so),
+`flag_micronucleus` (interleaved high-JCN DUP+INV) and
+`flag_bridging_amplicon` (a junction fuses two separate amplicons) – all
+character `"TRUE"`/`"FALSE"` and none of which override the call. The
+only disqualifying flags are `flag_inv_at_boundary` /
+`flag_tra_at_boundary` (an edge is defined by an INV/TRA, not a
+circularisation) and `flag_chromosomal_bridge` (an edge terminates in a
+centromere); an amplicon carrying any of these is set
+`episomal = "FALSE"`. For an amplicon with a boundary DUP it also
+reports the circularisation-junction microhomology as
+`boundary_homology` (numeric bp) and `junction_homology_class`
+(`"NHEJ"`/`"MMEJ"`/`"HR"`; `NA` when no boundary DUP is found), the
+inferred DSB-repair pathway that sealed the circle.
 
 The other amplicon-formation mechanisms are computed by dedicated
 standalone callers, not here:
 [`call_brf()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_brf.md)
 (breakage-replication/fusion / adjacent parallel breakpoints),
-[`call_micronucleation()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_micronucleation.md)
+[`call_chimeric_amplicon()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.md)
 (high-VF non-homologous translocation),
 [`call_bfb()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.md)
 (breakage-fusion-bridge) and

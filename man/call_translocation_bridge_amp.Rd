@@ -107,5 +107,5 @@ translocation demarcating the amplicon edge and co-amplifications on the
 partner chromosome. Runs independently of the other mechanism callers.
 }
 \seealso{
-\code{\link[=call_simple_excision]{call_simple_excision()}}, \code{\link[=call_bfb]{call_bfb()}}, \code{\link[=call_micronucleation]{call_micronucleation()}}
+\code{\link[=call_simple_excision]{call_simple_excision()}}, \code{\link[=call_bfb]{call_bfb()}}, \code{\link[=call_chimeric_amplicon]{call_chimeric_amplicon()}}
 }

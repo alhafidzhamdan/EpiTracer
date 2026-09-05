@@ -142,9 +142,9 @@ test_that("fusing two episomes gives a chimera with amplified translocations", {
   expect_setequal(ch$preserved$gene, c("EGFR", "CDK4"))
 
   inp <- sim_to_epitracer(ch, seed = 10)
-  mn <- q(call_micronucleation(inp$ecdna_gr, inp$breakpoints_gr,
+  mn <- q(call_chimeric_amplicon(inp$ecdna_gr, inp$breakpoints_gr,
                                inp$cnv_gr, inp$cancer_genes_gr))
-  expect_true(any(mn$micronucleation == "TRUE"))
+  expect_true(any(mn$chimeric == "TRUE"))
 })
 
 test_that("sim_noise scales the technical model and zero noise is exact", {
@@ -190,9 +190,9 @@ test_that("sim_benchmark recovers the trajectory class each caller is built for"
   ## simple excision fires on born-and-unshattered amplicons, and on those only
   expect_equal(s[class == "episomal"]$simple_excision, 1)
   expect_equal(s[class == "chromothriptic"]$simple_excision, 0)
-  ## shattered amplicons are called chromothriptic; chimeras micronucleated
+  ## shattered amplicons are called chromothriptic; chimeras are cross-chromosome fusions
   expect_equal(s[class == "chromothriptic"]$chromothripsis, 1)
-  expect_equal(s[class == "chimeric"]$micronucleation, 1)
+  expect_equal(s[class == "chimeric"]$chimeric, 1)
 })
 
 test_that("simulated amplicons render as plotter inputs", {

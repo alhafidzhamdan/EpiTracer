@@ -1,6 +1,6 @@
 ## ---------------------------------------------------------------------------
 ## Standalone amplicon-mechanism callers: breakage-replication/fusion (BRF),
-## micronucleation + chromothripsis, breakage-fusion-bridge (BFB), and
+## chimeric (cross-chromosome fusion) amplicons, chromothripsis, breakage-fusion-bridge (BFB), and
 ## translocation-bridge amplification (TBA).
 ##
 ## These sit ALONGSIDE call_simple_excision() rather than inside it: each is a
@@ -14,7 +14,7 @@
 #' Per-amplicon breakpoint annotation (shared set-up)
 #'
 #' Internal helper shared by [call_simple_excision()] and the standalone mechanism
-#' callers ([call_brf()], [call_micronucleation()], [call_bfb()]). For one
+#' callers ([call_brf()], [call_chimeric_amplicon()], [call_bfb()]). For one
 #' amplicon it builds the structural-variant breakpoint table falling within (or
 #' just outside, by `ext`) the amplicon, annotated with oncogene overlap and
 #' allele-specific copy number, and returns it together with the sample's full
@@ -124,8 +124,8 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
        brf = "TRUE")
 }
 
-.detect_micronucleation <- function(this_chr, coords, ctx, chr, min_cn_ratio) {
-  if (!isTRUE(coords$has_amp_region)) return(list(micronucleation = "FALSE"))
+.detect_chimeric_amplicon <- function(this_chr, coords, ctx, chr, min_cn_ratio) {
+  if (!isTRUE(coords$has_amp_region)) return(list(chimeric = "FALSE"))
   pl <- ctx$ploidy
   tra_amp <- this_chr[svclass == "TRA" & PURPLE_CN > min_cn_ratio * pl]
   mn <- "FALSE"
@@ -138,7 +138,7 @@ annotate_amplicon <- function(this_amplicon_id, ecdna_gr, breakpoints_gr,
       if (nrow(partner) && any(partner$PURPLE_CN > min_cn_ratio * pl)) { mn <- "TRUE"; break }
     }
   }
-  list(micronucleation = mn)
+  list(chimeric = mn)
 }
 
 ## Chromothripsis test over ONE amplicon's internal structural variants
@@ -430,34 +430,33 @@ call_brf <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                          ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, det)
 }
 
-#' Call micronucleation + chromothripsis amplicons
+#' Call chimeric (cross-chromosome fusion) amplicons
 #'
-#' Standalone caller for the two-ecDNA micronucleation signature: an amplicon
-#' joined to **another amplified locus on a non-homologous chromosome** by a
-#' high-VF interchromosomal translocation, with both breakends amplified ("high
-#' VF" = top quartile of the amplicon's own junctions). Fusing fragments of two
-#' different chromosomes into one amplicon is only possible if both were present
-#' together, so this is the signature of **two episomal ecDNAs co-encapsulated in
-#' a micronucleus and recombined** after chromosome shattering (chromothripsis).
+#' Standalone caller for the two-ecDNA chimeric signature: an amplicon joined to
+#' **another amplified locus on a non-homologous chromosome** by a high-VF
+#' interchromosomal translocation, with both breakends amplified ("high VF" = top
+#' quartile of the amplicon's own junctions). Fusing fragments of two different
+#' chromosomes into one amplicon is only possible if both were present together,
+#' so this is the signature of **two episomal ecDNAs co-encapsulated and
+#' recombined** into one chimeric circle.
 #'
-#' Micronucleation need **not** involve a non-homologous chromosome: a single
-#' chromosome -- or two homologous copies of one -- can be mis-segregated into a
-#' micronucleus, shattered and rejoined, which presents as clustered
-#' *intrachromosomal* rearrangements rather than an interchromosomal
-#' translocation. This caller keys on the interchromosomal two-ecDNA-fusion
-#' flavour; for the intrachromosomal shattering hallmarks (clustered breakpoints,
-#' random fragment joins, copy-number oscillation) use [call_chromothripsis()].
+#' The interchromosomal fusion is the discriminating hallmark: a single
+#' chromosome -- or two homologous copies of one -- mis-segregated, shattered and
+#' rejoined presents as clustered *intrachromosomal* rearrangements rather than a
+#' cross-chromosome translocation, and is captured by [call_chromothripsis()]
+#' (clustered breakpoints, random fragment joins, copy-number oscillation), not
+#' here.
 #'
 #' @inheritParams call_simple_excision
 #' @return A [data.table::data.table] of annotated breakpoints with
-#'   `micronucleation` (`"TRUE"`/`"FALSE"`).
+#'   `chimeric` (`"TRUE"`/`"FALSE"`).
 #' @seealso [call_simple_excision()], [call_chromothripsis()]
 #' @export
-call_micronucleation <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
+call_chimeric_amplicon <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                                  ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
                                  mc.cores = 1) {
   .run_amplicon_detector(ecdna_gr, breakpoints_gr, cnv_gr, cancer_genes_gr,
-                         ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, .detect_micronucleation)
+                         ext, min_cn_ratio, seed_gap, seed_min_width, mc.cores, .detect_chimeric_amplicon)
 }
 
 #' Call chromothripsis within (episomal) amplicons
@@ -492,7 +491,7 @@ call_micronucleation <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer
 #'   (`"TRUE"`/`"FALSE"`), `chromothripsis_conf` (`"high"`/`"low"`/`"none"`),
 #'   `n_internal_sv`, `n_intrachr_sv`, `sv_type_pval`, `cn_oscillations` and
 #'   `loh_interspersed`.
-#' @seealso [call_simple_excision()], [call_micronucleation()], [call_bfb()]
+#' @seealso [call_simple_excision()], [call_chimeric_amplicon()], [call_bfb()]
 #' @export
 call_chromothripsis <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                                 ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6, seed_min_width = 1e5,
@@ -581,7 +580,7 @@ call_bfb <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
 #'   `tb_high_confidence` (`"TRUE"` only for the dual-LOH pattern: LOH on BOTH the
 #'   amplicon and partner bridge arms with the non-bridge arm spared -- the
 #'   strongest signature of a dicentric translocation bridge).
-#' @seealso [call_simple_excision()], [call_bfb()], [call_micronucleation()]
+#' @seealso [call_simple_excision()], [call_bfb()], [call_chimeric_amplicon()]
 #' @export
 call_translocation_bridge_amp <- function(ecdna_gr = NULL, breakpoints_gr, cnv_gr, cancer_genes_gr,
                                           ext = 1e7, min_cn_ratio = 3, seed_gap = 1e6,

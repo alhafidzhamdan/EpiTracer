@@ -124,7 +124,7 @@ sim_cohort <- function(n = 30,
 #'
 #' @param cohort The list returned by [sim_cohort()].
 #' @param callers Character vector naming which callers to run; any of
-#'   `"simple_excision"`, `"chromothripsis"`, `"micronucleation"`, `"brf"`,
+#'   `"simple_excision"`, `"chromothripsis"`, `"chimeric"`, `"brf"`,
 #'   `"bfb"`. Defaults to the first three, the mechanisms this suite generates.
 #' @param mc.cores Cores passed to the callers (default `1`).
 #' @return A list with `calls` (one row per amplicon: truth columns plus one
@@ -137,14 +137,14 @@ sim_cohort <- function(n = 30,
 #' @export
 sim_benchmark <- function(cohort,
                           callers = c("simple_excision", "chromothripsis",
-                                      "micronucleation"),
+                                      "chimeric"),
                           mc.cores = 1L) {
   stopifnot(is.list(cohort), !is.null(cohort$truth))
   args <- list(cohort$ecdna_gr, cohort$breakpoints_gr, cohort$cnv_gr,
                cohort$cancer_genes_gr)
   fns <- list(simple_excision = list(call_simple_excision, "episomal"),
               chromothripsis  = list(call_chromothripsis,  "chromothripsis"),
-              micronucleation = list(call_micronucleation, "micronucleation"),
+              chimeric        = list(call_chimeric_amplicon, "chimeric"),
               brf             = list(call_brf,             "brf"),
               bfb             = list(call_bfb,             "bfb"))
   callers <- match.arg(callers, names(fns), several.ok = TRUE)

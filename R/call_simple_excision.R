@@ -109,6 +109,7 @@ classify_amplicon_episomal <- function(this_amplicon_id,
     this_sample_breakpoints_ecdna_annotated$flag_micronucleus <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_chromosomal_bridge <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_no_boundary_sv <- "FALSE"
+    this_sample_breakpoints_ecdna_annotated$flag_bridged_out <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_inv_at_boundary <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_tra_at_boundary <- "FALSE"
     this_sample_breakpoints_ecdna_annotated$flag_tra_recombination <- "FALSE"
@@ -167,6 +168,35 @@ classify_amplicon_episomal <- function(this_amplicon_id,
           (any(abs(edge_bp$start - min_amp_coord) <= 1e4) ||
            any(abs(edge_bp$start - max_amp_coord) <= 1e4))
         if (!near_edge) this_chr$flag_no_boundary_sv <- "TRUE"
+
+        ## Bridged/ambiguous downgrade (VF-based). Among junctions with a breakend
+        ## inside this chromosome's amplified region, take the one with the highest
+        ## read support (VF -- observational, not JCN). If its OTHER breakend lands
+        ## OUTSIDE the amplified region and is itself amplified
+        ## (PURPLE_CN > min_cn_ratio * ploidy), the dominant rearrangement
+        ## co-mobilises sequence beyond the amplicon, so it is not a self-contained
+        ## circle even if a bracketing boundary DUP exists -- flagged and
+        ## disqualifying. (A boundary DUP has BOTH ends at the amplified edges, so it
+        ## never triggers this; a purely internal SV has both ends inside, so it does
+        ## not either -- only a junction bridging OUT does.)
+        allbp_br <- gr2dt(this_sample_breakpoints); allbp_br[, PURPLE_CN := as.numeric(PURPLE_CN)]
+        inamp_ev <- unique(allbp_br[seqnames %in% unique_chrs[i] &
+                                      start >= min_amp_coord & start <= max_amp_coord]$event)
+        if (length(inamp_ev)) {
+          cand   <- allbp_br[event %in% inamp_ev]
+          top_ev <- cand[, .(vf = max(VF, na.rm = TRUE)), by = event][order(-vf)][1]$event
+          te  <- allbp_br[event == top_ev]
+          ins <- te[seqnames %in% unique_chrs[i] & start >= min_amp_coord & start <= max_amp_coord]
+          ## far end must be a SAME-CHROMOSOME bridge to another amplified region:
+          ## on this chromosome but > bridge_gap beyond the amplicon extent (NOT a
+          ## boundary DUP reaching just past the edge). Cross-chromosome TRAs are
+          ## the chimeric-episome signature and are deliberately NOT downgraded.
+          out <- te[seqnames %in% unique_chrs[i] &
+                      (start < min_amp_coord - bridge_gap | start > max_amp_coord + bridge_gap)]
+          if (nrow(ins) >= 1 && nrow(out) >= 1 &&
+              any(out$PURPLE_CN > min_cn_ratio * this_sample_ploidy, na.rm = TRUE))
+            this_chr$flag_bridged_out <- "TRUE"
+        }
 
         ## Boundary INV / TRA exclusion: if an amplified edge is DEFINED by an
         ## inversion or translocation -- i.e. an INV/TRA breakend at the edge
@@ -572,6 +602,13 @@ classify_amplicon_episomal <- function(this_amplicon_id,
         this_chr$episomal <- "FALSE"
         this_chr$episomal_type2 <- "FALSE"
       }
+      ## A VF-dominant BRIDGING junction (the amplicon's highest-VF junction reaches
+      ## OUT of the amplified region into another amplified locus) means the circle
+      ## is not self-contained -- downgrade to bridged/ambiguous (not episomal).
+      if (any(this_chr$flag_bridged_out == "TRUE")) {
+        this_chr$episomal <- "FALSE"
+        this_chr$episomal_type2 <- "FALSE"
+      }
       if (nrow(this_chr %>% dplyr::filter(deletion_flanking_boundary == "TRUE")) == 2) {
         this_chr$has_excision_scar <- "TRUE"
       }
@@ -673,10 +710,14 @@ classify_amplicon_episomal <- function(this_amplicon_id,
 #'   fold-back inversion does so), `flag_micronucleus` (interleaved high-JCN
 #'   DUP+INV) and `flag_bridging_amplicon` (a junction fuses two separate
 #'   amplicons) -- all character `"TRUE"`/`"FALSE"` and none of which override the
-#'   call. The only disqualifying flags are `flag_inv_at_boundary` /
+#'   call. The disqualifying flags are `flag_inv_at_boundary` /
 #'   `flag_tra_at_boundary` (an edge is defined by an INV/TRA, not a
-#'   circularisation) and `flag_chromosomal_bridge` (an edge terminates in a
-#'   centromere); an amplicon carrying any of these is set `episomal = "FALSE"`.
+#'   circularisation), `flag_chromosomal_bridge` (an edge terminates in a
+#'   centromere), and `flag_bridged_out` (the amplicon's highest-VF junction is a
+#'   SAME-chromosome bridge reaching into another amplified locus, so the circle
+#'   is not self-contained; cross-chromosome TRAs are chimeric episomes and are
+#'   not downgraded); an amplicon carrying any of these is set
+#'   `episomal = "FALSE"`.
 #'   For an amplicon with a
 #'   boundary DUP it also reports the circularisation-junction microhomology as
 #'   `boundary_homology` (numeric bp) and `junction_homology_class`

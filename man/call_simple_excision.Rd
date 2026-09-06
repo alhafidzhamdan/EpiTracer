@@ -117,10 +117,14 @@ amplicons, with per-breakpoint classification columns including
 fold-back inversion does so), \code{flag_micronucleus} (interleaved high-JCN
 DUP+INV) and \code{flag_bridging_amplicon} (a junction fuses two separate
 amplicons) -- all character \code{"TRUE"}/\code{"FALSE"} and none of which override the
-call. The only disqualifying flags are \code{flag_inv_at_boundary} /
+call. The disqualifying flags are \code{flag_inv_at_boundary} /
 \code{flag_tra_at_boundary} (an edge is defined by an INV/TRA, not a
-circularisation) and \code{flag_chromosomal_bridge} (an edge terminates in a
-centromere); an amplicon carrying any of these is set \code{episomal = "FALSE"}.
+circularisation), \code{flag_chromosomal_bridge} (an edge terminates in a
+centromere), and \code{flag_bridged_out} (the amplicon's highest-VF junction is a
+SAME-chromosome bridge reaching into another amplified locus, so the circle
+is not self-contained; cross-chromosome TRAs are chimeric episomes and are
+not downgraded); an amplicon carrying any of these is set
+\code{episomal = "FALSE"}.
 For an amplicon with a
 boundary DUP it also reports the circularisation-junction microhomology as
 \code{boundary_homology} (numeric bp) and \code{junction_homology_class}

@@ -42,10 +42,13 @@ data.frame with \code{seqnames}/\code{chr}, \code{start}/\code{pos}, \code{WGS_I
 \code{PURPLE_CN}). When supplied the seeds become \strong{SV-aware}: two seeds on the
 same chromosome joined by a structural variant whose \emph{both} breakends sit in
 amplified copy number (\code{PURPLE_CN > min_cn_ratio * ploidy}, the same bar a
-segment must clear to be a seed) are linked into one amplicon, even across a
+segment must clear to be a seed) \strong{and whose two amplified ends have similar
+copy number} (within \code{cn_ratio}) are linked into one amplicon, even across a
 large gap (e.g. a centromere) -- so a single rearranged amplicon that
 traverses a centromere is not split. A junction that dips into non-amplified
-sequence on either side does not link. In addition, when one breakend of such
+sequence on either side does not link, and one bridging two regions of
+dissimilar copy number (e.g. co-amplified CDK4 ~28x and MDM2 ~100x -- two
+separate ecDNAs) does not link either. In addition, when one breakend of such
 a junction falls in a seed and the other is amplified but sits in a block too
 narrow to have seeded (\verb{< min_width}), the seed is \strong{extended} to reach that
 far breakend -- so a boundary DUP that spans a small distal amplified block is

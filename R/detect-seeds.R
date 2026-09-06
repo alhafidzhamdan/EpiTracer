@@ -31,10 +31,13 @@
 #'   `PURPLE_CN`). When supplied the seeds become **SV-aware**: two seeds on the
 #'   same chromosome joined by a structural variant whose *both* breakends sit in
 #'   amplified copy number (`PURPLE_CN > min_cn_ratio * ploidy`, the same bar a
-#'   segment must clear to be a seed) are linked into one amplicon, even across a
+#'   segment must clear to be a seed) **and whose two amplified ends have similar
+#'   copy number** (within `cn_ratio`) are linked into one amplicon, even across a
 #'   large gap (e.g. a centromere) -- so a single rearranged amplicon that
 #'   traverses a centromere is not split. A junction that dips into non-amplified
-#'   sequence on either side does not link. In addition, when one breakend of such
+#'   sequence on either side does not link, and one bridging two regions of
+#'   dissimilar copy number (e.g. co-amplified CDK4 ~28x and MDM2 ~100x -- two
+#'   separate ecDNAs) does not link either. In addition, when one breakend of such
 #'   a junction falls in a seed and the other is amplified but sits in a block too
 #'   narrow to have seeded (`< min_width`), the seed is **extended** to reach that
 #'   far breakend -- so a boundary DUP that spans a small distal amplified block is
@@ -166,14 +169,25 @@ detect_amplicon_seeds <- function(cnv_gr, min_cn_ratio = 3,
       amp_ev <- Filter(function(e) nrow(e) >= 2 && length(unique(e$chr)) == 1 &&
                          !any(is.na(e$cn)) && all(e$cn > min_cn_ratio * pl),
                        split(bp_s, bp_s$event))
+      ## CN-similarity gate: two amplified regions are only joined into one
+      ## amplicon by a junction when their representative copy numbers are within
+      ## `cn_ratio` (the same "similar copy number" bar the merge_gap step uses).
+      ## A low-similarity pair (e.g. co-amplified CDK4 at ~28x and MDM2 at ~100x,
+      ## bridged by a single junction across a diploid gap) are TWO separate
+      ## ecDNAs, not one, so they must not be merged just because a junction has
+      ## both ends amplified. NA copy number falls back to permissive (links).
+      cn_similar <- function(ci, cj)
+        is.na(ci) || is.na(cj) || (min(ci, cj) / max(ci, cj) >= cn_ratio)
       if (length(amp_ev)) {
-        ## (A) link two seeds joined by such a junction (both ends land in a seed).
+        ## (A) link two seeds joined by such a junction (both ends land in a seed)
+        ## AND whose copy numbers are similar.
         if (nrow(reg) >= 2) {
           parent <- seq_len(nrow(reg))
           root <- function(x) { while (parent[x] != x) { parent[x] <<- parent[parent[x]]; x <- parent[x] }; x }
           for (e in amp_ev) {
             sids <- unique(stats::na.omit(mapply(seed_of, e$chr, e$pos)))
-            if (length(sids) >= 2) for (k in 2:length(sids)) parent[root(sids[k])] <- root(sids[1])
+            if (length(sids) >= 2) for (k in 2:length(sids))
+              if (cn_similar(reg$cn[sids[1]], reg$cn[sids[k]])) parent[root(sids[k])] <- root(sids[1])
           }
           comp <- vapply(seq_len(nrow(reg)), root, integer(1))
           reg <- do.call(rbind, lapply(unique(comp), function(cc) {
@@ -195,7 +209,10 @@ detect_amplicon_seeds <- function(cnv_gr, min_cn_ratio = 3,
             ins <- which(!is.na(sids)); out <- which(is.na(sids))
             if (length(ins) >= 1 && length(out) >= 1) {
               si <- sids[ins[1]]; far <- e$pos[out[1]]
-              if (reg$chr[si] == e$chr[1] && (far < reg$start[si] || far > reg$end[si])) {
+              ## only extend when the far (seedless) breakend's amplified copy
+              ## number is similar to the seed's -- same gate as the seed<->seed link.
+              if (cn_similar(reg$cn[si], e$cn[out[1]]) &&
+                  reg$chr[si] == e$chr[1] && (far < reg$start[si] || far > reg$end[si])) {
                 reg$start[si] <- min(reg$start[si], far)
                 reg$end[si]   <- max(reg$end[si], far)
                 extended <- TRUE

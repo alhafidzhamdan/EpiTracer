@@ -52,6 +52,31 @@ but **gained** flanks (i.e. not excised from a diploid region) is
 instead returned as `episomal = "FALSE"` — the discrimination the caller
 is built for.
 
+## Visualising the call
+
+Plotting the same locus makes the episome signature explicit: a sharp
+copy-number step over the EGFR amplicon bounded by a duplication
+junction (the circularising boundary DUP), with diploid flanks on either
+side.
+
+``` r
+
+plot_sv_linear(
+  sample   = "EXAMPLE01",
+  cnv_data = ex_plot_inputs$cnv_data,
+  sv_data  = ex_plot_inputs$sv_data,
+  wgd_data = ex_plot_inputs$wgd_data,
+  chromosome       = "chr7",
+  chromosome_range = matrix(c(54e6, 56e6), nrow = 1)
+)
+```
+
+![](calling_files/figure-html/plot-episome-1.png)
+
+See the [plotting
+vignette](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.md)
+for the full set of controls.
+
 ## Running without AmpliconArchitect
 
 AmpliconArchitect is optional. Pass `ecdna_gr = NULL` and EpiTracer

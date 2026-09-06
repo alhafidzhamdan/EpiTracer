@@ -12,6 +12,18 @@ nominate the founder circularisation junction that bounds them.
 - [`detect_amplicon_seeds()`](https://alhafidzhamdan.github.io/EpiTracer/reference/detect_amplicon_seeds.md)
   : Detect focal-amplicon seeds from copy number alone
 
+## Episomal detection from AmpliconSuite
+
+Apply the same episome model directly to AmpliconArchitect +
+AmpliconClassifier output (e.g. from AmpliconRepository).
+
+- [`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md)
+  : Call episomal ecDNA from AmpliconSuite output
+- [`read_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_ampliconsuite.md)
+  : Read an AmpliconArchitect graph file
+- [`aa_cycle_intervals()`](https://alhafidzhamdan.github.io/EpiTracer/reference/aa_cycle_intervals.md)
+  : Derive ecDNA intervals from an AmpliconArchitect cycles file
+
 ## Mechanism callers
 
 Standalone callers for the other routes to a focal amplification, each

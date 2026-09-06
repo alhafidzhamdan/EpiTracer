@@ -6,20 +6,30 @@ re-circularisation* event — an **episome** — and visualises the
 structural rearrangements underlying focal amplifications, from
 whole-genome sequencing data.
 
-Three short articles walk through the workflow, each end-to-end on
+Four short articles walk through the workflow, each end-to-end on
 bundled, synthetic example data (no patient data):
 
 1.  **[Calling episomal
     ecDNA](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.md)**
-    — `call_episomal_ecdna()`: flag amplicons that fit the episome model
-    (with or without AmpliconArchitect seeds).
-2.  **[Plotting copy number, SVs and
+    —
+    [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md):
+    flag amplicons that fit the episome model (with or without
+    AmpliconArchitect seeds), from PURPLE/GRIDSS copy-number and
+    structural-variant calls.
+2.  **[Calling episomal ecDNA from
+    AmpliconSuite](https://alhafidzhamdan.github.io/EpiTracer/articles/ampliconsuite.md)**
+    —
+    [`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md):
+    the same episome model applied directly to AmpliconArchitect +
+    AmpliconClassifier output, so community-standard ecDNA calls
+    (e.g. from AmpliconRepository) can be classified.
+3.  **[Plotting copy number, SVs and
     kataegis](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.md)**
     —
     [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md):
     a copy-number / structural-variant viewer, with an optional stacked
     SNV (kataegis) panel.
-3.  **[Reconstructing a focal amplicon wave by
+4.  **[Reconstructing a focal amplicon wave by
     wave](https://alhafidzhamdan.github.io/EpiTracer/articles/reconstruction.md)**
     —
     [`plot_sv_reconstruction()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.md):
@@ -41,8 +51,9 @@ data(package = "EpiTracer")$results[, "Item"]
 #> [1] "ex_caller_inputs" "ex_plot_inputs"   "ex_recon_inputs"  "ex_snv"
 ```
 
-- `ex_caller_inputs` — inputs for `call_episomal_ecdna()` (an episomal
-  EGFR ecDNA).
+- `ex_caller_inputs` — inputs for
+  [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
+  (an episomal EGFR ecDNA).
 - `ex_plot_inputs` / `ex_snv` — inputs for
   [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
   (an EGFR amplicon and a kataegis SNV set).

@@ -9,6 +9,8 @@
 
 - [Calling episomal
   ecDNA](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.md):
+- [Calling episomal ecDNA from
+  AmpliconSuite](https://alhafidzhamdan.github.io/EpiTracer/articles/ampliconsuite.md):
 - [Plotting copy number, structural variants and
   kataegis](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.md):
 - [Reconstructing a focal amplicon wave by

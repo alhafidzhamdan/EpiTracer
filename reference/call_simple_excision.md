@@ -171,11 +171,14 @@ per-breakpoint classification columns including
 `flag_micronucleus` (interleaved high-JCN DUP+INV) and
 `flag_bridging_amplicon` (a junction fuses two separate amplicons) – all
 character `"TRUE"`/`"FALSE"` and none of which override the call. The
-only disqualifying flags are `flag_inv_at_boundary` /
-`flag_tra_at_boundary` (an edge is defined by an INV/TRA, not a
-circularisation) and `flag_chromosomal_bridge` (an edge terminates in a
-centromere); an amplicon carrying any of these is set
-`episomal = "FALSE"`. For an amplicon with a boundary DUP it also
+disqualifying flags are `flag_inv_at_boundary` / `flag_tra_at_boundary`
+(an edge is defined by an INV/TRA, not a circularisation),
+`flag_chromosomal_bridge` (an edge terminates in a centromere), and
+`flag_bridged_out` (the amplicon's highest-VF junction is a
+SAME-chromosome bridge reaching into another amplified locus, so the
+circle is not self-contained; cross-chromosome TRAs are chimeric
+episomes and are not downgraded); an amplicon carrying any of these is
+set `episomal = "FALSE"`. For an amplicon with a boundary DUP it also
 reports the circularisation-junction microhomology as
 `boundary_homology` (numeric bp) and `junction_homology_class`
 (`"NHEJ"`/`"MMEJ"`/`"HR"`; `NA` when no boundary DUP is found), the

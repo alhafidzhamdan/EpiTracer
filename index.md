@@ -29,6 +29,19 @@ res <- call_simple_excision(
 unique(res$episomal)          #> "TRUE"
 ```
 
+Already have [AmpliconSuite](https://github.com/AmpliconSuite) output
+(e.g. from [AmpliconRepository](https://ampliconrepository.org))? Apply
+the same episome model directly to an AmpliconArchitect graph +
+AmpliconClassifier interval BED:
+
+``` r
+
+call_episomal_from_ampliconsuite(
+  graph_file = "SAMPLE_amplicon1_graph.txt",
+  intervals  = "SAMPLE_amplicon1_ecDNA_1_intervals.bed"
+)
+```
+
 ## Documentation
 
 Everything — input formats, the founder-boundary and mechanism callers,
@@ -40,6 +53,8 @@ vignettes:
   started](https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.html)
 - [Calling episomal
   ecDNA](https://alhafidzhamdan.github.io/EpiTracer/articles/calling.html)
+- [Calling episomal ecDNA from
+  AmpliconSuite](https://alhafidzhamdan.github.io/EpiTracer/articles/ampliconsuite.html)
 - [Plotting copy number, structural variants and
   kataegis](https://alhafidzhamdan.github.io/EpiTracer/articles/plotting.html)
 - [Reconstructing a focal amplicon wave by

@@ -1,6 +1,7 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/404.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/LICENSE-text.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/ampliconsuite.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/calling.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/epitracer.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/articles/index.html</loc></url>
@@ -10,12 +11,14 @@
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/index.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/news/index.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/EpiTracer-package.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/aa_cycle_intervals.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/annotate_amplicon.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_bfb.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_brf.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_chimeric_amplicon.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromoplexy.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_chromothripsis.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_founder_boundary.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/call_translocation_bridge_amp.html</loc></url>
@@ -40,6 +43,7 @@
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_reconstruction.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/prepare_amplicon_inputs.html</loc></url>
+<url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/read_ampliconsuite.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/read_cnv.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/read_purple_sv_vcf.html</loc></url>
 <url><loc>https://alhafidzhamdan.github.io/EpiTracer/reference/read_sv.html</loc></url>

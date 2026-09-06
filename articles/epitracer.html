@@ -35,6 +35,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/epitracer.html">Get started with EpiTracer</a></li>
     <li><a class="dropdown-item" href="../articles/calling.html">Calling episomal ecDNA</a></li>
+    <li><a class="dropdown-item" href="../articles/ampliconsuite.html">Calling episomal ecDNA from AmpliconSuite</a></li>
     <li><a class="dropdown-item" href="../articles/plotting.html">Plotting copy number, structural variants and kataegis</a></li>
     <li><a class="dropdown-item" href="../articles/reconstruction.html">Reconstructing a focal amplicon wave by wave</a></li>
   </ul>
@@ -73,13 +74,21 @@
 excision and re-circularisation</em> event — an <strong>episome</strong>
 — and visualises the structural rearrangements underlying focal
 amplifications, from whole-genome sequencing data.</p>
-<p>Three short articles walk through the workflow, each end-to-end on
+<p>Four short articles walk through the workflow, each end-to-end on
 bundled, synthetic example data (no patient data):</p>
 <ol style="list-style-type: decimal">
 <li>
 <strong><a href="calling.html">Calling episomal ecDNA</a></strong> —
-<code>call_episomal_ecdna()</code>: flag amplicons that fit the episome
-model (with or without AmpliconArchitect seeds).</li>
+<code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code>: flag amplicons that fit the episome
+model (with or without AmpliconArchitect seeds), from PURPLE/GRIDSS
+copy-number and structural-variant calls.</li>
+<li>
+<strong><a href="ampliconsuite.html">Calling episomal ecDNA from
+AmpliconSuite</a></strong> —
+<code><a href="../reference/call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite()</a></code>: the same episome model
+applied directly to AmpliconArchitect + AmpliconClassifier output, so
+community-standard ecDNA calls (e.g. from AmpliconRepository) can be
+classified.</li>
 <li>
 <strong><a href="plotting.html">Plotting copy number, SVs and
 kataegis</a></strong> — <code><a href="../reference/plot_sv_linear.html">plot_sv_linear()</a></code>: a copy-number /
@@ -107,7 +116,7 @@ stratified by read support.</li>
 <ul>
 <li>
 <code>ex_caller_inputs</code> — inputs for
-<code>call_episomal_ecdna()</code> (an episomal EGFR ecDNA).</li>
+<code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code> (an episomal EGFR ecDNA).</li>
 <li>
 <code>ex_plot_inputs</code> / <code>ex_snv</code> — inputs for
 <code><a href="../reference/plot_sv_linear.html">plot_sv_linear()</a></code> (an EGFR amplicon and a kataegis SNV

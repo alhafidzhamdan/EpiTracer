@@ -1,5 +1,22 @@
-# EpiTracer (development)
+# EpiTracer 0.1.0 (alpha)
 
+* **Episomal ecDNA from AmpliconSuite.** `call_episomal_from_ampliconsuite()`
+  applies the episome model directly to AmpliconArchitect + AmpliconClassifier
+  output (e.g. from AmpliconRepository), a self-contained module that does not
+  touch `call_simple_excision()`. Amplicon extent comes from AmpliconSuite
+  itself; an amplicon is episomal when a boundary DUP (highest read-pair support
+  among the spanning DUPs) brackets the extent, chimeric when every chromosome is
+  bracketed and joined by a translocation, and internal structure is ignored.
+  Two guards reject non-circles: an **occupancy guard** (`min_occupancy`, default
+  `0.05`, calibrated on a PCAWG-vs-PURPLE concordance sweep — 97% donor / 98%
+  driver-locus agreement) against lone DUPs spanning largely diploid extents, and
+  a same-chromosome **bridged/ambiguous downgrade**. Companion readers
+  `read_ampliconsuite()` (AA `*_graph.txt`) and `aa_cycle_intervals()` (bare AA
+  `*_cycles.txt`). Vignette: *Calling episomal ecDNA from AmpliconSuite*.
+* `call_simple_excision()`: a matching same-chromosome bridged-out disqualifier
+  (`flag_bridged_out`), and `detect_amplicon_seeds()` now gates seed linking on
+  copy-number similarity (`cn_ratio`) so dissimilar co-amplicons (e.g. CDK4 vs
+  MDM2 tiers) are not merged.
 * **ecDNA simulation suite.** A generative simulator for episomal ecDNA in which
   an amplicon is an ordered list of genomic fragments; copy number is the
   coverage of that list and the structural variants are read off consecutive

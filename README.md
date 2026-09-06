@@ -58,5 +58,5 @@ and its vignettes:
 
 ## Status
 
-**v0.0.1 — alpha.** Under active development; the API may still change.
+**v0.1.0 — alpha.** Under active development; the API may still change.
 Released under the [MIT License](LICENSE). © 2026 Alhafidz Hamdan.

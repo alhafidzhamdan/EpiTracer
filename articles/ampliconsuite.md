@@ -38,73 +38,71 @@ Two files per amplicon, both standard AmpliconSuite output:
   **amplicon extent** — AA/AC’s own call, so no copy-number threshold is
   re-applied here.
 
-## A worked example
+## Two gold standards
 
-There is no bundled AmpliconSuite dataset, so we synthesise a tiny one:
-a textbook **episomal EGFR ecDNA** on chr7, written in the exact AA/AC
-on-disk formats into temporary files.
+The package bundles the AmpliconSuite output for two well-characterised
+ecDNA cell lines (from AmpliconRepository; cell-line data, no patient
+data):
+
+- **GBM39** — an *EGFR* ecDNA that is a **simple-excision circle**
+  (episomal);
+- **COLO320DM** — the canonical *MYC* ecDNA, which is **complex**, not a
+  simple excision.
 
 ``` r
 
-# --- a minimal AmpliconArchitect *_graph.txt ------------------------------
-graph <- tempfile(fileext = "_graph.txt")
-writeLines(c(
-  "SequenceEdge: StartPosition, EndPosition, PredictedCopyCount, AverageCoverage, Size, NumberReadsMapped",
-  "sequence\tchr7:54500000-\tchr7:54999999+\t2\t100\t499999\t100",   # diploid flank
-  "sequence\tchr7:55000000-\tchr7:55500000+\t60\t900\t500000\t9000", # EGFR amplicon
-  "sequence\tchr7:55500001-\tchr7:56000000+\t2\t100\t499999\t100",   # diploid flank
-  "BreakpointEdge: StartPosition->EndPosition, PredictedCopyCount, NumberOfReadPairs, HomologySizeIfAvailable, Homology/InsertionSequence",
-  "discordant\tchr7:55000000-->chr7:55500000+\t55\t220\tNone\tNone", # boundary DUP
-  "discordant\tchr7:55150000+->chr7:55300000-\t20\t60\tNone\tNone"), # internal DEL
-  graph)
+aa <- function(f) system.file("extdata", "ampliconsuite", f, package = "EpiTracer")
 
-# --- the AmpliconClassifier ecDNA interval BED (exclusive end) -------------
-bed <- tempfile(fileext = "_ecDNA_1_intervals.bed")
-writeLines("chr7\t55000000\t55500001", bed)
+gbm39_graph <- aa("GBM39_EGFR_graph.txt")
+gbm39_bed   <- aa("GBM39_EGFR_ecDNA_1_intervals.bed")
+colo_graph  <- aa("COLO320DM_MYC_graph.txt")
+colo_bed    <- aa("COLO320DM_MYC_ecDNA_1_intervals.bed")
 ```
 
 [`read_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_ampliconsuite.md)
-parses the graph. Note that AA writes each junction in an arbitrary
-orientation, so the SV class is assigned **after sorting the two
-breakends by coordinate** (`lo`/`hi`): a `lo-`/`hi+` pair is a
-head-to-tail duplication — the circulariser.
+parses the graph. AA writes each junction in an arbitrary orientation,
+so the SV class is assigned **after sorting the two breakends by
+coordinate** (`lo`/`hi`): a `lo-`/`hi+` pair is a head-to-tail
+duplication — the circulariser. In GBM39 the highest read-pair-support
+DUP brackets the EGFR amplicon — the boundary DUP:
 
 ``` r
 
-gr <- read_ampliconsuite(graph)
-gr$junctions[, c("cA", "pA", "cB", "pB", "svclass", "jcn", "pe_support")]
-#>        cA       pA     cB       pB svclass   jcn pe_support
-#>    <char>    <num> <char>    <num>  <char> <num>      <num>
-#> 1:   chr7 55000000   chr7 55500000     DUP    55        220
-#> 2:   chr7 55150000   chr7 55300000     DEL    20         60
+gr <- read_ampliconsuite(gbm39_graph)
+gr$junctions[order(-pe_support),
+             c("cA", "pA", "cB", "pB", "svclass", "jcn", "pe_support")]
+#>        cA       pA     cB       pB svclass      jcn pe_support
+#>    <char>    <num> <char>    <num>  <char>    <num>      <num>
+#> 1:   chr7 55127266   chr7 55155021     DEL 153.2909         40
+#> 2:   chr7 54763282   chr7 56049369     DUP 153.4940          8
+#> 3:   chr7 55609119   chr7 55610113     DEL 133.8442          6
 ```
 
-Classifying the amplicon:
+## Classifying the two amplicons
 
 ``` r
 
-res <- call_episomal_from_ampliconsuite(graph_file = graph, intervals = bed)
-t(res)
-#>                   [,1]      
-#> episomal          "TRUE"    
-#> status            "episomal"
-#> chimeric          "FALSE"   
-#> n_chr             "1"       
-#> bd_chr            "chr7"    
-#> bd_lo             "5.5e+07" 
-#> bd_hi             "55500000"
-#> bd_pe_support     "220"     
-#> bd_jcn            "55"      
-#> bd_homlen         NA        
-#> bd_occupancy      "1"       
-#> bridge_pe_support NA        
-#> bridge_partner    NA        
-#> n_junctions       "2"
+gbm39 <- call_episomal_from_ampliconsuite(gbm39_graph, gbm39_bed)
+colo  <- call_episomal_from_ampliconsuite(colo_graph,  colo_bed)
+
+cols <- c("status", "episomal", "chimeric", "n_chr",
+          "bd_chr", "bd_pe_support", "bd_occupancy", "n_junctions")
+cbind(cell_line = c("GBM39", "COLO320DM"), rbind(gbm39, colo)[, cols, with = FALSE])
+#>    cell_line   status episomal chimeric n_chr bd_chr bd_pe_support bd_occupancy
+#>       <char>   <char>   <lgcl>   <lgcl> <int> <char>         <num>        <num>
+#> 1:     GBM39 episomal     TRUE    FALSE     1   chr7             8    0.9776461
+#> 2: COLO320DM  complex    FALSE    FALSE     1   <NA>            NA           NA
+#>    n_junctions
+#>          <int>
+#> 1:           3
+#> 2:          25
 ```
 
-The amplicon is `episomal = TRUE` (`status = "episomal"`): a boundary
-DUP brackets the ecDNA extent, and the extent is fully amplified
-(`bd_occupancy = 1`).
+**GBM39** is `episomal` — a boundary DUP brackets the EGFR extent, which
+is fully amplified (`bd_occupancy ≈ 1`). **COLO320DM** is `complex`: its
+25 amplicon junctions contain no single DUP that brackets the MYC ecDNA
+extent, so there is no boundary DUP (`bd_chr = NA`) — the discrimination
+the caller is built for.
 
 ## The episome model
 
@@ -151,28 +149,28 @@ Every reported field (`bd_pe_support`, `bd_occupancy`, `bridge_partner`,
 [`read_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_ampliconsuite.md)
 output converts directly into
 [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
-inputs, so the same episome can be drawn — the sharp copy-number step
-over EGFR, bounded by the duplication junction:
+inputs, so the GBM39 episome can be drawn — the amplified EGFR segment
+bounded by the duplication junction:
 
 ``` r
 
 cnv_data <- with(gr$segments, data.frame(
-  sample = "AA_EXAMPLE", seqnames = chr, start = start, end = end,
+  sample = "GBM39", seqnames = chr, start = start, end = end,
   copyNumber = cn, ploidy = 2,
   majorAlleleCopyNumber = cn, minorAlleleCopyNumber = 0))
 
 sv_data <- with(gr$junctions, data.frame(
-  sample = "AA_EXAMPLE",
+  sample = "GBM39",
   chrom1 = cA, start1 = pA, strand1 = sA,
   chrom2 = cB, start2 = pB, strand2 = sB,
   svclass = svclass, VF = pe_support, JCN = jcn))
 
 plot_sv_linear(
-  sample   = "AA_EXAMPLE",
+  sample   = "GBM39",
   cnv_data = cnv_data,
   sv_data  = sv_data,
   chromosome       = "chr7",
-  chromosome_range = matrix(c(54.5e6, 56e6), nrow = 1)
+  chromosome_range = matrix(c(54.5e6, 56.3e6), nrow = 1)
 )
 ```
 
@@ -188,13 +186,9 @@ reads the dominant (highest-copy) cycle’s segments from a `*_cycles.txt`
 
 ``` r
 
-cycles <- tempfile(fileext = "_cycles.txt")
-writeLines(c(
-  "Segment\t1\tchr7\t55000000\t55500000",
-  "Cycle=1;Copy_count=100;Segments=0+,1+"), cycles)
-
-call_episomal_from_ampliconsuite(graph_file = graph, intervals = cycles)$status
-#> [1] "episomal"
+call_episomal_from_ampliconsuite(
+  graph_file = "SAMPLE_amplicon1_graph.txt",
+  intervals  = "SAMPLE_amplicon1_cycles.txt")   # extent from the dominant cycle
 ```
 
 ## Using your own data

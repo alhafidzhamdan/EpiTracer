@@ -320,7 +320,8 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
         }
         if (far_region && far_amp) {
           status <- "bridged"; episomal <- FALSE
-          bridge_pe <- top$pe_support; bridge_partner <- paste0(far_c, ":", far_p)
+          bridge_pe <- top$pe_support
+          bridge_partner <- paste0(far_c, ":", format(far_p, scientific = FALSE, trim = TRUE))
         }
       }
     }

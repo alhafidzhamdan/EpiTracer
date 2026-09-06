@@ -8,7 +8,8 @@ call_episomal_from_ampliconsuite(
   graph_file,
   intervals,
   tol = 0L,
-  bridge_gap = 1e+06
+  bridge_gap = 1e+06,
+  min_occupancy = 0.05
 )
 }
 \arguments{
@@ -21,7 +22,16 @@ convention is handled internally.}
 
 \item{tol}{Integer; coordinate tolerance (bp) for the boundary-DUP bracket
 test (default \code{0}; graph and interval coordinates come from the same graph
-so no tolerance is normally needed).
+so no tolerance is normally needed).}
+
+\item{min_occupancy}{Numeric in \verb{(0, 1]}; minimum fraction of the boundary-DUP
+bracketed span that must be covered by the ecDNA intervals for an episomal
+call (default \code{0.05}, i.e. reject when >95\% of the bracketed span is
+non-amplified). A simple-excision circle is near-contiguous, so a DUP
+spanning a largely non-amplified region (e.g. a lone DUP across a diploid
+chromosome arm) is rejected as not a self-contained circle. The default was
+set by a PCAWG-vs-PURPLE concordance sweep (optimal at 2-5\%; 5\% additionally
+removes scattered low-occupancy secondary features).
 
 A \strong{bridged/ambiguous downgrade} applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -36,7 +46,9 @@ A one-row \link[data.table:data.table]{data.table::data.table} with \code{episom
 only for a clean episome), \code{status} (\code{"episomal"}/\code{"bridged"}/\code{"complex"}),
 \code{chimeric} (logical), \code{n_chr} (chromosomes spanned by the ecDNA), the
 boundary-DUP record \code{bd_chr}, \code{bd_lo}, \code{bd_hi}, \code{bd_pe_support}, \code{bd_jcn},
-\code{bd_homlen} (\code{NA} when no boundary DUP), the bridging-junction record
+\code{bd_homlen} (\code{NA} when no boundary DUP), \code{bd_occupancy} (ecDNA-interval
+coverage of the boundary-DUP span; the occupancy-guard metric), the
+bridging-junction record
 \code{bridge_pe_support}, \code{bridge_partner} (\code{chr:pos} of the out-of-amplicon
 breakend; \code{NA} unless downgraded), and \code{n_junctions}.
 }

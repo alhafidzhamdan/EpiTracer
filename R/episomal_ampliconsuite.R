@@ -185,6 +185,14 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #' @param tol Integer; coordinate tolerance (bp) for the boundary-DUP bracket
 #'   test (default `0`; graph and interval coordinates come from the same graph
 #'   so no tolerance is normally needed).
+#' @param min_occupancy Numeric in `(0, 1]`; minimum fraction of the boundary-DUP
+#'   bracketed span that must be covered by the ecDNA intervals for an episomal
+#'   call (default `0.05`, i.e. reject when >95% of the bracketed span is
+#'   non-amplified). A simple-excision circle is near-contiguous, so a DUP
+#'   spanning a largely non-amplified region (e.g. a lone DUP across a diploid
+#'   chromosome arm) is rejected as not a self-contained circle. The default was
+#'   set by a PCAWG-vs-PURPLE concordance sweep (optimal at 2-5%; 5% additionally
+#'   removes scattered low-occupancy secondary features).
 #'
 #' A **bridged/ambiguous downgrade** applies even when a bracketing boundary DUP
 #' exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -198,7 +206,9 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #'   only for a clean episome), `status` (`"episomal"`/`"bridged"`/`"complex"`),
 #'   `chimeric` (logical), `n_chr` (chromosomes spanned by the ecDNA), the
 #'   boundary-DUP record `bd_chr`, `bd_lo`, `bd_hi`, `bd_pe_support`, `bd_jcn`,
-#'   `bd_homlen` (`NA` when no boundary DUP), the bridging-junction record
+#'   `bd_homlen` (`NA` when no boundary DUP), `bd_occupancy` (ecDNA-interval
+#'   coverage of the boundary-DUP span; the occupancy-guard metric), the
+#'   bridging-junction record
 #'   `bridge_pe_support`, `bridge_partner` (`chr:pos` of the out-of-amplicon
 #'   breakend; `NA` unless downgraded), and `n_junctions`.
 #' @seealso [read_ampliconsuite()], [call_simple_excision()]
@@ -211,11 +221,12 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #' @export
 #' @importFrom data.table data.table rbindlist
 call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
-                                             bridge_gap = 1e6) {
+                                             bridge_gap = 1e6, min_occupancy = 0.05) {
   none <- data.table::data.table(
     episomal = NA, chimeric = NA, n_chr = NA_integer_, bd_chr = NA_character_,
     bd_lo = NA_real_, bd_hi = NA_real_, bd_pe_support = NA_real_,
-    bd_jcn = NA_real_, bd_homlen = NA_real_, n_junctions = NA_integer_)
+    bd_jcn = NA_real_, bd_homlen = NA_real_, bd_occupancy = NA_real_,
+    n_junctions = NA_integer_)
 
   ## accept a bare AA cycles file as the interval source (generalises to any AA output)
   if (is.character(intervals) && length(intervals) == 1L && !is.na(intervals) &&
@@ -249,6 +260,28 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
     ntra <- if (is.null(j) || !nrow(j)) 0L else nrow(j[svclass == "TRA"])
     episomal <- all(has_span) && ntra >= 1L
     chimeric <- episomal
+  }
+
+  ## Occupancy of the selected boundary DUP on each bracketed chromosome:
+  ## (summed ecDNA-interval width on the chr) / (boundary-DUP-bracketed span).
+  occ_of <- function(cc) {
+    sp <- if (is.null(span) || !nrow(span)) NULL else span[cA == cc]
+    if (is.null(sp) || !nrow(sp)) return(NA_real_)
+    d <- sp[which.max(pe_support)]; dspan <- d$hi - d$lo
+    if (is.na(dspan) || dspan <= 0) return(NA_real_)
+    sum(iv[chr == cc, end - start]) / dspan
+  }
+  occ <- vapply(chrs, occ_of, numeric(1))
+  bd_occupancy <- suppressWarnings(min(occ, na.rm = TRUE))
+  if (!is.finite(bd_occupancy)) bd_occupancy <- NA_real_
+
+  ## OCCUPANCY GUARD. A simple-excision circle is near-contiguous. Reject an
+  ## episomal call whose boundary DUP brackets a span that is mostly NON-amplified
+  ## -- a lone DUP spanning a largely diploid region (e.g. a whole chromosome arm)
+  ## is not a self-contained circle. Every bracketed chromosome's ecDNA-interval
+  ## coverage of its boundary-DUP span must reach `min_occupancy`.
+  if (isTRUE(episomal) && any(!is.na(occ) & occ < min_occupancy)) {
+    episomal <- FALSE; chimeric <- FALSE
   }
 
   bd <- if (episomal && !is.null(span) && nrow(span)) span[which.max(pe_support)] else NULL
@@ -301,6 +334,7 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
     bd_pe_support = if (!is.null(bd)) bd$pe_support else NA_real_,
     bd_jcn = if (!is.null(bd)) bd$jcn else NA_real_,
     bd_homlen = if (!is.null(bd)) bd$homlen else NA_real_,
+    bd_occupancy = bd_occupancy,
     bridge_pe_support = bridge_pe, bridge_partner = bridge_partner,
     n_junctions = if (is.null(j)) 0L else nrow(j))
 }

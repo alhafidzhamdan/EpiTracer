@@ -215,6 +215,24 @@ test_that("a *_cycles.txt path can be passed directly as the intervals argument"
   expect_equal(r$n_chr, 1L)
 })
 
+## ---- bundled gold standards ----------------------------------------------
+test_that("bundled GBM39 (EGFR) is episomal and COLO320DM (MYC) is complex", {
+  aa <- function(f) system.file("extdata", "ampliconsuite", f, package = "EpiTracer")
+  gbm39 <- call_episomal_from_ampliconsuite(
+    aa("GBM39_EGFR_graph.txt"), aa("GBM39_EGFR_ecDNA_1_intervals.bed"))
+  colo <- call_episomal_from_ampliconsuite(
+    aa("COLO320DM_MYC_graph.txt"), aa("COLO320DM_MYC_ecDNA_1_intervals.bed"))
+
+  expect_true(gbm39$episomal)                 # EGFR simple-excision circle
+  expect_equal(gbm39$status, "episomal")
+  expect_equal(gbm39$bd_chr, "chr7")
+  expect_gt(gbm39$bd_occupancy, 0.9)
+
+  expect_false(colo$episomal)                 # MYC ecDNA is complex
+  expect_equal(colo$status, "complex")
+  expect_true(is.na(colo$bd_chr))
+})
+
 ## ---- degenerate inputs ----------------------------------------------------
 test_that("missing / empty intervals return an NA (uncallable) row", {
   g <- aa_graph_file(seg1(), jx("chr7", 55e6, "-", "chr7", 55.5e6, "+", 50, 200))

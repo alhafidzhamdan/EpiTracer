@@ -13,8 +13,7 @@
 A tool to **classify one AmpliconClassifier ecDNA feature** from its
 [AmpliconArchitect](https://github.com/AmpliconSuite/AmpliconArchitect) (AA)
 graph and its ecDNA interval(s). The amplicon extent is taken from AmpliconSuite
-itself (AA/AC's own call) — no copy-number threshold is re-applied — and the
-feature is classified by the structure of its boundary junction.
+itself (AA/AC's own call) and the feature is classified by the structure of its boundary junction.
 
 ## How it works — the episome model
 

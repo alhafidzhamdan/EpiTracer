@@ -144,37 +144,66 @@ Every reported field (`bd_pe_support`, `bd_occupancy`, `bridge_partner`,
 …) is documented in
 [`?call_episomal_from_ampliconsuite`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md).
 
-## Visualising the call
+## Visualising the calls
 
 [`read_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_ampliconsuite.md)
 output converts directly into
 [`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
-inputs, so the GBM39 episome can be drawn — the amplified EGFR segment
-bounded by the duplication junction:
+inputs. A small helper turns the parsed graph into the `cnv_data` /
+`sv_data` the plotter expects:
 
 ``` r
 
-cnv_data <- with(gr$segments, data.frame(
-  sample = "GBM39", seqnames = chr, start = start, end = end,
-  copyNumber = cn, ploidy = 2,
-  majorAlleleCopyNumber = cn, minorAlleleCopyNumber = 0))
+aa_to_plot <- function(graph, sample) {
+  g <- read_ampliconsuite(graph)
+  list(
+    cnv_data = with(g$segments, data.frame(
+      sample = sample, seqnames = chr, start = start, end = end,
+      copyNumber = cn, ploidy = 2,
+      majorAlleleCopyNumber = cn, minorAlleleCopyNumber = 0)),
+    sv_data = with(g$junctions, data.frame(
+      sample = sample,
+      chrom1 = cA, start1 = pA, strand1 = sA,
+      chrom2 = cB, start2 = pB, strand2 = sB,
+      svclass = svclass, VF = pe_support, JCN = jcn)))
+}
+```
 
-sv_data <- with(gr$junctions, data.frame(
-  sample = "GBM39",
-  chrom1 = cA, start1 = pA, strand1 = sA,
-  chrom2 = cB, start2 = pB, strand2 = sB,
-  svclass = svclass, VF = pe_support, JCN = jcn))
+**GBM39 (episomal)** — the amplified EGFR segment bounded by a single
+duplication junction (the boundary DUP): a clean simple-excision circle.
 
+``` r
+
+gbm39_pl <- aa_to_plot(gbm39_graph, "GBM39")
 plot_sv_linear(
   sample   = "GBM39",
-  cnv_data = cnv_data,
-  sv_data  = sv_data,
+  cnv_data = gbm39_pl$cnv_data,
+  sv_data  = gbm39_pl$sv_data,
   chromosome       = "chr7",
   chromosome_range = matrix(c(54.5e6, 56.3e6), nrow = 1)
 )
 ```
 
-![](ampliconsuite_files/figure-html/plot-1.png)
+![](ampliconsuite_files/figure-html/plot-gbm39-1.png)
+
+**COLO320DM (complex)** — the MYC amplicon is a tangle of duplications,
+inversions and translocations (it even co-amplifies segments on other
+chromosomes), with no single DUP bracketing the extent: not a
+simple-excision circle.
+
+``` r
+
+colo_pl <- aa_to_plot(colo_graph, "COLO320DM")
+plot_sv_linear(
+  sample   = "COLO320DM",
+  cnv_data = colo_pl$cnv_data,
+  sv_data  = colo_pl$sv_data,
+  chromosome       = "chr8",
+  chromosome_range = matrix(c(126e6, 130e6), nrow = 1)
+)
+```
+
+![](ampliconsuite_files/figure-html/plot-colo-1.png)
 
 ## Bare AA runs (no AmpliconClassifier)
 

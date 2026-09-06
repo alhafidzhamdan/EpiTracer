@@ -243,31 +243,53 @@ circle, so the call is downgraded to <code>status = "bridged"</code>.
 in <code><a href="../reference/call_episomal_from_ampliconsuite.html">?call_episomal_from_ampliconsuite</a></code>.</p>
 </div>
 <div class="section level2">
-<h2 id="visualising-the-call">Visualising the call<a class="anchor" aria-label="anchor" href="#visualising-the-call"></a>
+<h2 id="visualising-the-calls">Visualising the calls<a class="anchor" aria-label="anchor" href="#visualising-the-calls"></a>
 </h2>
 <p><code><a href="../reference/read_ampliconsuite.html">read_ampliconsuite()</a></code> output converts directly into
-<code><a href="../reference/plot_sv_linear.html">plot_sv_linear()</a></code> inputs, so the GBM39 episome can be drawn
-— the amplified EGFR segment bounded by the duplication junction:</p>
+<code><a href="../reference/plot_sv_linear.html">plot_sv_linear()</a></code> inputs. A small helper turns the parsed
+graph into the <code>cnv_data</code> / <code>sv_data</code> the plotter
+expects:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cnv_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">gr</span><span class="op">$</span><span class="va">segments</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  sample <span class="op">=</span> <span class="st">"GBM39"</span>, seqnames <span class="op">=</span> <span class="va">chr</span>, start <span class="op">=</span> <span class="va">start</span>, end <span class="op">=</span> <span class="va">end</span>,</span>
-<span>  copyNumber <span class="op">=</span> <span class="va">cn</span>, ploidy <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  majorAlleleCopyNumber <span class="op">=</span> <span class="va">cn</span>, minorAlleleCopyNumber <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">sv_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">gr</span><span class="op">$</span><span class="va">junctions</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  sample <span class="op">=</span> <span class="st">"GBM39"</span>,</span>
-<span>  chrom1 <span class="op">=</span> <span class="va">cA</span>, start1 <span class="op">=</span> <span class="va">pA</span>, strand1 <span class="op">=</span> <span class="va">sA</span>,</span>
-<span>  chrom2 <span class="op">=</span> <span class="va">cB</span>, start2 <span class="op">=</span> <span class="va">pB</span>, strand2 <span class="op">=</span> <span class="va">sB</span>,</span>
-<span>  svclass <span class="op">=</span> <span class="va">svclass</span>, VF <span class="op">=</span> <span class="va">pe_support</span>, JCN <span class="op">=</span> <span class="va">jcn</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
+<code class="sourceCode R"><span><span class="va">aa_to_plot</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">graph</span>, <span class="va">sample</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_ampliconsuite.html">read_ampliconsuite</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    cnv_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">segments</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>      sample <span class="op">=</span> <span class="va">sample</span>, seqnames <span class="op">=</span> <span class="va">chr</span>, start <span class="op">=</span> <span class="va">start</span>, end <span class="op">=</span> <span class="va">end</span>,</span>
+<span>      copyNumber <span class="op">=</span> <span class="va">cn</span>, ploidy <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>      majorAlleleCopyNumber <span class="op">=</span> <span class="va">cn</span>, minorAlleleCopyNumber <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    sv_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">junctions</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>      sample <span class="op">=</span> <span class="va">sample</span>,</span>
+<span>      chrom1 <span class="op">=</span> <span class="va">cA</span>, start1 <span class="op">=</span> <span class="va">pA</span>, strand1 <span class="op">=</span> <span class="va">sA</span>,</span>
+<span>      chrom2 <span class="op">=</span> <span class="va">cB</span>, start2 <span class="op">=</span> <span class="va">pB</span>, strand2 <span class="op">=</span> <span class="va">sB</span>,</span>
+<span>      svclass <span class="op">=</span> <span class="va">svclass</span>, VF <span class="op">=</span> <span class="va">pe_support</span>, JCN <span class="op">=</span> <span class="va">jcn</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p><strong>GBM39 (episomal)</strong> — the amplified EGFR segment
+bounded by a single duplication junction (the boundary DUP): a clean
+simple-excision circle.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gbm39_pl</span> <span class="op">&lt;-</span> <span class="fu">aa_to_plot</span><span class="op">(</span><span class="va">gbm39_graph</span>, <span class="st">"GBM39"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_sv_linear.html">plot_sv_linear</a></span><span class="op">(</span></span>
 <span>  sample   <span class="op">=</span> <span class="st">"GBM39"</span>,</span>
-<span>  cnv_data <span class="op">=</span> <span class="va">cnv_data</span>,</span>
-<span>  sv_data  <span class="op">=</span> <span class="va">sv_data</span>,</span>
+<span>  cnv_data <span class="op">=</span> <span class="va">gbm39_pl</span><span class="op">$</span><span class="va">cnv_data</span>,</span>
+<span>  sv_data  <span class="op">=</span> <span class="va">gbm39_pl</span><span class="op">$</span><span class="va">sv_data</span>,</span>
 <span>  chromosome       <span class="op">=</span> <span class="st">"chr7"</span>,</span>
 <span>  chromosome_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">54.5e6</span>, <span class="fl">56.3e6</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="ampliconsuite_files/figure-html/plot-1.png" class="r-plt" alt="" width="768"></p>
+<p><img src="ampliconsuite_files/figure-html/plot-gbm39-1.png" class="r-plt" alt="" width="768"></p>
+<p><strong>COLO320DM (complex)</strong> — the MYC amplicon is a tangle
+of duplications, inversions and translocations (it even co-amplifies
+segments on other chromosomes), with no single DUP bracketing the
+extent: not a simple-excision circle.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">colo_pl</span> <span class="op">&lt;-</span> <span class="fu">aa_to_plot</span><span class="op">(</span><span class="va">colo_graph</span>, <span class="st">"COLO320DM"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_sv_linear.html">plot_sv_linear</a></span><span class="op">(</span></span>
+<span>  sample   <span class="op">=</span> <span class="st">"COLO320DM"</span>,</span>
+<span>  cnv_data <span class="op">=</span> <span class="va">colo_pl</span><span class="op">$</span><span class="va">cnv_data</span>,</span>
+<span>  sv_data  <span class="op">=</span> <span class="va">colo_pl</span><span class="op">$</span><span class="va">sv_data</span>,</span>
+<span>  chromosome       <span class="op">=</span> <span class="st">"chr8"</span>,</span>
+<span>  chromosome_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">126e6</span>, <span class="fl">130e6</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="ampliconsuite_files/figure-html/plot-colo-1.png" class="r-plt" alt="" width="768"></p>
 </div>
 <div class="section level2">
 <h2 id="bare-aa-runs-no-ampliconclassifier">Bare AA runs (no AmpliconClassifier)<a class="anchor" aria-label="anchor" href="#bare-aa-runs-no-ampliconclassifier"></a>
@@ -278,7 +300,7 @@ cycle: <code><a href="../reference/aa_cycle_intervals.html">aa_cycle_intervals()
 (dropping the AA source vertex, segment <code>0</code>). You can pass
 the <code>*_cycles.txt</code> path straight to <code>intervals</code> —
 the caller detects it:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite</a></span><span class="op">(</span></span>
 <span>  graph_file <span class="op">=</span> <span class="st">"SAMPLE_amplicon1_graph.txt"</span>,</span>
 <span>  intervals  <span class="op">=</span> <span class="st">"SAMPLE_amplicon1_cycles.txt"</span><span class="op">)</span>   <span class="co"># extent from the dominant cycle</span></span></code></pre></div>
@@ -288,7 +310,7 @@ the caller detects it:</p>
 </h2>
 <p>Point the two arguments at the matching files from an AmpliconSuite
 run or an AmpliconRepository download:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite</a></span><span class="op">(</span></span>
 <span>  graph_file <span class="op">=</span> <span class="st">"SAMPLE_amplicon1_graph.txt"</span>,</span>
 <span>  intervals  <span class="op">=</span> <span class="st">"SAMPLE_amplicon1_ecDNA_1_intervals.bed"</span><span class="op">)</span></span></code></pre></div>

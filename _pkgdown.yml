@@ -25,6 +25,14 @@ reference:
       - call_simple_excision
       - call_founder_boundary
       - detect_amplicon_seeds
+  - title: Episomal detection from AmpliconSuite
+    desc: >
+      Apply the same episome model directly to AmpliconArchitect +
+      AmpliconClassifier output (e.g. from AmpliconRepository).
+    contents:
+      - call_episomal_from_ampliconsuite
+      - read_ampliconsuite
+      - aa_cycle_intervals
   - title: Mechanism callers
     desc: >
       Standalone callers for the other routes to a focal amplification, each
@@ -99,5 +107,6 @@ articles:
     navbar: ~
     contents:
       - calling
+      - ampliconsuite
       - plotting
       - reconstruction

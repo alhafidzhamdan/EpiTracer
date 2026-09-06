@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">EpiTracer</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,36 @@
       <small>Source: <a href="https://github.com/alhafidzhamdan/EpiTracer/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0" id="epitracer-010-alpha">EpiTracer 0.1.0 (alpha)<a class="anchor" aria-label="anchor" href="#epitracer-010-alpha"></a></h2>
+<ul><li>
+<strong>Episomal ecDNA from AmpliconSuite.</strong> <code><a href="../reference/call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite()</a></code> applies the episome model directly to AmpliconArchitect + AmpliconClassifier output (e.g. from AmpliconRepository), a self-contained module that does not touch <code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code>. Amplicon extent comes from AmpliconSuite itself; an amplicon is episomal when a boundary DUP (highest read-pair support among the spanning DUPs) brackets the extent, chimeric when every chromosome is bracketed and joined by a translocation, and internal structure is ignored. Two guards reject non-circles: an <strong>occupancy guard</strong> (<code>min_occupancy</code>, default <code>0.05</code>, calibrated on a PCAWG-vs-PURPLE concordance sweep — 97% donor / 98% driver-locus agreement) against lone DUPs spanning largely diploid extents, and a same-chromosome <strong>bridged/ambiguous downgrade</strong>. Companion readers <code><a href="../reference/read_ampliconsuite.html">read_ampliconsuite()</a></code> (AA <code>*_graph.txt</code>) and <code><a href="../reference/aa_cycle_intervals.html">aa_cycle_intervals()</a></code> (bare AA <code>*_cycles.txt</code>). Vignette: <em>Calling episomal ecDNA from AmpliconSuite</em>.</li>
+<li>
+<code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code>: a matching same-chromosome bridged-out disqualifier (<code>flag_bridged_out</code>), and <code><a href="../reference/detect_amplicon_seeds.html">detect_amplicon_seeds()</a></code> now gates seed linking on copy-number similarity (<code>cn_ratio</code>) so dissimilar co-amplicons (e.g. CDK4 vs MDM2 tiers) are not merged.</li>
+<li>
+<strong>ecDNA simulation suite.</strong> A generative simulator for episomal ecDNA in which an amplicon is an ordered list of genomic fragments; copy number is the coverage of that list and the structural variants are read off consecutive fragment pairs, so the two are consistent by construction. The mechanism operators compose, so an amplicon can be followed along its life:
+<ul><li>
+<code><a href="../reference/sim_episome.html">sim_episome()</a></code> — birth by simple excision and circularisation, carrying the boundary duplication, non-gained flanks and excision scar that <code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code> looks for.</li>
+<li>
+<code><a href="../reference/sim_replicate.html">sim_replicate()</a></code> — rounds of replication that change the copy level and nothing else, so the boundary duplication gains read support while no new junction appears.</li>
+<li>
+<code><a href="../reference/sim_internal_deletion.html">sim_internal_deletion()</a></code> — a single molecule loses an interval and re-seals, splitting the amplicon into a <strong>population of circle species</strong>. Because a junction’s copy number is the abundance of the circles carrying it, a deletion that arose late is emitted far below the boundary duplication it lies inside — which is what makes the <em>order</em> of events recoverable from read support alone.</li>
+<li>
+<code><a href="../reference/sim_shatter_to_episomes.html">sim_shatter_to_episomes()</a></code> — shattering whose fragments religate into SEVERAL new circles rather than one. The founder boundary duplication does not survive (it would have to be rejoined end-for-end), so the products are genuinely episomal but are no longer recognised by <code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code> once the daughters become mosaic — see <code>validation/simulate_episome_fission.R</code> for where that boundary falls.</li>
+<li>
+<code><a href="../reference/sim_segregate.html">sim_segregate()</a></code> — copy number derived from generations of division under an explicit <code>Binom(2k, 1/2)</code> segregation model plus dosage selection, instead of being set by hand. With <code>selection = 0</code> the population mean does not move however many generations elapse: random segregation is copy-number-neutral in expectation, so <strong>cell division rate does not raise read support</strong>. Only selection does. <code><a href="../reference/sim_replicate.html">sim_replicate()</a></code>’s <code>fold</code> is documented accordingly as a selection-driven growth factor whose neutral value is <code>1</code>, not a cell division.</li>
+<li>
+<code><a href="../reference/sim_micronucleation.html">sim_micronucleation()</a></code> / <code><a href="../reference/sim_evolve.html">sim_evolve()</a></code> — one or several rounds of micronuclear encapsulation, shattering and random religation, generating the random-join and oscillating-copy-number hallmarks <code><a href="../reference/call_chromothripsis.html">call_chromothripsis()</a></code> scores.</li>
+<li>
+<code><a href="../reference/sim_fuse_episomes.html">sim_fuse_episomes()</a></code> — two episomes co-encapsulated in one micronucleus forming a chimeric circle, giving the amplified inter-chromosomal junctions <code>call_micronucleation()</code> detects, and co-amplifying two oncogenes on one circle.</li>
+<li>
+<code><a href="../reference/sim_to_epitracer.html">sim_to_epitracer()</a></code> / <code><a href="../reference/sim_to_plot_inputs.html">sim_to_plot_inputs()</a></code> — render an amplicon as PURPLE-style caller inputs or plotter inputs, through a <code><a href="../reference/sim_noise.html">sim_noise()</a></code> model of tumour purity, depth, copy-number segmentation error, junction dropout and repair-pathway microhomology. <code>sim_noise(0)</code> is exact.</li>
+<li>Circle species carry a <code>fitness</code>, and <code><a href="../reference/sim_replicate.html">sim_replicate()</a></code> grows each at its own rate. This matters because a NEUTRAL minority species keeps a fixed share of the population forever, so a single-molecule internal deletion would sit ~32-fold below the boundary junction indefinitely; real amplicons show internal junctions at a half to a twentieth of the founder’s support, which needs the shortened circle to expand.</li>
+<li>Junction read support is drawn as a fragment COUNT (negative binomial, variance <code>mu + (vf_cv * mu)^2</code>) rather than from a constant-CV log-normal, so expected support stays strictly proportionate to junction copy number while weakly supported junctions are relatively noisy and strongly supported ones are tight. <code>sim_noise(vf_cv = )</code> now means extra-Poisson dispersion and defaults to <code>0.1</code>.</li>
+<li>
+<code><a href="../reference/sim_cohort.html">sim_cohort()</a></code> / <code><a href="../reference/sim_benchmark.html">sim_benchmark()</a></code> — draw a labelled cohort from a mixture of trajectories and score the callers against the known truth. The fragment-list formulation follows Bernhard <em>et al.</em>’s seismic-amplification simulator (Nature 2022); <code>validation/simulate_trajectories.R</code> uses the suite to chart where each caller fires along an ecDNA’s life.</li>
+</ul></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1" id="epitracer-001-alpha">EpiTracer 0.0.1 (alpha)<a class="anchor" aria-label="anchor" href="#epitracer-001-alpha"></a></h2>
 <ul><li>

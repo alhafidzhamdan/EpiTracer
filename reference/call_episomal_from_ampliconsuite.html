@@ -79,7 +79,9 @@ chromosome is bracketed by a boundary DUP and joined by &gt;= 1 translocation.</
 <span>  <span class="va">intervals</span>,</span>
 <span>  tol <span class="op">=</span> <span class="fl">0L</span>,</span>
 <span>  bridge_gap <span class="op">=</span> <span class="fl">1e+06</span>,</span>
-<span>  min_occupancy <span class="op">=</span> <span class="fl">0.05</span></span>
+<span>  min_occupancy <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  trim_to_amplified <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  min_seg_cn_frac <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -112,7 +114,25 @@ non-amplified). A simple-excision circle is near-contiguous, so a DUP
 spanning a largely non-amplified region (e.g. a lone DUP across a diploid
 chromosome arm) is rejected as not a self-contained circle. The default was
 set by a PCAWG-vs-PURPLE concordance sweep (optimal at 2-5%; 5% additionally
-removes scattered low-occupancy secondary features).</p>
+removes scattered low-occupancy secondary features).</p></dd>
+
+
+<dt id="arg-trim-to-amplified">trim_to_amplified<a class="anchor" aria-label="anchor" href="#arg-trim-to-amplified"></a></dt>
+<dd><p>Logical; trim the AmpliconClassifier ecDNA interval to
+its amplified extent before the boundary-DUP test (default <code>TRUE</code>).
+AmpliconClassifier occasionally pads an interval with flanking diploid
+sequence, pushing the outer extent past the boundary DUP and mis-calling a
+clean episome as complex; trimming uses the AA graph's own segment copy
+numbers to drop leading/trailing near-diploid segments (edges only – internal
+low-CN segments are kept). It can only shrink the extent, so it may rescue a
+false-complex call but never breaks a true-episomal one.</p></dd>
+
+
+<dt id="arg-min-seg-cn-frac">min_seg_cn_frac<a class="anchor" aria-label="anchor" href="#arg-min-seg-cn-frac"></a></dt>
+<dd><p>Numeric in <code>(0, 1]</code>; a segment counts as amplified for
+<code>trim_to_amplified</code> when its copy number is at least this fraction of the
+amplicon's peak segment copy number (default <code>0.10</code>). Relative to the
+amplicon's own amplification, not a global ploidy cutoff.</p>
 <p>A <strong>bridged/ambiguous downgrade</strong> applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside
 the ecDNA extent) has its other breakend on the <strong>same chromosome</strong>, &gt; <code>bridge_gap</code>

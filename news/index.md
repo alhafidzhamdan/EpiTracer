@@ -2,6 +2,20 @@
 
 ## EpiTracer 0.1.0 (alpha)
 
+- **[`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md)
+  interval trimming.** New `trim_to_amplified` (default `TRUE`) trims an
+  AmpliconClassifier ecDNA interval to its amplified extent, using the
+  AA graph’s own segment copy numbers, before the boundary-DUP test.
+  AmpliconClassifier sometimes pads an interval with flanking diploid
+  sequence (e.g. GBM39EC long-read: ~100 kb of CN~4 either side of a
+  CN~91 EGFR circle), which pushes the outer extent past the boundary
+  DUP and mis-calls a clean episome as complex; trimming drops
+  leading/trailing near-diploid segments (edges only — internal low-CN
+  excision scars are kept) so the DUP brackets the true amplified core.
+  `min_seg_cn_frac` (default `0.10`) sets the amplified threshold
+  relative to the amplicon’s own peak (a robust peak ignoring sub-2 kb
+  spikes), not a global ploidy cutoff. The `none` (uncallable) return
+  now carries the full column set including `status`.
 - **[`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
   total copy number.** When `cnv_data` has no allele-specific copy
   number (the `majorAlleleCopyNumber` / `minorAlleleCopyNumber` columns

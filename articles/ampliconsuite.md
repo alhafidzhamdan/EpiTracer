@@ -109,8 +109,12 @@ the caller is built for.
 An amplicon is **episomal** when a **boundary DUP** exists:
 
 1.  **Extent** comes from AmpliconSuite itself (the AC ecDNA interval
-    BED, or the dominant AA cycle) — no copy-number cutoff is applied
-    here.
+    BED, or the dominant AA cycle), then **trimmed to its amplified
+    extent** (`trim_to_amplified`, default `TRUE`): leading/trailing
+    segments below `min_seg_cn_frac` (default `0.10`) of the amplicon’s
+    peak CN are dropped, so AmpliconClassifier’s occasional diploid
+    padding cannot push the outer boundary past the circularising DUP
+    (internal low-CN scars are kept).
 2.  **Boundary DUP** = an intra-chromosomal duplication whose two ends
     *bracket* the ecDNA’s outer boundary on its chromosome
     (`lo ≤ extent start` and `hi ≥ extent end`).

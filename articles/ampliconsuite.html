@@ -196,8 +196,13 @@ DUP</strong> exists:</p>
 <ol style="list-style-type: decimal">
 <li>
 <strong>Extent</strong> comes from AmpliconSuite itself (the AC
-ecDNA interval BED, or the dominant AA cycle) — no copy-number cutoff is
-applied here.</li>
+ecDNA interval BED, or the dominant AA cycle), then <strong>trimmed to
+its amplified extent</strong> (<code>trim_to_amplified</code>, default
+<code>TRUE</code>): leading/trailing segments below
+<code>min_seg_cn_frac</code> (default <code>0.10</code>) of the
+amplicon’s peak CN are dropped, so AmpliconClassifier’s occasional
+diploid padding cannot push the outer boundary past the circularising
+DUP (internal low-CN scars are kept).</li>
 <li>
 <strong>Boundary DUP</strong> = an intra-chromosomal duplication
 whose two ends <em>bracket</em> the ecDNA’s outer boundary on its

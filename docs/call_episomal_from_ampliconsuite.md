@@ -21,7 +21,11 @@ itself (AA/AC's own call) and the feature is classified by the structure of its 
    (`*_ecDNA_<k>_intervals.bed`), or the dominant AA cycle from a `*_cycles.txt`
    (via [`aa_cycle_intervals()`](https://alhafidzhamdan.github.io/EpiTracer/reference/aa_cycle_intervals.html)).
    AC's exclusive end is handled internally, so the boundary test needs no fuzzy
-   tolerance.
+   tolerance. The interval is first **trimmed to its amplified extent**
+   (`trim_to_amplified`, default `TRUE`): leading/trailing segments below
+   `min_seg_cn_frac` (default `0.10`) of the amplicon's peak copy number are
+   dropped, so AmpliconClassifier's occasional diploid padding cannot push the
+   outer boundary past the circularising DUP (internal low-CN scars are kept).
 2. **Boundary DUP** = an intra-chromosomal duplication whose ends **bracket** the
    ecDNA's outer boundary on its chromosome (`lo ≤ extent start`,
    `hi ≥ extent end`). SV class is assigned **after coordinate-sorting the two

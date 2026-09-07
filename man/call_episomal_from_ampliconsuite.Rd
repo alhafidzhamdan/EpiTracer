@@ -9,7 +9,9 @@ call_episomal_from_ampliconsuite(
   intervals,
   tol = 0L,
   bridge_gap = 1e+06,
-  min_occupancy = 0.05
+  min_occupancy = 0.05,
+  trim_to_amplified = TRUE,
+  min_seg_cn_frac = 0.1
 )
 }
 \arguments{
@@ -31,7 +33,21 @@ non-amplified). A simple-excision circle is near-contiguous, so a DUP
 spanning a largely non-amplified region (e.g. a lone DUP across a diploid
 chromosome arm) is rejected as not a self-contained circle. The default was
 set by a PCAWG-vs-PURPLE concordance sweep (optimal at 2-5\%; 5\% additionally
-removes scattered low-occupancy secondary features).
+removes scattered low-occupancy secondary features).}
+
+\item{trim_to_amplified}{Logical; trim the AmpliconClassifier ecDNA interval to
+its amplified extent before the boundary-DUP test (default \code{TRUE}).
+AmpliconClassifier occasionally pads an interval with flanking diploid
+sequence, pushing the outer extent past the boundary DUP and mis-calling a
+clean episome as complex; trimming uses the AA graph's own segment copy
+numbers to drop leading/trailing near-diploid segments (edges only -- internal
+low-CN segments are kept). It can only shrink the extent, so it may rescue a
+false-complex call but never breaks a true-episomal one.}
+
+\item{min_seg_cn_frac}{Numeric in \verb{(0, 1]}; a segment counts as amplified for
+\code{trim_to_amplified} when its copy number is at least this fraction of the
+amplicon's peak segment copy number (default \code{0.10}). Relative to the
+amplicon's own amplification, not a global ploidy cutoff.
 
 A \strong{bridged/ambiguous downgrade} applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside

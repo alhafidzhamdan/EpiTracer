@@ -193,6 +193,18 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #'   chromosome arm) is rejected as not a self-contained circle. The default was
 #'   set by a PCAWG-vs-PURPLE concordance sweep (optimal at 2-5%; 5% additionally
 #'   removes scattered low-occupancy secondary features).
+#' @param trim_to_amplified Logical; trim the AmpliconClassifier ecDNA interval to
+#'   its amplified extent before the boundary-DUP test (default `TRUE`).
+#'   AmpliconClassifier occasionally pads an interval with flanking diploid
+#'   sequence, pushing the outer extent past the boundary DUP and mis-calling a
+#'   clean episome as complex; trimming uses the AA graph's own segment copy
+#'   numbers to drop leading/trailing near-diploid segments (edges only -- internal
+#'   low-CN segments are kept). It can only shrink the extent, so it may rescue a
+#'   false-complex call but never breaks a true-episomal one.
+#' @param min_seg_cn_frac Numeric in `(0, 1]`; a segment counts as amplified for
+#'   `trim_to_amplified` when its copy number is at least this fraction of the
+#'   amplicon's peak segment copy number (default `0.10`). Relative to the
+#'   amplicon's own amplification, not a global ploidy cutoff.
 #'
 #' A **bridged/ambiguous downgrade** applies even when a bracketing boundary DUP
 #' exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -221,11 +233,13 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #' @export
 #' @importFrom data.table data.table rbindlist
 call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
-                                             bridge_gap = 1e6, min_occupancy = 0.05) {
+                                             bridge_gap = 1e6, min_occupancy = 0.05,
+                                             trim_to_amplified = TRUE, min_seg_cn_frac = 0.10) {
   none <- data.table::data.table(
-    episomal = NA, chimeric = NA, n_chr = NA_integer_, bd_chr = NA_character_,
-    bd_lo = NA_real_, bd_hi = NA_real_, bd_pe_support = NA_real_,
+    episomal = NA, status = NA_character_, chimeric = NA, n_chr = NA_integer_,
+    bd_chr = NA_character_, bd_lo = NA_real_, bd_hi = NA_real_, bd_pe_support = NA_real_,
     bd_jcn = NA_real_, bd_homlen = NA_real_, bd_occupancy = NA_real_,
+    bridge_pe_support = NA_real_, bridge_partner = NA_character_,
     n_junctions = NA_integer_)
 
   ## accept a bare AA cycles file as the interval source (generalises to any AA output)
@@ -240,6 +254,38 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
   if (!nrow(iv)) return(none)
   gr <- read_ampliconsuite(graph_file)
   j  <- gr$junctions
+
+  ## Trim the AC interval to its AMPLIFIED extent (default on). AmpliconClassifier
+  ## sometimes pads an ecDNA interval with flanking DIPLOID sequence -- e.g. GBM39EC:
+  ## ~100 kb of CN~4 either side of a CN~91 EGFR circle -- which pushes the outer
+  ## extent past the boundary DUP and mis-calls a clean episome as complex. Using the
+  ## AA graph's own segment copy numbers, drop leading/trailing segments whose CN is
+  ## < `min_seg_cn_frac` of the amplicon's peak CN, per chromosome. Only the EDGES are
+  ## trimmed: internal low-CN segments (excision scars, chromothriptic deletions) sit
+  ## between amplified segments and are retained. Shrinking the extent only makes the
+  ## boundary-DUP bracket easier, so this can rescue a false-complex but never break a
+  ## true-episomal call.
+  if (isTRUE(trim_to_amplified) && !is.null(gr$segments) && nrow(gr$segments)) {
+    seg <- gr$segments
+    bnd <- iv[, {
+      s   <- seg[seg$chr == .BY$chr & seg$end >= min(start) & seg$start <= max(end), ]
+      ## Robust peak CN: ignore sub-2kb segments so a tiny high-CN spike cannot set
+      ## the reference and trim away a genuine amplicon body.
+      ref  <- s[is.finite(s$cn) & (s$end - s$start) >= 2000, ]
+      peak <- if (nrow(ref)) max(ref$cn) else if (nrow(s)) max(s$cn, na.rm = TRUE) else NA_real_
+      amp  <- if (nrow(s) && is.finite(peak)) s[is.finite(s$cn) & s$cn >= min_seg_cn_frac * peak, ] else s
+      ## clamp the amplified span to WITHIN the original interval so trimming can
+      ## only shrink the extent (a segment straddling the edge must not expand it)
+      if (nrow(amp)) .(lo2 = max(min(start), min(amp$start)), hi2 = min(max(end), max(amp$end)))
+      else           .(lo2 = min(start),     hi2 = max(end))
+    }, by = chr]
+    iv2 <- merge(iv, bnd, by = "chr", all.x = TRUE)
+    iv2 <- iv2[end >= lo2 & start <= hi2]
+    if (nrow(iv2)) {                              # keep original interval if trimming would empty it
+      iv2[, start := pmax(start, lo2)][, end := pmin(end, hi2)][, c("lo2", "hi2") := NULL]
+      iv <- iv2
+    }
+  }
 
   ## per-chromosome outer extent of the ecDNA feature
   ext <- iv[, .(lo = min(start), hi = max(end)), by = chr]

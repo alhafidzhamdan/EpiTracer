@@ -240,3 +240,39 @@ test_that("missing / empty intervals return an NA (uncallable) row", {
   expect_true(is.na(r$episomal))
   expect_equal(nrow(r), 1L)
 })
+
+## ---- interval trimming to the amplified extent -----------------------------
+test_that("trim_to_amplified rescues an episome whose AC interval is padded with diploid flanks", {
+  # amplified EGFR-like body (CN 60) flanked by ~400 kb of diploid (CN 2) either side;
+  # the boundary DUP brackets the body but NOT the padded AC interval.
+  segs <- rbind(
+    data.frame(chr = "chr7", start = 54.6e6,       end = 55.0e6 - 1, cn = 2),   # left diploid flank
+    data.frame(chr = "chr7", start = 55.0e6,       end = 55.5e6,     cn = 60),  # amplified body
+    data.frame(chr = "chr7", start = 55.5e6 + 1,   end = 56.15e6,    cn = 2))   # right diploid flank
+  g   <- aa_graph_file(segs, jx("chr7", 55.0e6, "-", "chr7", 55.5e6, "+", jcn = 55, pe = 200))
+  bed <- ac_bed_file(data.frame(chr = "chr7", start = 54.6e6, end = 56.15e6))   # padded ~400 kb each side
+
+  r_trim <- call_episomal_from_ampliconsuite(g, bed)                       # default trim on
+  expect_true(r_trim$episomal)
+  expect_equal(r_trim$status, "episomal")
+  expect_gt(r_trim$bd_occupancy, 0.9)
+
+  r_notrim <- call_episomal_from_ampliconsuite(g, bed, trim_to_amplified = FALSE)
+  expect_false(r_notrim$episomal)                                          # DUP fails to bracket the padded interval
+  expect_equal(r_notrim$status, "complex")
+})
+
+test_that("trimming keeps internal segments and does not fire on a tiny high-CN spike", {
+  # a genuine CN~7 body (>=2 kb) with a 300 bp CN~250 spike must not set the peak
+  # and trim the body away (regression guard for the sub-kb-spike case).
+  segs <- rbind(
+    data.frame(chr = "chr8", start = 68.0e6, end = 69.4e6,          cn = 7),
+    data.frame(chr = "chr8", start = 82.7540e6, end = 82.7543e6,    cn = 250),  # 300 bp spike
+    data.frame(chr = "chr8", start = 82.7543e6 + 1, end = 85.0e6,   cn = 7))
+  g   <- aa_graph_file(segs, jx("chr8", 68.0e6, "-", "chr8", 85.0e6, "+", jcn = 6, pe = 40))
+  bed <- ac_bed_file(data.frame(chr = "chr8", start = 68.0e6, end = 85.0e6))
+  # the whole CN-7 region is retained (spike ignored), so the extent is unchanged
+  r <- call_episomal_from_ampliconsuite(g, bed)
+  expect_equal(round(r$bd_lo), 68.0e6)   # boundary DUP still spans the full region
+  expect_equal(round(r$bd_hi), 85.0e6)
+})

@@ -28,6 +28,7 @@ plot_sv_linear(
   gain_ratio = 1.4,
   loh_thresh = 0.5,
   homdel_thresh = 0.5,
+  allele_specific = NULL,
   min_amp_width = 1e+05,
   gap_frac = 0.06,
   genes_to_highlight = NULL,
@@ -83,8 +84,12 @@ plot_sv_linear(
 - cnv_data:
 
   A data.frame of copy-number segments with columns `sample`,
-  `seqnames`, `start`, `end`, `copyNumber`, `ploidy`,
-  `majorAlleleCopyNumber`, `minorAlleleCopyNumber`.
+  `seqnames`, `start`, `end`, `copyNumber`, `ploidy`. The
+  allele-specific columns `majorAlleleCopyNumber` and
+  `minorAlleleCopyNumber` are optional: when they are absent (or all
+  `NA`) the plotter draws **total** `copyNumber` and labels the
+  copy-number axis accordingly (see `allele_specific`) — it does not
+  assume the minor allele is zero.
 
 - sv_data:
 
@@ -182,6 +187,17 @@ plot_sv_linear(
 
   Numeric; homozygous-deletion copy-number threshold
   (`copyNumber < homdel_thresh`, default `0.5`).
+
+- allele_specific:
+
+  Logical or `NULL`. Whether to draw allele-specific copy number (major-
+  and minor-allele lines, LOH bars, axis "Allele specific copy number")
+  or **total** copy number (a single `copyNumber` line, axis "Copy
+  number"). `NULL` (default) auto-detects: allele-specific when both
+  `majorAlleleCopyNumber` and `minorAlleleCopyNumber` are present and
+  not all `NA`, otherwise total. `TRUE` requires the allele columns
+  (errors if absent); `FALSE` forces total copy number. `events = "loh"`
+  requires allele-specific data.
 
 - min_amp_width:
 

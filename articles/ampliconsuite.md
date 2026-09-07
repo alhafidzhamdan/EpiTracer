@@ -157,10 +157,11 @@ inputs. A small helper turns the parsed graph into the `cnv_data` /
 aa_to_plot <- function(graph, sample) {
   g <- read_ampliconsuite(graph)
   list(
+    # AA graphs carry TOTAL copy number only (no allele-specific split), so we
+    # supply `copyNumber` and let plot_sv_linear() draw total copy number.
     cnv_data = with(g$segments, data.frame(
       sample = sample, seqnames = chr, start = start, end = end,
-      copyNumber = cn, ploidy = 2,
-      majorAlleleCopyNumber = cn, minorAlleleCopyNumber = 0)),
+      copyNumber = cn, ploidy = 2)),
     sv_data = with(g$junctions, data.frame(
       sample = sample,
       chrom1 = cA, start1 = pA, strand1 = sA,
@@ -168,6 +169,11 @@ aa_to_plot <- function(graph, sample) {
       svclass = svclass, VF = pe_support, JCN = jcn)))
 }
 ```
+
+Because AA reports only total copy number,
+[`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
+draws a single copy-number line and labels the axis *Copy number* (it
+does not assume the minor allele is zero).
 
 **GBM39 (episomal)** — the amplified EGFR segment bounded by a single
 duplication junction (the boundary DUP): a clean simple-excision circle.

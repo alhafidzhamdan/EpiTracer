@@ -84,7 +84,9 @@ plot_sv_reconstruction(
 
   A data.frame of copy-number segments with columns `sample`,
   `seqnames`, `start`, `end`, `copyNumber`, `ploidy`,
-  `majorAlleleCopyNumber`, `minorAlleleCopyNumber`.
+  `majorAlleleCopyNumber`, `minorAlleleCopyNumber`. Allele-specific copy
+  number is **required** here — the reconstruction rebuilds the
+  major-allele copy number wave by wave.
 
 - sv_data:
 

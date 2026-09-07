@@ -77,6 +77,7 @@ of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.</p>
 <span>  gain_ratio <span class="op">=</span> <span class="fl">1.4</span>,</span>
 <span>  loh_thresh <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  homdel_thresh <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  allele_specific <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_amp_width <span class="op">=</span> <span class="fl">1e+05</span>,</span>
 <span>  gap_frac <span class="op">=</span> <span class="fl">0.06</span>,</span>
 <span>  genes_to_highlight <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -133,8 +134,11 @@ of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.</p>
 
 <dt id="arg-cnv-data">cnv_data<a class="anchor" aria-label="anchor" href="#arg-cnv-data"></a></dt>
 <dd><p>A data.frame of copy-number segments with columns <code>sample</code>,
-<code>seqnames</code>, <code>start</code>, <code>end</code>, <code>copyNumber</code>, <code>ploidy</code>, <code>majorAlleleCopyNumber</code>,
-<code>minorAlleleCopyNumber</code>.</p></dd>
+<code>seqnames</code>, <code>start</code>, <code>end</code>, <code>copyNumber</code>, <code>ploidy</code>. The allele-specific
+columns <code>majorAlleleCopyNumber</code> and <code>minorAlleleCopyNumber</code> are optional:
+when they are absent (or all <code>NA</code>) the plotter draws <strong>total</strong> <code>copyNumber</code>
+and labels the copy-number axis accordingly (see <code>allele_specific</code>) — it does
+not assume the minor allele is zero.</p></dd>
 
 
 <dt id="arg-sv-data">sv_data<a class="anchor" aria-label="anchor" href="#arg-sv-data"></a></dt>
@@ -227,6 +231,17 @@ applies to auto-detected loci, not to explicit <code>chromosome</code>/<code>loc
 <dt id="arg-homdel-thresh">homdel_thresh<a class="anchor" aria-label="anchor" href="#arg-homdel-thresh"></a></dt>
 <dd><p>Numeric; homozygous-deletion copy-number threshold
 (<code>copyNumber &lt; homdel_thresh</code>, default <code>0.5</code>).</p></dd>
+
+
+<dt id="arg-allele-specific">allele_specific<a class="anchor" aria-label="anchor" href="#arg-allele-specific"></a></dt>
+<dd><p>Logical or <code>NULL</code>. Whether to draw allele-specific
+copy number (major- and minor-allele lines, LOH bars, axis "Allele specific
+copy number") or <strong>total</strong> copy number (a single <code>copyNumber</code> line, axis
+"Copy number"). <code>NULL</code> (default) auto-detects: allele-specific when both
+<code>majorAlleleCopyNumber</code> and <code>minorAlleleCopyNumber</code> are present and not all
+<code>NA</code>, otherwise total. <code>TRUE</code> requires the allele columns (errors if absent);
+<code>FALSE</code> forces total copy number. <code>events = "loh"</code> requires allele-specific
+data.</p></dd>
 
 
 <dt id="arg-min-amp-width">min_amp_width<a class="anchor" aria-label="anchor" href="#arg-min-amp-width"></a></dt>

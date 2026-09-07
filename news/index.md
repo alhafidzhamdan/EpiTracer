@@ -2,6 +2,15 @@
 
 ## EpiTracer 0.1.0 (alpha)
 
+- **[`plot_sv_linear()`](https://alhafidzhamdan.github.io/EpiTracer/reference/plot_sv_linear.md)
+  total copy number.** When `cnv_data` has no allele-specific copy
+  number (the `majorAlleleCopyNumber` / `minorAlleleCopyNumber` columns
+  are absent or all `NA`), the plotter now draws a single **total**
+  `copyNumber` line and labels the axis *Copy number* — it no longer
+  assumes the minor allele is zero. New `allele_specific` argument
+  (`NULL` auto-detects, `TRUE`/`FALSE` force the mode); `events = "loh"`
+  still requires allele-specific data. The AmpliconSuite vignette’s
+  plots use this, since AA graphs carry only total CN.
 - **Episomal ecDNA from AmpliconSuite.**
   [`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md)
   applies the episome model directly to AmpliconArchitect +

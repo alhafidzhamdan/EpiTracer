@@ -22,6 +22,10 @@
 #' amplified loci).
 #'
 #' @inheritParams plot_sv_linear
+#' @param cnv_data A data.frame of copy-number segments with columns `sample`,
+#'   `seqnames`, `start`, `end`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`,
+#'   `minorAlleleCopyNumber`. Allele-specific copy number is **required** here —
+#'   the reconstruction rebuilds the major-allele copy number wave by wave.
 #' @param vf_col Name of the read-support column in `sv_data` (default `"VF"`).
 #' @param k Number of `VF` strata. `"auto"` (default) chooses the number of
 #'   clusters automatically (via \pkg{Ckmeans.1d.dp} BIC when available, otherwise

@@ -335,3 +335,48 @@ test_that("highlight_events recolours matched SVs bold (by name)", {
   cols <- unlist(lapply(p$layers, function(L) L$data$colour), use.names = FALSE)
   expect_true("#d95f0e" %in% cols)
 })
+
+test_that("total copy-number mode (no allele-specific columns) plots and labels the axis", {
+  d <- make_plot_inputs()
+  cnv_total <- d$cnv_data
+  cnv_total$majorAlleleCopyNumber <- NULL
+  cnv_total$minorAlleleCopyNumber <- NULL          # only `copyNumber` remains
+
+  p <- suppressWarnings(suppressMessages(plot_sv_linear(
+    sample = "S1", cnv_data = cnv_total, sv_data = d$sv_data, wgd_data = d$wgd_data,
+    karyotype = d$karyotype, gene_coord = d$gene_coord,
+    chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+    outdir = NULL)))
+  expect_s3_class(p, "ggplot")
+  expect_equal(p$labels$y, "Copy number")          # not "Allele specific ..."
+})
+
+test_that("allele-specific auto-detects and can be forced off", {
+  d <- make_plot_inputs()
+  base_args <- list(sample = "S1", sv_data = d$sv_data, wgd_data = d$wgd_data,
+                    karyotype = d$karyotype, gene_coord = d$gene_coord,
+                    chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+                    outdir = NULL)
+  p_auto <- suppressWarnings(suppressMessages(do.call(plot_sv_linear,
+    c(list(cnv_data = d$cnv_data), base_args))))
+  expect_equal(p_auto$labels$y, "Allele specific\ncopy number")
+
+  p_forced <- suppressWarnings(suppressMessages(do.call(plot_sv_linear,
+    c(list(cnv_data = d$cnv_data, allele_specific = FALSE), base_args))))
+  expect_equal(p_forced$labels$y, "Copy number")
+})
+
+test_that("allele_specific = TRUE and events = 'loh' require the allele columns", {
+  d <- make_plot_inputs()
+  cnv_total <- d$cnv_data
+  cnv_total$majorAlleleCopyNumber <- NULL
+  cnv_total$minorAlleleCopyNumber <- NULL
+  common <- list(sample = "S1", cnv_data = cnv_total, sv_data = d$sv_data, wgd_data = d$wgd_data,
+                 karyotype = d$karyotype, gene_coord = d$gene_coord,
+                 chromosome = "chr7", chromosome_range = matrix(c(54e6, 56e6), nrow = 1),
+                 outdir = NULL)
+  expect_error(do.call(plot_sv_linear, c(common, list(allele_specific = TRUE))),
+               "allele_specific = TRUE")
+  expect_error(do.call(plot_sv_linear, c(common, list(events = "loh"))),
+               "loh")
+})

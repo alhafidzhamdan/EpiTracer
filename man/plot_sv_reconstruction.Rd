@@ -70,7 +70,8 @@ plot_sv_reconstruction(
 
 \item{cnv_data}{A data.frame of copy-number segments with columns \code{sample},
 \code{seqnames}, \code{start}, \code{end}, \code{copyNumber}, \code{ploidy}, \code{majorAlleleCopyNumber},
-\code{minorAlleleCopyNumber}.}
+\code{minorAlleleCopyNumber}. Allele-specific copy number is \strong{required} here —
+the reconstruction rebuilds the major-allele copy number wave by wave.}
 
 \item{sv_data}{A data.frame of SVs with columns \code{chrom1}, \code{start1}, \code{chrom2},
 \code{start2}, \code{strand1}, \code{strand2}, \code{svclass}, \code{VF}, \code{JCN}, \code{sample}.}

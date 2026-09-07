@@ -34,8 +34,11 @@
 #' @param sample Character scalar; sample identifier (matched in `cnv_data`,
 #'   `sv_data`, `wgd_data`).
 #' @param cnv_data A data.frame of copy-number segments with columns `sample`,
-#'   `seqnames`, `start`, `end`, `copyNumber`, `ploidy`, `majorAlleleCopyNumber`,
-#'   `minorAlleleCopyNumber`.
+#'   `seqnames`, `start`, `end`, `copyNumber`, `ploidy`. The allele-specific
+#'   columns `majorAlleleCopyNumber` and `minorAlleleCopyNumber` are optional:
+#'   when they are absent (or all `NA`) the plotter draws **total** `copyNumber`
+#'   and labels the copy-number axis accordingly (see `allele_specific`) — it does
+#'   not assume the minor allele is zero.
 #' @param sv_data A data.frame of SVs with columns `chrom1`, `start1`, `chrom2`,
 #'   `start2`, `strand1`, `strand2`, `svclass`, `VF`, `JCN`, `sample`.
 #' @param wgd_data Optional data.frame with a sample-identifier column (see
@@ -83,6 +86,14 @@
 #'   (`minorAlleleCopyNumber < loh_thresh`, default `0.5`).
 #' @param homdel_thresh Numeric; homozygous-deletion copy-number threshold
 #'   (`copyNumber < homdel_thresh`, default `0.5`).
+#' @param allele_specific Logical or `NULL`. Whether to draw allele-specific
+#'   copy number (major- and minor-allele lines, LOH bars, axis "Allele specific
+#'   copy number") or **total** copy number (a single `copyNumber` line, axis
+#'   "Copy number"). `NULL` (default) auto-detects: allele-specific when both
+#'   `majorAlleleCopyNumber` and `minorAlleleCopyNumber` are present and not all
+#'   `NA`, otherwise total. `TRUE` requires the allele columns (errors if absent);
+#'   `FALSE` forces total copy number. `events = "loh"` requires allele-specific
+#'   data.
 #' @param min_amp_width Numeric; drop auto-detected loci whose total event span
 #'   is below this many bp (default `1e5`).
 #' @param gap_frac Numeric; gap between loci as a fraction of the total plotted
@@ -234,6 +245,7 @@ plot_sv_linear <- function(sample,
                            gain_ratio = 1.4,
                            loh_thresh = 0.5,
                            homdel_thresh = 0.5,
+                           allele_specific = NULL,
                            min_amp_width = 1e5,
                            gap_frac = 0.06,
                            genes_to_highlight = NULL,
@@ -325,6 +337,23 @@ plot_sv_linear <- function(sample,
   cnv$chr <- as.character(cnv$seqnames)
   if (nrow(cnv) == 0) stop("No copy-number data for sample ", this_sample, ".")
 
+  ## Allele-specific copy number is optional. When the major/minor-allele columns
+  ## are absent or all-NA, plot TOTAL `copyNumber` instead -- we do NOT assume the
+  ## minor allele is 0. `allele_specific` forces the mode; NULL (default)
+  ## auto-detects from the columns present.
+  has_major <- "majorAlleleCopyNumber" %in% names(cnv) && any(is.finite(cnv$majorAlleleCopyNumber))
+  has_minor <- "minorAlleleCopyNumber" %in% names(cnv) && any(is.finite(cnv$minorAlleleCopyNumber))
+  allele_specific <- if (is.null(allele_specific)) (has_major && has_minor) else isTRUE(allele_specific)
+  if (allele_specific && !(has_major && has_minor))
+    stop("allele_specific = TRUE but 'majorAlleleCopyNumber' / 'minorAlleleCopyNumber' ",
+         "are missing or all NA in cnv_data.")
+  if (!allele_specific) {
+    ## Total-CN mode: the single copy-number line is total `copyNumber`; there is
+    ## no minor allele, so no minor-allele line and no LOH bars are drawn.
+    cnv$majorAlleleCopyNumber <- cnv$copyNumber
+    cnv$minorAlleleCopyNumber <- NA_real_
+  }
+
   ## WGD annotation is optional: only shown in the title when `wgd_data` is given.
   wgd_status <- NULL
   if (!is.null(wgd_data)) {
@@ -337,6 +366,9 @@ plot_sv_linear <- function(sample,
 
   ## ---- Resolve loci -------------------------------------------------------
   events <- match.arg(events, c("amp", "gain", "loh", "homdel"), several.ok = TRUE)
+  if (!allele_specific && "loh" %in% events)
+    stop("events = \"loh\" needs allele-specific copy number (minorAlleleCopyNumber), ",
+         "which is not available for sample ", this_sample, ".")
   ## Copy-number event predicate over a set of segments:
   ##   amp    : copyNumber > min_cn_ratio * ploidy
   ##   gain   : copyNumber > gain_ratio  * ploidy, but not amplified
@@ -642,11 +674,14 @@ plot_sv_linear <- function(sample,
       ymin = 0, ymax = max.cn * ymax_highlight_ratio), fill = color_homdel, alpha = 0.05)
   }
 
-  p <- p +
-    geom_segment(data = cn_plot, aes(x = gx_start, xend = gx_end,
+  ## Minor-allele line only in allele-specific mode; the major-allele line doubles
+  ## as the single TOTAL copy-number line otherwise.
+  if (allele_specific)
+    p <- p + geom_segment(data = cn_plot, aes(x = gx_start, xend = gx_end,
                  y = minorAlleleCopyNumber - minorAllele_offset,
                  yend = minorAlleleCopyNumber - minorAllele_offset),
-                 colour = color_minor_cn, linewidth = cn_size) +
+                 colour = color_minor_cn, linewidth = cn_size)
+  p <- p +
     geom_segment(data = cn_plot, aes(x = gx_start, xend = gx_end,
                  y = majorAlleleCopyNumber, yend = majorAlleleCopyNumber),
                  colour = color_major_cn, linewidth = cn_size)
@@ -832,7 +867,7 @@ plot_sv_linear <- function(sample,
   if (!has_snv) p <- draw_genomic_axis(p, y_base = lower_limit_karyotype, y_unit = unit_y)
   p <- p +
     ggtitle(if (is.null(wgd_status)) this_sample else paste0(this_sample, " (", wgd_status, ")")) +
-    labs(x = NULL, y = "Allele specific\ncopy number") +
+    labs(x = NULL, y = if (allele_specific) "Allele specific\ncopy number" else "Copy number") +
     coord_cartesian(clip = "off", expand = FALSE) +
     scale_x_continuous(expand = expansion(mult = 0.01)) +
     theme(

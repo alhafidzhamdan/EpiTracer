@@ -22,6 +22,7 @@ plot_sv_linear(
   gain_ratio = 1.4,
   loh_thresh = 0.5,
   homdel_thresh = 0.5,
+  allele_specific = NULL,
   min_amp_width = 1e+05,
   gap_frac = 0.06,
   genes_to_highlight = NULL,
@@ -71,8 +72,11 @@ plot_sv_linear(
 \code{sv_data}, \code{wgd_data}).}
 
 \item{cnv_data}{A data.frame of copy-number segments with columns \code{sample},
-\code{seqnames}, \code{start}, \code{end}, \code{copyNumber}, \code{ploidy}, \code{majorAlleleCopyNumber},
-\code{minorAlleleCopyNumber}.}
+\code{seqnames}, \code{start}, \code{end}, \code{copyNumber}, \code{ploidy}. The allele-specific
+columns \code{majorAlleleCopyNumber} and \code{minorAlleleCopyNumber} are optional:
+when they are absent (or all \code{NA}) the plotter draws \strong{total} \code{copyNumber}
+and labels the copy-number axis accordingly (see \code{allele_specific}) — it does
+not assume the minor allele is zero.}
 
 \item{sv_data}{A data.frame of SVs with columns \code{chrom1}, \code{start1}, \code{chrom2},
 \code{start2}, \code{strand1}, \code{strand2}, \code{svclass}, \code{VF}, \code{JCN}, \code{sample}.}
@@ -135,6 +139,15 @@ applies to auto-detected loci, not to explicit \code{chromosome}/\code{loci}.}
 
 \item{homdel_thresh}{Numeric; homozygous-deletion copy-number threshold
 (\code{copyNumber < homdel_thresh}, default \code{0.5}).}
+
+\item{allele_specific}{Logical or \code{NULL}. Whether to draw allele-specific
+copy number (major- and minor-allele lines, LOH bars, axis "Allele specific
+copy number") or \strong{total} copy number (a single \code{copyNumber} line, axis
+"Copy number"). \code{NULL} (default) auto-detects: allele-specific when both
+\code{majorAlleleCopyNumber} and \code{minorAlleleCopyNumber} are present and not all
+\code{NA}, otherwise total. \code{TRUE} requires the allele columns (errors if absent);
+\code{FALSE} forces total copy number. \code{events = "loh"} requires allele-specific
+data.}
 
 \item{min_amp_width}{Numeric; drop auto-detected loci whose total event span
 is below this many bp (default \code{1e5}).}

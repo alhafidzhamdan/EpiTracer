@@ -314,13 +314,36 @@ test_that("structural QC rejects a passenger DUP whose jcn is far below the circ
     segments  = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 60),
     junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 20, pe = 200))  # 20/60 = 0.33
   bed <- ac_bed_file(data.frame(chr = "chr7", start = 55e6, end = 55.5e6))
-  r <- call_episomal_from_ampliconsuite(g, bed)
+  # jcn 0.33 is above the lenient default floor (0.1) but below a strict 0.5:
+  r <- call_episomal_from_ampliconsuite(g, bed, qc_jcn_frac = 0.5)
   expect_false(r$episomal)
   expect_match(r$qc_fail, "jcn_below_cn")
   # with QC off, the old bracket-and-occupancy logic still calls it episomal
   r0 <- call_episomal_from_ampliconsuite(g, bed, structural_qc = FALSE)
   expect_true(r0$episomal)
   expect_true(is.na(r0$qc_pass))
+})
+
+test_that("ploidy gate rejects a low-copy amplicon (tandem-duplication zone)", {
+  # circle CN 6 in a diploid tumour = 3x ploidy; require > 3x -> reject.
+  g <- aa_graph_file(
+    segments  = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 6),
+    junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 6, pe = 200))
+  bed <- ac_bed_file(data.frame(chr = "chr7", start = 55e6, end = 55.5e6))
+  r_lo <- call_episomal_from_ampliconsuite(g, bed, ploidy = 2)   # 6 !> 3*2
+  expect_false(r_lo$episomal)
+  expect_match(r_lo$qc_fail, "below_ploidy")
+  expect_equal(r_lo$cn_over_ploidy, 3, tolerance = 1e-6)
+  # a high-copy circle (CN 60) in the same ploidy passes the gate
+  g2 <- aa_graph_file(
+    segments  = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 60),
+    junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 55, pe = 200))
+  r_hi <- call_episomal_from_ampliconsuite(g2, bed, ploidy = 2)
+  expect_true(r_hi$episomal)
+  # no ploidy supplied -> gate skipped, low-copy amplicon is not rejected on this ground
+  r_na <- call_episomal_from_ampliconsuite(g, bed)
+  expect_true(r_na$episomal)
+  expect_true(is.na(r_na$ploidy))
 })
 
 test_that("structural QC tolerates an INTERNAL open co-amplification (away from boundary)", {

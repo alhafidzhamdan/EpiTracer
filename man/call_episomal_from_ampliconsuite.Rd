@@ -15,8 +15,11 @@ call_episomal_from_ampliconsuite(
   structural_qc = TRUE,
   qc_amp_frac = 0.5,
   qc_src_frac = 0.5,
-  qc_jcn_frac = 0.5,
-  qc_edge_tol = 10000
+  qc_jcn_frac = 0.1,
+  qc_edge_tol = 10000,
+  ploidy = NULL,
+  cnv_file = NULL,
+  min_cn_ratio = 3
 )
 }
 \arguments{
@@ -70,11 +73,28 @@ boundary-DUP span (the "circle-body" CN). A boundary breakend must be amplified
 to \verb{>= qc_amp_frac} × circle CN (default \code{0.5}); a boundary source edge
 \verb{>= qc_src_frac} × circle CN marks an open boundary (default \code{0.5}); the
 boundary DUP's junction copy number must be \verb{>= qc_jcn_frac} × circle CN
-(default \code{0.5}).}
+(default \code{0.1}; a low floor that rejects only a boundary DUP explaining a
+tiny fraction of the amplification, while tolerating internally re-amplified
+episomes whose resident locus is boosted above the circularising junction's
+copy number — e.g. DO11854 EGFR).}
 
 \item{qc_edge_tol}{Integer; window (bp) around a boundary-DUP breakend within
 which a source edge or INV/TRA breakend counts as "at the boundary"
-(default \code{1e4}).
+(default \code{1e4}).}
+
+\item{ploidy, cnv_file}{Tumour ploidy for the amplification / tandem-duplication
+gate. Supply \code{ploidy} directly, or \code{cnv_file} -- a path to a genome-wide
+copy-number BED (e.g. the AA-input \verb{*_CNV_CALLS.bed}) whose width-weighted
+median CN is used. When ploidy is known and structural QC is on, a bracketed
+amplicon whose circle-body CN does not exceed \code{min_cn_ratio} x ploidy is
+downgraded (\code{qc_fail = "below_ploidy"}): at low copy number a boundary DUP +
+copy-number step is indistinguishable from an in-place tandem duplication by
+unphased short-read data, so a genuine ecDNA must be amplified well above
+ploidy. Both \code{NULL} (the default) skips the gate.}
+
+\item{min_cn_ratio}{Numeric; the circle-body CN must exceed this multiple of
+ploidy to pass the amplification gate (default \code{3}, matching the
+PURPLE-native \code{\link[=call_simple_excision]{call_simple_excision()}}).
 
 A \strong{bridged/ambiguous downgrade} applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -93,8 +113,10 @@ boundary-DUP record \code{bd_chr}, \code{bd_lo}, \code{bd_hi}, \code{bd_pe_suppo
 coverage of the boundary-DUP span; the occupancy-guard metric), the
 structural-QC record \code{bd_circle_cn} (width-weighted median CN of the
 boundary-DUP span), \code{bd_jcn_frac} (boundary-DUP jcn ÷ circle CN), \code{bd_src_frac}
-(boundary source-edge CN ÷ circle CN), \code{qc_pass} (logical) and \code{qc_fail}
-(\verb{;}-separated failed checks, \code{NA} if passed or QC off), the
+(boundary source-edge CN ÷ circle CN), \code{ploidy} (resolved tumour ploidy or
+\code{NA}), \code{cn_over_ploidy} (circle CN ÷ ploidy), \code{qc_pass} (logical) and
+\code{qc_fail} (\verb{;}-separated failed checks incl. \code{below_ploidy}, \code{NA} if passed
+or QC off), the
 bridging-junction record
 \code{bridge_pe_support}, \code{bridge_partner} (\code{chr:pos} of the out-of-amplicon
 breakend; \code{NA} unless downgraded), and \code{n_junctions}.

@@ -1,5 +1,17 @@
 # EpiTracer 0.1.0 (alpha)
 
+* **`call_episomal_from_ampliconsuite()` ploidy / tandem-duplication gate.** New
+  `ploidy` / `cnv_file` inputs with `min_cn_ratio` (default `3`). When tumour
+  ploidy is known (passed directly, or as the genome-wide median of a
+  `*_CNV_CALLS.bed`), a bracketed amplicon whose circle-body CN does not exceed
+  `min_cn_ratio` × ploidy is downgraded (`qc_fail = "below_ploidy"`): at low copy
+  number a boundary DUP + copy-number step is indistinguishable from an in-place
+  tandem duplication by unphased short-read data, so a genuine ecDNA must be
+  amplified well above ploidy (as in the PURPLE-native `call_simple_excision()`).
+  New outputs `ploidy`, `cn_over_ploidy`. The gate is skipped when ploidy is
+  unknown. The default `qc_jcn_frac` is relaxed to `0.1` (a low floor that keeps
+  internally re-amplified episomes, e.g. DO11854 EGFR, whose resident locus is
+  boosted above the circularising junction's copy number).
 * **`call_episomal_from_ampliconsuite()` structural QC (default on).** New
   `structural_qc` (default `TRUE`) ports four structural checks from the
   PURPLE-native `call_simple_excision()` to the AmpliconSuite adapter, so a

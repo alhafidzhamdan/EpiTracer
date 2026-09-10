@@ -10,7 +10,7 @@ read_ampliconsuite(graph_file)
 \item{graph_file}{Path to an AmpliconArchitect \verb{*_graph.txt}.}
 }
 \value{
-A list with two \link[data.table:data.table]{data.table::data.table}s:
+A list with three \link[data.table:data.table]{data.table::data.table}s:
 \describe{
 \item{\code{segments}}{\code{chr}, \code{start}, \code{end}, \code{cn} (predicted copy number).}
 \item{\code{junctions}}{\code{cA},\code{pA},\code{sA} and \code{cB},\code{pB},\code{sB} (the two breakends'
@@ -18,8 +18,13 @@ chromosome/position/strand), \code{jcn} (junction predicted copy number),
 \code{pe_support} (number of supporting read pairs), \code{homlen} (breakpoint
 homology length, \code{NA} if absent), \code{svclass} (\code{DUP}/\code{DEL}/\code{INV}/\code{TRA}) and
 \code{lo}/\code{hi} (the lower/upper breakend coordinate).}
+\item{\code{source}}{\code{chr}, \code{pos}, \code{cn} for each AA \emph{source} edge -- an open end
+where copy-number flow enters/leaves the amplicon via the rest of the
+genome instead of looping back through a junction (a self-contained circle
+has none). Used by the structural QC of
+\code{\link[=call_episomal_from_ampliconsuite]{call_episomal_from_ampliconsuite()}}.}
 }
-Either table may have zero rows.
+Any table may have zero rows.
 }
 \description{
 Parses an AmpliconArchitect \verb{*_graph.txt} into copy-number segments (from the

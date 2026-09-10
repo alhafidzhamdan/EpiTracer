@@ -6,7 +6,7 @@
 # Write an AmpliconArchitect *_graph.txt from segment/junction data.frames.
 #   segments : chr, start, end, cn
 #   junctions: cA, pA, sA, cB, pB, sB, jcn, pe, homlen (NA -> "None")
-aa_graph_file <- function(segments = NULL, junctions = NULL,
+aa_graph_file <- function(segments = NULL, junctions = NULL, sources = NULL,
                           path = tempfile(fileext = "_graph.txt")) {
   con <- file(path, "w"); on.exit(close(con))
   writeLines(paste("SequenceEdge: StartPosition, EndPosition, PredictedCopyCount,",
@@ -25,6 +25,13 @@ aa_graph_file <- function(segments = NULL, junctions = NULL,
     writeLines(sprintf("discordant\t%s:%.0f%s->%s:%.0f%s\t%s\t%.0f\t%s\tNone",
                        j$cA, j$pA, j$sA, j$cB, j$pB, j$sB,
                        format(j$jcn, scientific = FALSE), j$pe, hom), con)
+  }
+  # source edges: 'source  chr:-1-->chr:pos(strand)  CN  reads  None  None'
+  if (!is.null(sources)) for (i in seq_len(nrow(sources))) {
+    s <- sources[i, ]
+    writeLines(sprintf("source\t%s:-1-->%s:%.0f%s\t%s\t%.0f\tNone\tNone",
+                       s$chr, s$chr, s$pos, s$strand,
+                       format(s$cn, scientific = FALSE), s$reads), con)
   }
   path
 }
@@ -275,4 +282,56 @@ test_that("trimming keeps internal segments and does not fire on a tiny high-CN 
   r <- call_episomal_from_ampliconsuite(g, bed)
   expect_equal(round(r$bd_lo), 68.0e6)   # boundary DUP still spans the full region
   expect_equal(round(r$bd_hi), 85.0e6)
+})
+
+## ---- structural QC (source edges, jcn-vs-CN, open boundary) ----------------
+test_that("read_ampliconsuite parses source (open-end) edges", {
+  g <- aa_graph_file(
+    segments = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 60),
+    sources  = data.frame(chr = "chr7", pos = 55e6, strand = "-", cn = 40, reads = 30))
+  gr <- read_ampliconsuite(g)
+  expect_true(!is.null(gr$source))
+  expect_equal(nrow(gr$source), 1L)
+  expect_equal(gr$source$pos, 55e6)
+  expect_equal(gr$source$cn, 40)
+})
+
+test_that("structural QC rejects an OPEN boundary (source edge at a breakend)", {
+  # clean bracketing DUP (jcn 50 of CN 60) but a large source edge AT bd_lo
+  g <- aa_graph_file(
+    segments  = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 60),
+    junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 50, pe = 200),
+    sources   = data.frame(chr = "chr7", pos = 55e6, strand = "-", cn = 40, reads = 30))
+  bed <- ac_bed_file(data.frame(chr = "chr7", start = 55e6, end = 55.5e6))
+  r <- call_episomal_from_ampliconsuite(g, bed)
+  expect_false(r$episomal)
+  expect_equal(r$status, "complex")
+  expect_match(r$qc_fail, "open_boundary")
+})
+
+test_that("structural QC rejects a passenger DUP whose jcn is far below the circle CN", {
+  g <- aa_graph_file(
+    segments  = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 60),
+    junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 20, pe = 200))  # 20/60 = 0.33
+  bed <- ac_bed_file(data.frame(chr = "chr7", start = 55e6, end = 55.5e6))
+  r <- call_episomal_from_ampliconsuite(g, bed)
+  expect_false(r$episomal)
+  expect_match(r$qc_fail, "jcn_below_cn")
+  # with QC off, the old bracket-and-occupancy logic still calls it episomal
+  r0 <- call_episomal_from_ampliconsuite(g, bed, structural_qc = FALSE)
+  expect_true(r0$episomal)
+  expect_true(is.na(r0$qc_pass))
+})
+
+test_that("structural QC tolerates an INTERNAL open co-amplification (away from boundary)", {
+  # source edge sits mid-amplicon, > qc_edge_tol from either breakend -> not an
+  # open boundary; the circle is still called episomal (HMF000043-type case)
+  g <- aa_graph_file(
+    segments  = data.frame(chr = "chr7", start = 55e6, end = 55.5e6, cn = 60),
+    junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 50, pe = 200),
+    sources   = data.frame(chr = "chr7", pos = 55.25e6, strand = "+", cn = 40, reads = 30))
+  bed <- ac_bed_file(data.frame(chr = "chr7", start = 55e6, end = 55.5e6))
+  r <- call_episomal_from_ampliconsuite(g, bed)
+  expect_true(r$episomal)
+  expect_true(r$qc_pass)
 })

@@ -1,5 +1,23 @@
 # EpiTracer 0.1.0 (alpha)
 
+* **`call_episomal_from_ampliconsuite()` structural QC (default on).** New
+  `structural_qc` (default `TRUE`) ports four structural checks from the
+  PURPLE-native `call_simple_excision()` to the AmpliconSuite adapter, so a
+  bracketing boundary DUP is no longer sufficient on its own. Using the AA graph's
+  segment copy numbers, **`source` (open-end) edges** (now parsed by
+  `read_ampliconsuite()`, which returns a third `source` table) and junction copy
+  numbers, an amplicon is downgraded to `complex` unless: (a) both boundary-DUP
+  breakends are amplified (`>= qc_amp_frac` × the circle-body CN), (b) the boundary
+  is **not open** (no source edge `>= qc_src_frac` × circle CN within `qc_edge_tol`
+  of a breakend — an *internal* open co-amplification is tolerated), (c) the
+  boundary DUP's `jcn >= qc_jcn_frac` × circle CN (it explains most of the
+  amplification, not a passenger partial duplication), and (d) no INV/TRA at a
+  boundary out-copies the DUP. Thresholds default to `0.5`, calibrated on the
+  GBM39 gold (jcn/circle 0.98, src/circle 0.11) and validated to retain 13/13
+  primary-GBM EGFR episomes while rejecting passenger, open and chromothriptic
+  amplicons. New output columns `bd_circle_cn`, `bd_jcn_frac`, `bd_src_frac`,
+  `qc_pass`, `qc_fail`. Set `structural_qc = FALSE` for the previous
+  bracket-and-occupancy behaviour.
 * **`call_episomal_from_ampliconsuite()` interval trimming.** New
   `trim_to_amplified` (default `TRUE`) trims an AmpliconClassifier ecDNA interval
   to its amplified extent, using the AA graph's own segment copy numbers, before

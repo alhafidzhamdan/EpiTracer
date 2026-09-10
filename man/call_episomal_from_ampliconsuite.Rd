@@ -11,7 +11,12 @@ call_episomal_from_ampliconsuite(
   bridge_gap = 1e+06,
   min_occupancy = 0.05,
   trim_to_amplified = TRUE,
-  min_seg_cn_frac = 0.1
+  min_seg_cn_frac = 0.1,
+  structural_qc = TRUE,
+  qc_amp_frac = 0.5,
+  qc_src_frac = 0.5,
+  qc_jcn_frac = 0.5,
+  qc_edge_tol = 10000
 )
 }
 \arguments{
@@ -47,7 +52,29 @@ false-complex call but never breaks a true-episomal one.}
 \item{min_seg_cn_frac}{Numeric in \verb{(0, 1]}; a segment counts as amplified for
 \code{trim_to_amplified} when its copy number is at least this fraction of the
 amplicon's peak segment copy number (default \code{0.10}). Relative to the
-amplicon's own amplification, not a global ploidy cutoff.
+amplicon's own amplification, not a global ploidy cutoff.}
+
+\item{structural_qc}{Logical (default \code{TRUE}); apply structural quality control
+to a bracketed amplicon before calling it episomal, using the AA graph's own
+segment copy numbers, source (open-end) edges and junction copy numbers.
+Rejects (→ \code{status = "complex"}) an amplicon that is not amplified at both
+boundary-DUP breakends, is OPEN at the boundary (a large source edge at a
+breakend), is closed by a boundary DUP whose copy number is far below the
+circle CN, or has an INV/TRA at a boundary out-copying the DUP. Ported from
+the PURPLE-native \code{\link[=call_simple_excision]{call_simple_excision()}}. Set \code{FALSE} for the older
+bracket-and-occupancy behaviour.}
+
+\item{qc_amp_frac, qc_src_frac, qc_jcn_frac}{Numeric in \verb{(0, 1]}; the structural-QC
+thresholds, each relative to the width-weighted median copy number across the
+boundary-DUP span (the "circle-body" CN). A boundary breakend must be amplified
+to \verb{>= qc_amp_frac} × circle CN (default \code{0.5}); a boundary source edge
+\verb{>= qc_src_frac} × circle CN marks an open boundary (default \code{0.5}); the
+boundary DUP's junction copy number must be \verb{>= qc_jcn_frac} × circle CN
+(default \code{0.5}).}
+
+\item{qc_edge_tol}{Integer; window (bp) around a boundary-DUP breakend within
+which a source edge or INV/TRA breakend counts as "at the boundary"
+(default \code{1e4}).
 
 A \strong{bridged/ambiguous downgrade} applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -64,6 +91,10 @@ only for a clean episome), \code{status} (\code{"episomal"}/\code{"bridged"}/\co
 boundary-DUP record \code{bd_chr}, \code{bd_lo}, \code{bd_hi}, \code{bd_pe_support}, \code{bd_jcn},
 \code{bd_homlen} (\code{NA} when no boundary DUP), \code{bd_occupancy} (ecDNA-interval
 coverage of the boundary-DUP span; the occupancy-guard metric), the
+structural-QC record \code{bd_circle_cn} (width-weighted median CN of the
+boundary-DUP span), \code{bd_jcn_frac} (boundary-DUP jcn ÷ circle CN), \code{bd_src_frac}
+(boundary source-edge CN ÷ circle CN), \code{qc_pass} (logical) and \code{qc_fail}
+(\verb{;}-separated failed checks, \code{NA} if passed or QC off), the
 bridging-junction record
 \code{bridge_pe_support}, \code{bridge_partner} (\code{chr:pos} of the out-of-amplicon
 breakend; \code{NA} unless downgraded), and \code{n_junctions}.

@@ -40,7 +40,7 @@
 #'
 #' @param graph_file Path to an AmpliconArchitect `*_graph.txt`.
 #'
-#' @return A list with two [data.table::data.table]s:
+#' @return A list with three [data.table::data.table]s:
 #' \describe{
 #'   \item{`segments`}{`chr`, `start`, `end`, `cn` (predicted copy number).}
 #'   \item{`junctions`}{`cA`,`pA`,`sA` and `cB`,`pB`,`sB` (the two breakends'
@@ -48,8 +48,13 @@
 #'     `pe_support` (number of supporting read pairs), `homlen` (breakpoint
 #'     homology length, `NA` if absent), `svclass` (`DUP`/`DEL`/`INV`/`TRA`) and
 #'     `lo`/`hi` (the lower/upper breakend coordinate).}
+#'   \item{`source`}{`chr`, `pos`, `cn` for each AA *source* edge -- an open end
+#'     where copy-number flow enters/leaves the amplicon via the rest of the
+#'     genome instead of looping back through a junction (a self-contained circle
+#'     has none). Used by the structural QC of
+#'     [call_episomal_from_ampliconsuite()].}
 #' }
-#' Either table may have zero rows.
+#' Any table may have zero rows.
 #' @seealso [call_episomal_from_ampliconsuite()]
 #' @export
 #' @importFrom data.table data.table tstrsplit fifelse
@@ -61,8 +66,9 @@ read_ampliconsuite <- function(graph_file) {
                                 jcn = numeric(), pe_support = numeric(),
                                 homlen = numeric(), svclass = character(),
                                 lo = numeric(), hi = numeric())
+  src <- data.table::data.table(chr = character(), pos = numeric(), cn = numeric())
   if (is.null(graph_file) || is.na(graph_file) || !file.exists(graph_file))
-    return(list(segments = seg, junctions = jun))
+    return(list(segments = seg, junctions = jun, source = src))
   L <- readLines(graph_file, warn = FALSE)
 
   ## sequence edges -> CN segments
@@ -101,7 +107,24 @@ read_ampliconsuite <- function(graph_file) {
       jun[, lo := pmin(pA, pB)][, hi := pmax(pA, pB)]
     }
   }
-  list(segments = seg, junctions = jun)
+
+  ## source edges -> open ends. AA writes 'source  chr:-1-->chr:pos(strand)  CN ...';
+  ## a source edge is copy-number flow that enters/leaves the amplicon via the rest
+  ## of the genome (an OPEN end) rather than looping back through a junction. The
+  ## real breakend is the last "->"-separated field; `cn` (col 3) is the open flow.
+  so <- L[startsWith(L, "source")]
+  if (length(so)) {
+    s  <- data.table::tstrsplit(so, "\t", fixed = TRUE)
+    sp <- data.table::tstrsplit(s[[2]], "->", fixed = TRUE)
+    be <- sp[[length(sp)]]                              # 2nd endpoint = actual breakend
+    m  <- regmatches(be, regexec("^([^:]+):(-?[0-9]+)([+-])$", be))
+    src <- data.table::data.table(
+      chr = vapply(m, function(x) if (length(x) == 4) x[2] else NA_character_, ""),
+      pos = as.numeric(vapply(m, function(x) if (length(x) == 4) x[3] else NA_character_, "")),
+      cn  = suppressWarnings(as.numeric(s[[3]])))
+    src <- src[!is.na(chr) & !is.na(pos)]
+  }
+  list(segments = seg, junctions = jun, source = src)
 }
 
 ## Read an AmpliconClassifier ecDNA interval BED into inclusive-coordinate
@@ -205,6 +228,25 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #'   `trim_to_amplified` when its copy number is at least this fraction of the
 #'   amplicon's peak segment copy number (default `0.10`). Relative to the
 #'   amplicon's own amplification, not a global ploidy cutoff.
+#' @param structural_qc Logical (default `TRUE`); apply structural quality control
+#'   to a bracketed amplicon before calling it episomal, using the AA graph's own
+#'   segment copy numbers, source (open-end) edges and junction copy numbers.
+#'   Rejects (→ `status = "complex"`) an amplicon that is not amplified at both
+#'   boundary-DUP breakends, is OPEN at the boundary (a large source edge at a
+#'   breakend), is closed by a boundary DUP whose copy number is far below the
+#'   circle CN, or has an INV/TRA at a boundary out-copying the DUP. Ported from
+#'   the PURPLE-native [call_simple_excision()]. Set `FALSE` for the older
+#'   bracket-and-occupancy behaviour.
+#' @param qc_amp_frac,qc_src_frac,qc_jcn_frac Numeric in `(0, 1]`; the structural-QC
+#'   thresholds, each relative to the width-weighted median copy number across the
+#'   boundary-DUP span (the "circle-body" CN). A boundary breakend must be amplified
+#'   to `>= qc_amp_frac` × circle CN (default `0.5`); a boundary source edge
+#'   `>= qc_src_frac` × circle CN marks an open boundary (default `0.5`); the
+#'   boundary DUP's junction copy number must be `>= qc_jcn_frac` × circle CN
+#'   (default `0.5`).
+#' @param qc_edge_tol Integer; window (bp) around a boundary-DUP breakend within
+#'   which a source edge or INV/TRA breakend counts as "at the boundary"
+#'   (default `1e4`).
 #'
 #' A **bridged/ambiguous downgrade** applies even when a bracketing boundary DUP
 #' exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -220,6 +262,10 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #'   boundary-DUP record `bd_chr`, `bd_lo`, `bd_hi`, `bd_pe_support`, `bd_jcn`,
 #'   `bd_homlen` (`NA` when no boundary DUP), `bd_occupancy` (ecDNA-interval
 #'   coverage of the boundary-DUP span; the occupancy-guard metric), the
+#'   structural-QC record `bd_circle_cn` (width-weighted median CN of the
+#'   boundary-DUP span), `bd_jcn_frac` (boundary-DUP jcn ÷ circle CN), `bd_src_frac`
+#'   (boundary source-edge CN ÷ circle CN), `qc_pass` (logical) and `qc_fail`
+#'   (`;`-separated failed checks, `NA` if passed or QC off), the
 #'   bridging-junction record
 #'   `bridge_pe_support`, `bridge_partner` (`chr:pos` of the out-of-amplicon
 #'   breakend; `NA` unless downgraded), and `n_junctions`.
@@ -234,11 +280,16 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #' @importFrom data.table data.table rbindlist
 call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
                                              bridge_gap = 1e6, min_occupancy = 0.05,
-                                             trim_to_amplified = TRUE, min_seg_cn_frac = 0.10) {
+                                             trim_to_amplified = TRUE, min_seg_cn_frac = 0.10,
+                                             structural_qc = TRUE, qc_amp_frac = 0.5,
+                                             qc_src_frac = 0.5, qc_jcn_frac = 0.5,
+                                             qc_edge_tol = 1e4) {
   none <- data.table::data.table(
     episomal = NA, status = NA_character_, chimeric = NA, n_chr = NA_integer_,
     bd_chr = NA_character_, bd_lo = NA_real_, bd_hi = NA_real_, bd_pe_support = NA_real_,
     bd_jcn = NA_real_, bd_homlen = NA_real_, bd_occupancy = NA_real_,
+    bd_circle_cn = NA_real_, bd_jcn_frac = NA_real_, bd_src_frac = NA_real_,
+    qc_pass = NA, qc_fail = NA_character_,
     bridge_pe_support = NA_real_, bridge_partner = NA_character_,
     n_junctions = NA_integer_)
 
@@ -341,6 +392,64 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
   ## its OTHER breakend outside every feature interval and that breakend sits in an
   ## amplified segment, downgrade `episomal` to the "bridged" status.
   status <- if (isTRUE(episomal)) "episomal" else "complex"
+
+  ## STRUCTURAL QC (default on). A bracketing boundary DUP is necessary but not
+  ## sufficient for a clean simple-excision circle. Using the AA graph's own
+  ## segment copy numbers, source (open-end) edges and junction copy numbers,
+  ## reject a bracketed amplicon that is:
+  ##   (a) not amplified at BOTH boundary-DUP breakends (CN < qc_amp_frac x the
+  ##       circle-body CN) -- a DUP reaching into non-amplified sequence;
+  ##   (b) OPEN at the boundary -- a source edge >= qc_src_frac x circle CN within
+  ##       qc_edge_tol of a breakend (copy number leaks into the genome there, so
+  ##       the boundary is not a closed circularisation). An INTERNAL open
+  ##       co-amplification (away from the boundary) does NOT disqualify;
+  ##   (c) closed by a boundary DUP whose junction copy number is << the circle CN
+  ##       (jcn < qc_jcn_frac x circle CN) -- the DUP explains only a fraction of
+  ##       the amplification, i.e. it is a passenger/partial tandem duplication;
+  ##   (d) has an INV/TRA at a boundary breakend that out-copies the DUP -- the
+  ##       edge is a fold-back / translocation junction, not a circularisation.
+  ## The circle-body CN is the width-weighted median segment CN across the
+  ## boundary-DUP span (robust to internal high-CN spikes). Ported from the
+  ## PURPLE-native call_simple_excision(); calibrated on the GBM39 gold
+  ## (jcn/circle 0.98, src/circle 0.11) and validated to retain 13/13 primary-GBM
+  ## EGFR episomes while rejecting passenger, open and chromothriptic amplicons.
+  bd_circle_cn <- NA_real_; bd_jcn_frac <- NA_real_; bd_src_frac <- NA_real_
+  qc_pass <- NA; qc_fail <- NA_character_
+  if (isTRUE(structural_qc) && !is.null(bd)) {
+    seg <- gr$segments; bc <- bd$cA
+    scc <- if (!is.null(seg) && nrow(seg)) seg[chr == bc & end >= bd$lo & start <= bd$hi] else seg
+    ccn <- if (!is.null(scc) && nrow(scc)) {
+      w <- pmax(1, pmin(scc$end, bd$hi) - pmax(scc$start, bd$lo)); o <- order(scc$cn)
+      scc$cn[o][which(cumsum(w[o]) / sum(w) >= 0.5)[1]]
+    } else NA_real_
+    cn_at <- function(p) {
+      s <- if (!is.null(seg) && nrow(seg)) seg[chr == bc & end >= p - 300 & start <= p + 300] else NULL
+      if (!is.null(s) && nrow(s)) max(s$cn, na.rm = TRUE) else NA_real_
+    }
+    cn_lo <- cn_at(bd$lo); cn_hi <- cn_at(bd$hi)
+    sr <- gr$source
+    src_bnd <- if (!is.null(sr) && nrow(sr))
+      suppressWarnings(max(c(0, sr[chr == bc &
+        (abs(pos - bd$lo) <= qc_edge_tol | abs(pos - bd$hi) <= qc_edge_tol)]$cn), na.rm = TRUE)) else 0
+    ej <- if (!is.null(j) && nrow(j)) j[cA == bc & cB == bc &
+        svclass %in% c("h2hINV", "t2tINV", "INV", "TRA") &
+        (abs(lo - bd$lo) <= qc_edge_tol | abs(hi - bd$hi) <= qc_edge_tol |
+         abs(lo - bd$hi) <= qc_edge_tol | abs(hi - bd$lo) <= qc_edge_tol)] else NULL
+    cn_ok  <- is.finite(ccn) && ccn > 0
+    a_ok <- cn_ok && is.finite(cn_lo) && is.finite(cn_hi) &&
+            cn_lo >= qc_amp_frac * ccn && cn_hi >= qc_amp_frac * ccn
+    b_ok <- !cn_ok || (src_bnd / ccn) < qc_src_frac
+    c_ok <- is.finite(bd$jcn) && cn_ok && (bd$jcn / ccn) >= qc_jcn_frac
+    d_ok <- is.null(ej) || !nrow(ej) || all(ej$jcn <= (if (is.finite(bd$jcn)) bd$jcn else 0))
+    bd_circle_cn <- ccn
+    bd_jcn_frac  <- if (is.finite(bd$jcn) && cn_ok) bd$jcn / ccn else NA_real_
+    bd_src_frac  <- if (cn_ok) src_bnd / ccn else NA_real_
+    qc_pass <- isTRUE(a_ok && b_ok && c_ok && d_ok)
+    qc_fail <- paste(c("both_ends_amplified", "open_boundary", "jcn_below_cn", "invtra_boundary")[
+      c(!a_ok, !b_ok, !c_ok, !d_ok)], collapse = ";")
+    if (!qc_pass) { episomal <- FALSE; chimeric <- FALSE; status <- "complex" }
+  }
+
   bridge_pe <- NA_real_; bridge_partner <- NA_character_
   if (isTRUE(episomal) && !is.null(j) && nrow(j)) {
     in_ext <- function(ch, pos)
@@ -382,6 +491,9 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
     bd_jcn = if (!is.null(bd)) bd$jcn else NA_real_,
     bd_homlen = if (!is.null(bd)) bd$homlen else NA_real_,
     bd_occupancy = bd_occupancy,
+    bd_circle_cn = bd_circle_cn, bd_jcn_frac = bd_jcn_frac, bd_src_frac = bd_src_frac,
+    qc_pass = qc_pass,
+    qc_fail = if (!is.na(qc_fail) && nzchar(qc_fail)) qc_fail else NA_character_,
     bridge_pe_support = bridge_pe, bridge_partner = bridge_partner,
     n_junctions = if (is.null(j)) 0L else nrow(j))
 }

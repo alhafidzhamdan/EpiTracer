@@ -340,10 +340,16 @@ test_that("ploidy gate rejects a low-copy amplicon (tandem-duplication zone)", {
     junctions = jx("chr7", 55.5e6, "+", "chr7", 55e6, "-", jcn = 55, pe = 200))
   r_hi <- call_episomal_from_ampliconsuite(g2, bed, ploidy = 2)
   expect_true(r_hi$episomal)
-  # no ploidy supplied -> gate skipped, low-copy amplicon is not rejected on this ground
+  # no ploidy supplied -> default_ploidy=2 applies an absolute floor of 3*2=6; CN 6 fails
   r_na <- call_episomal_from_ampliconsuite(g, bed)
-  expect_true(r_na$episomal)
-  expect_true(is.na(r_na$ploidy))
+  expect_false(r_na$episomal)
+  expect_true(r_na$ploidy_assumed)
+  expect_equal(r_na$ploidy, 2)
+  expect_match(r_na$qc_fail, "below_ploidy")
+  # default_ploidy = NULL disables the fallback -> gate skipped -> episomal
+  r_skip <- call_episomal_from_ampliconsuite(g, bed, default_ploidy = NULL)
+  expect_true(r_skip$episomal)
+  expect_true(is.na(r_skip$ploidy))
 })
 
 test_that("structural QC tolerates an INTERNAL open co-amplification (away from boundary)", {

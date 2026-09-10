@@ -281,6 +281,11 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #' @param min_cn_ratio Numeric; the circle-body CN must exceed this multiple of
 #'   ploidy to pass the amplification gate (default `3`, matching the
 #'   PURPLE-native [call_simple_excision()]).
+#' @param default_ploidy Numeric; the ploidy assumed when neither `ploidy` nor
+#'   `cnv_file` resolves a value (default `2`, diploid), so the amplification gate
+#'   still applies an absolute floor of `min_cn_ratio` x `default_ploidy` (= 6 at
+#'   the defaults) rather than being skipped. Set `NULL` to skip the gate when
+#'   ploidy is unknown. When the fallback is used, `ploidy_assumed` is `TRUE`.
 #'
 #' A **bridged/ambiguous downgrade** applies even when a bracketing boundary DUP
 #' exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -298,8 +303,10 @@ aa_cycle_intervals <- function(cycles_file, cycle = c("dominant", "all")) {
 #'   coverage of the boundary-DUP span; the occupancy-guard metric), the
 #'   structural-QC record `bd_circle_cn` (width-weighted median CN of the
 #'   boundary-DUP span), `bd_jcn_frac` (boundary-DUP jcn ÷ circle CN), `bd_src_frac`
-#'   (boundary source-edge CN ÷ circle CN), `ploidy` (resolved tumour ploidy or
-#'   `NA`), `cn_over_ploidy` (circle CN ÷ ploidy), `qc_pass` (logical) and
+#'   (boundary source-edge CN ÷ circle CN), `ploidy` (the ploidy used for the
+#'   gate, resolved or the `default_ploidy` fallback), `ploidy_assumed` (logical;
+#'   `TRUE` when the fallback was used), `cn_over_ploidy` (circle CN ÷ ploidy),
+#'   `qc_pass` (logical) and
 #'   `qc_fail` (`;`-separated failed checks incl. `below_ploidy`, `NA` if passed
 #'   or QC off), the
 #'   bridging-junction record
@@ -320,13 +327,14 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
                                              structural_qc = TRUE, qc_amp_frac = 0.5,
                                              qc_src_frac = 0.5, qc_jcn_frac = 0.1,
                                              qc_edge_tol = 1e4, ploidy = NULL,
-                                             cnv_file = NULL, min_cn_ratio = 3) {
+                                             cnv_file = NULL, min_cn_ratio = 3,
+                                             default_ploidy = 2) {
   none <- data.table::data.table(
     episomal = NA, status = NA_character_, chimeric = NA, n_chr = NA_integer_,
     bd_chr = NA_character_, bd_lo = NA_real_, bd_hi = NA_real_, bd_pe_support = NA_real_,
     bd_jcn = NA_real_, bd_homlen = NA_real_, bd_occupancy = NA_real_,
     bd_circle_cn = NA_real_, bd_jcn_frac = NA_real_, bd_src_frac = NA_real_,
-    ploidy = NA_real_, cn_over_ploidy = NA_real_,
+    ploidy = NA_real_, ploidy_assumed = NA, cn_over_ploidy = NA_real_,
     qc_pass = NA, qc_fail = NA_character_,
     bridge_pe_support = NA_real_, bridge_partner = NA_character_,
     n_junctions = NA_integer_)
@@ -453,8 +461,15 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
   ## EGFR episomes while rejecting passenger, open and chromothriptic amplicons.
   ## Resolve tumour ploidy for the amplification (tandem-dup) gate: a direct
   ## `ploidy` value takes precedence, else the genome-wide median of `cnv_file`.
-  ploidy_val <- if (is.numeric(ploidy) && length(ploidy) == 1L && is.finite(ploidy)) ploidy
+  ## When neither resolves, fall back to `default_ploidy` (default 2, diploid) so
+  ## the gate still applies an absolute floor of min_cn_ratio x default_ploidy
+  ## (=6 at the defaults) rather than being skipped.
+  ploidy_res <- if (is.numeric(ploidy) && length(ploidy) == 1L && is.finite(ploidy)) ploidy
                 else .cnv_ploidy(cnv_file)
+  dp <- if (is.numeric(default_ploidy) && length(default_ploidy) == 1L &&
+            is.finite(default_ploidy) && default_ploidy > 0) default_ploidy else NA_real_
+  ploidy_assumed <- !(is.finite(ploidy_res) && ploidy_res > 0)
+  ploidy_val <- if (ploidy_assumed) dp else ploidy_res
 
   bd_circle_cn <- NA_real_; bd_jcn_frac <- NA_real_; bd_src_frac <- NA_real_
   cn_over_ploidy <- NA_real_
@@ -545,7 +560,7 @@ call_episomal_from_ampliconsuite <- function(graph_file, intervals, tol = 0L,
     bd_homlen = if (!is.null(bd)) bd$homlen else NA_real_,
     bd_occupancy = bd_occupancy,
     bd_circle_cn = bd_circle_cn, bd_jcn_frac = bd_jcn_frac, bd_src_frac = bd_src_frac,
-    ploidy = ploidy_val, cn_over_ploidy = cn_over_ploidy,
+    ploidy = ploidy_val, ploidy_assumed = ploidy_assumed, cn_over_ploidy = cn_over_ploidy,
     qc_pass = qc_pass,
     qc_fail = if (!is.na(qc_fail) && nzchar(qc_fail)) qc_fail else NA_character_,
     bridge_pe_support = bridge_pe, bridge_partner = bridge_partner,

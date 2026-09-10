@@ -19,7 +19,8 @@ call_episomal_from_ampliconsuite(
   qc_edge_tol = 10000,
   ploidy = NULL,
   cnv_file = NULL,
-  min_cn_ratio = 3
+  min_cn_ratio = 3,
+  default_ploidy = 2
 )
 }
 \arguments{
@@ -94,7 +95,13 @@ ploidy. Both \code{NULL} (the default) skips the gate.}
 
 \item{min_cn_ratio}{Numeric; the circle-body CN must exceed this multiple of
 ploidy to pass the amplification gate (default \code{3}, matching the
-PURPLE-native \code{\link[=call_simple_excision]{call_simple_excision()}}).
+PURPLE-native \code{\link[=call_simple_excision]{call_simple_excision()}}).}
+
+\item{default_ploidy}{Numeric; the ploidy assumed when neither \code{ploidy} nor
+\code{cnv_file} resolves a value (default \code{2}, diploid), so the amplification gate
+still applies an absolute floor of \code{min_cn_ratio} x \code{default_ploidy} (= 6 at
+the defaults) rather than being skipped. Set \code{NULL} to skip the gate when
+ploidy is unknown. When the fallback is used, \code{ploidy_assumed} is \code{TRUE}.
 
 A \strong{bridged/ambiguous downgrade} applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside
@@ -113,8 +120,10 @@ boundary-DUP record \code{bd_chr}, \code{bd_lo}, \code{bd_hi}, \code{bd_pe_suppo
 coverage of the boundary-DUP span; the occupancy-guard metric), the
 structural-QC record \code{bd_circle_cn} (width-weighted median CN of the
 boundary-DUP span), \code{bd_jcn_frac} (boundary-DUP jcn ÷ circle CN), \code{bd_src_frac}
-(boundary source-edge CN ÷ circle CN), \code{ploidy} (resolved tumour ploidy or
-\code{NA}), \code{cn_over_ploidy} (circle CN ÷ ploidy), \code{qc_pass} (logical) and
+(boundary source-edge CN ÷ circle CN), \code{ploidy} (the ploidy used for the
+gate, resolved or the \code{default_ploidy} fallback), \code{ploidy_assumed} (logical;
+\code{TRUE} when the fallback was used), \code{cn_over_ploidy} (circle CN ÷ ploidy),
+\code{qc_pass} (logical) and
 \code{qc_fail} (\verb{;}-separated failed checks incl. \code{below_ploidy}, \code{NA} if passed
 or QC off), the
 bridging-junction record

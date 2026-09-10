@@ -8,8 +8,12 @@
   number a boundary DUP + copy-number step is indistinguishable from an in-place
   tandem duplication by unphased short-read data, so a genuine ecDNA must be
   amplified well above ploidy (as in the PURPLE-native `call_simple_excision()`).
-  New outputs `ploidy`, `cn_over_ploidy`. The gate is skipped when ploidy is
-  unknown. The default `qc_jcn_frac` is relaxed to `0.1` (a low floor that keeps
+  New outputs `ploidy`, `cn_over_ploidy`. When neither `ploidy` nor `cnv_file`
+  resolves, a `default_ploidy` (default `2`, diploid) supplies the gate so it
+  still applies an absolute floor of `min_cn_ratio` × `default_ploidy` (= 6 at
+  the defaults) rather than being skipped; the new `ploidy_assumed` output flags
+  when this fallback was used (set `default_ploidy = NULL` to skip the gate when
+  ploidy is unknown). The default `qc_jcn_frac` is relaxed to `0.1` (a low floor that keeps
   internally re-amplified episomes, e.g. DO11854 EGFR, whose resident locus is
   boosted above the circularising junction's copy number).
 * **`call_episomal_from_ampliconsuite()` structural QC (default on).** New

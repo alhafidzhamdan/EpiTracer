@@ -81,7 +81,16 @@ chromosome is bracketed by a boundary DUP and joined by &gt;= 1 translocation.</
 <span>  bridge_gap <span class="op">=</span> <span class="fl">1e+06</span>,</span>
 <span>  min_occupancy <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  trim_to_amplified <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  min_seg_cn_frac <span class="op">=</span> <span class="fl">0.1</span></span>
+<span>  min_seg_cn_frac <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  structural_qc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  qc_amp_frac <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  qc_src_frac <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  qc_jcn_frac <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  qc_edge_tol <span class="op">=</span> <span class="fl">10000</span>,</span>
+<span>  ploidy <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cnv_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  min_cn_ratio <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  default_ploidy <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -132,7 +141,64 @@ false-complex call but never breaks a true-episomal one.</p></dd>
 <dd><p>Numeric in <code>(0, 1]</code>; a segment counts as amplified for
 <code>trim_to_amplified</code> when its copy number is at least this fraction of the
 amplicon's peak segment copy number (default <code>0.10</code>). Relative to the
-amplicon's own amplification, not a global ploidy cutoff.</p>
+amplicon's own amplification, not a global ploidy cutoff.</p></dd>
+
+
+<dt id="arg-structural-qc">structural_qc<a class="anchor" aria-label="anchor" href="#arg-structural-qc"></a></dt>
+<dd><p>Logical (default <code>TRUE</code>); apply structural quality control
+to a bracketed amplicon before calling it episomal, using the AA graph's own
+segment copy numbers, source (open-end) edges and junction copy numbers.
+Rejects (→ <code>status = "complex"</code>) an amplicon that is not amplified at both
+boundary-DUP breakends, is OPEN at the boundary (a large source edge at a
+breakend), is closed by a boundary DUP whose copy number is far below the
+circle CN, or has an INV/TRA at a boundary out-copying the DUP. Ported from
+the PURPLE-native <code><a href="call_simple_excision.html">call_simple_excision()</a></code>. Set <code>FALSE</code> for the older
+bracket-and-occupancy behaviour.</p></dd>
+
+
+<dt id="arg-qc-amp-frac-qc-src-frac-qc-jcn-frac">qc_amp_frac, qc_src_frac, qc_jcn_frac<a class="anchor" aria-label="anchor" href="#arg-qc-amp-frac-qc-src-frac-qc-jcn-frac"></a></dt>
+<dd><p>Numeric in <code>(0, 1]</code>; the structural-QC
+thresholds, each relative to the width-weighted median copy number across the
+boundary-DUP span (the "circle-body" CN). A boundary breakend must be amplified
+to <code>&gt;= qc_amp_frac</code> × circle CN (default <code>0.5</code>); a boundary source edge
+<code>&gt;= qc_src_frac</code> × circle CN marks an open boundary (default <code>0.5</code>); the
+boundary DUP's junction copy number must be <code>&gt;= qc_jcn_frac</code> × circle CN
+(default <code>0.1</code>; a low floor that rejects only a boundary DUP explaining a
+tiny fraction of the amplification, while tolerating internally re-amplified
+episomes whose resident locus is boosted above the circularising junction's
+copy number — e.g. DO11854 EGFR).</p></dd>
+
+
+<dt id="arg-qc-edge-tol">qc_edge_tol<a class="anchor" aria-label="anchor" href="#arg-qc-edge-tol"></a></dt>
+<dd><p>Integer; window (bp) around a boundary-DUP breakend within
+which a source edge or INV/TRA breakend counts as "at the boundary"
+(default <code>1e4</code>).</p></dd>
+
+
+<dt id="arg-ploidy-cnv-file">ploidy, cnv_file<a class="anchor" aria-label="anchor" href="#arg-ploidy-cnv-file"></a></dt>
+<dd><p>Tumour ploidy for the amplification / tandem-duplication
+gate. Supply <code>ploidy</code> directly, or <code>cnv_file</code> – a path to a genome-wide
+copy-number BED (e.g. the AA-input <code>*_CNV_CALLS.bed</code>) whose width-weighted
+median CN is used. When ploidy is known and structural QC is on, a bracketed
+amplicon whose circle-body CN does not exceed <code>min_cn_ratio</code> x ploidy is
+downgraded (<code>qc_fail = "below_ploidy"</code>): at low copy number a boundary DUP +
+copy-number step is indistinguishable from an in-place tandem duplication by
+unphased short-read data, so a genuine ecDNA must be amplified well above
+ploidy. Both <code>NULL</code> (the default) skips the gate.</p></dd>
+
+
+<dt id="arg-min-cn-ratio">min_cn_ratio<a class="anchor" aria-label="anchor" href="#arg-min-cn-ratio"></a></dt>
+<dd><p>Numeric; the circle-body CN must exceed this multiple of
+ploidy to pass the amplification gate (default <code>3</code>, matching the
+PURPLE-native <code><a href="call_simple_excision.html">call_simple_excision()</a></code>).</p></dd>
+
+
+<dt id="arg-default-ploidy">default_ploidy<a class="anchor" aria-label="anchor" href="#arg-default-ploidy"></a></dt>
+<dd><p>Numeric; the ploidy assumed when neither <code>ploidy</code> nor
+<code>cnv_file</code> resolves a value (default <code>2</code>, diploid), so the amplification gate
+still applies an absolute floor of <code>min_cn_ratio</code> x <code>default_ploidy</code> (= 6 at
+the defaults) rather than being skipped. Set <code>NULL</code> to skip the gate when
+ploidy is unknown. When the fallback is used, <code>ploidy_assumed</code> is <code>TRUE</code>.</p>
 <p>A <strong>bridged/ambiguous downgrade</strong> applies even when a bracketing boundary DUP
 exists: if the amplicon's highest read-pair-support junction (a breakend inside
 the ecDNA extent) has its other breakend on the <strong>same chromosome</strong>, &gt; <code>bridge_gap</code>
@@ -150,6 +216,14 @@ only for a clean episome), <code>status</code> (<code>"episomal"</code>/<code>"b
 boundary-DUP record <code>bd_chr</code>, <code>bd_lo</code>, <code>bd_hi</code>, <code>bd_pe_support</code>, <code>bd_jcn</code>,
 <code>bd_homlen</code> (<code>NA</code> when no boundary DUP), <code>bd_occupancy</code> (ecDNA-interval
 coverage of the boundary-DUP span; the occupancy-guard metric), the
+structural-QC record <code>bd_circle_cn</code> (width-weighted median CN of the
+boundary-DUP span), <code>bd_jcn_frac</code> (boundary-DUP jcn ÷ circle CN), <code>bd_src_frac</code>
+(boundary source-edge CN ÷ circle CN), <code>ploidy</code> (the ploidy used for the
+gate, resolved or the <code>default_ploidy</code> fallback), <code>ploidy_assumed</code> (logical;
+<code>TRUE</code> when the fallback was used), <code>cn_over_ploidy</code> (circle CN ÷ ploidy),
+<code>qc_pass</code> (logical) and
+<code>qc_fail</code> (<code>;</code>-separated failed checks incl. <code>below_ploidy</code>, <code>NA</code> if passed
+or QC off), the
 bridging-junction record
 <code>bridge_pe_support</code>, <code>bridge_partner</code> (<code>chr:pos</code> of the out-of-amplicon
 breakend; <code>NA</code> unless downgraded), and <code>n_junctions</code>.</p>

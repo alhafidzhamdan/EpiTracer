@@ -3,6 +3,49 @@
 ## EpiTracer 0.1.0 (alpha)
 
 - **[`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md)
+  ploidy / tandem-duplication gate.** New `ploidy` / `cnv_file` inputs
+  with `min_cn_ratio` (default `3`). When tumour ploidy is known (passed
+  directly, or as the genome-wide median of a `*_CNV_CALLS.bed`), a
+  bracketed amplicon whose circle-body CN does not exceed `min_cn_ratio`
+  × ploidy is downgraded (`qc_fail = "below_ploidy"`): at low copy
+  number a boundary DUP + copy-number step is indistinguishable from an
+  in-place tandem duplication by unphased short-read data, so a genuine
+  ecDNA must be amplified well above ploidy (as in the PURPLE-native
+  [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)).
+  New outputs `ploidy`, `cn_over_ploidy`. When neither `ploidy` nor
+  `cnv_file` resolves, a `default_ploidy` (default `2`, diploid)
+  supplies the gate so it still applies an absolute floor of
+  `min_cn_ratio` × `default_ploidy` (= 6 at the defaults) rather than
+  being skipped; the new `ploidy_assumed` output flags when this
+  fallback was used (set `default_ploidy = NULL` to skip the gate when
+  ploidy is unknown). The default `qc_jcn_frac` is relaxed to `0.1` (a
+  low floor that keeps internally re-amplified episomes, e.g. DO11854
+  EGFR, whose resident locus is boosted above the circularising
+  junction’s copy number).
+- **[`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md)
+  structural QC (default on).** New `structural_qc` (default `TRUE`)
+  ports four structural checks from the PURPLE-native
+  [`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)
+  to the AmpliconSuite adapter, so a bracketing boundary DUP is no
+  longer sufficient on its own. Using the AA graph’s segment copy
+  numbers, **`source` (open-end) edges** (now parsed by
+  [`read_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/read_ampliconsuite.md),
+  which returns a third `source` table) and junction copy numbers, an
+  amplicon is downgraded to `complex` unless: (a) both boundary-DUP
+  breakends are amplified (`>= qc_amp_frac` × the circle-body CN), (b)
+  the boundary is **not open** (no source edge `>= qc_src_frac` × circle
+  CN within `qc_edge_tol` of a breakend — an *internal* open
+  co-amplification is tolerated), (c) the boundary DUP’s
+  `jcn >= qc_jcn_frac` × circle CN (it explains most of the
+  amplification, not a passenger partial duplication), and (d) no
+  INV/TRA at a boundary out-copies the DUP. Thresholds default to `0.5`,
+  calibrated on the GBM39 gold (jcn/circle 0.98, src/circle 0.11) and
+  validated to retain 13/13 primary-GBM EGFR episomes while rejecting
+  passenger, open and chromothriptic amplicons. New output columns
+  `bd_circle_cn`, `bd_jcn_frac`, `bd_src_frac`, `qc_pass`, `qc_fail`.
+  Set `structural_qc = FALSE` for the previous bracket-and-occupancy
+  behaviour.
+- **[`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md)
   interval trimming.** New `trim_to_amplified` (default `TRUE`) trims an
   AmpliconClassifier ecDNA interval to its amplified extent, using the
   AA graph’s own segment copy numbers, before the boundary-DUP test.

@@ -19,7 +19,7 @@ read_ampliconsuite(graph_file)
 
 ## Value
 
-A list with two
+A list with three
 [data.table::data.table](https://rdrr.io/pkg/data.table/man/data.table.html)s:
 
 - `segments`:
@@ -34,7 +34,15 @@ A list with two
   homology length, `NA` if absent), `svclass` (`DUP`/`DEL`/`INV`/`TRA`)
   and `lo`/`hi` (the lower/upper breakend coordinate).
 
-Either table may have zero rows.
+- `source`:
+
+  `chr`, `pos`, `cn` for each AA *source* edge – an open end where
+  copy-number flow enters/leaves the amplicon via the rest of the genome
+  instead of looping back through a junction (a self-contained circle
+  has none). Used by the structural QC of
+  [`call_episomal_from_ampliconsuite()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_episomal_from_ampliconsuite.md).
+
+Any table may have zero rows.
 
 ## See also
 

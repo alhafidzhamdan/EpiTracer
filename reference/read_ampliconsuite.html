@@ -69,7 +69,7 @@ are accepted with or without a <code>chr</code> prefix.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with two <a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table::data.table</a>s:</p><dl><dt><code>segments</code></dt>
+    <p>A list with three <a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table::data.table</a>s:</p><dl><dt><code>segments</code></dt>
 <dd><p><code>chr</code>, <code>start</code>, <code>end</code>, <code>cn</code> (predicted copy number).</p></dd>
 
 <dt><code>junctions</code></dt>
@@ -79,8 +79,15 @@ chromosome/position/strand), <code>jcn</code> (junction predicted copy number),
 homology length, <code>NA</code> if absent), <code>svclass</code> (<code>DUP</code>/<code>DEL</code>/<code>INV</code>/<code>TRA</code>) and
 <code>lo</code>/<code>hi</code> (the lower/upper breakend coordinate).</p></dd>
 
+<dt><code>source</code></dt>
+<dd><p><code>chr</code>, <code>pos</code>, <code>cn</code> for each AA <em>source</em> edge – an open end
+where copy-number flow enters/leaves the amplicon via the rest of the
+genome instead of looping back through a junction (a self-contained circle
+has none). Used by the structural QC of
+<code><a href="call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite()</a></code>.</p></dd>
 
-</dl><p>Either table may have zero rows.</p>
+
+</dl><p>Any table may have zero rows.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

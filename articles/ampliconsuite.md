@@ -85,17 +85,17 @@ gr$junctions[order(-pe_support),
 gbm39 <- call_episomal_from_ampliconsuite(gbm39_graph, gbm39_bed)
 colo  <- call_episomal_from_ampliconsuite(colo_graph,  colo_bed)
 
-cols <- c("status", "episomal", "chimeric", "n_chr",
-          "bd_chr", "bd_pe_support", "bd_occupancy", "n_junctions")
+cols <- c("status", "episomal", "chimeric", "bd_chr", "bd_occupancy",
+          "bd_jcn_frac", "cn_over_ploidy", "qc_pass")
 cbind(cell_line = c("GBM39", "COLO320DM"), rbind(gbm39, colo)[, cols, with = FALSE])
-#>    cell_line   status episomal chimeric n_chr bd_chr bd_pe_support bd_occupancy
-#>       <char>   <char>   <lgcl>   <lgcl> <int> <char>         <num>        <num>
-#> 1:     GBM39 episomal     TRUE    FALSE     1   chr7             8    0.9776461
-#> 2: COLO320DM  complex    FALSE    FALSE     1   <NA>            NA           NA
-#>    n_junctions
-#>          <int>
-#> 1:           3
-#> 2:          25
+#>    cell_line   status episomal chimeric bd_chr bd_occupancy bd_jcn_frac
+#>       <char>   <char>   <lgcl>   <lgcl> <char>        <num>       <num>
+#> 1:     GBM39 episomal     TRUE    FALSE   chr7    0.9776461   0.9798862
+#> 2: COLO320DM  complex    FALSE    FALSE   <NA>           NA          NA
+#>    cn_over_ploidy qc_pass
+#>             <num>  <lgcl>
+#> 1:       78.32235    TRUE
+#> 2:             NA      NA
 ```
 
 **GBM39** is `episomal` — a boundary DUP brackets the EGFR extent, which
@@ -106,7 +106,14 @@ the caller is built for.
 
 ## The episome model
 
-An amplicon is **episomal** when a **boundary DUP** exists:
+A bracketing **boundary DUP** is *necessary but not sufficient*. The
+caller first fixes the boundary geometry, then applies structural and
+amplitude checks (ported from the PURPLE-native
+[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md))
+so that passenger, open-ended and tandem-duplication circles are not
+mis-called episomal.
+
+**Boundary geometry**
 
 1.  **Extent** comes from AmpliconSuite itself (the AC ecDNA interval
     BED, or the dominant AA cycle), then **trimmed to its amplified
@@ -117,19 +124,42 @@ An amplicon is **episomal** when a **boundary DUP** exists:
     (internal low-CN scars are kept).
 2.  **Boundary DUP** = an intra-chromosomal duplication whose two ends
     *bracket* the ecDNA’s outer boundary on its chromosome
-    (`lo ≤ extent start` and `hi ≥ extent end`).
-3.  **Episomal** if ≥ 1 boundary DUP exists. The boundary DUP reported
-    is the one with the **highest read-pair support** *among the
-    spanning DUPs* — a selector, not a gate: a higher-support DEL or INV
-    elsewhere in the amplicon does **not** veto the call.
-4.  **Chimeric episomal** — a multi-chromosome ecDNA where *every*
+    (`lo ≤ extent start` and `hi ≥ extent end`); the one with the
+    **highest read-pair support** is reported.
+3.  **Chimeric episomal** — a multi-chromosome ecDNA where *every*
     chromosome is bracketed by its own boundary DUP **and** at least one
     translocation joins them (two episomes fused into one circle).
-5.  **Internal structure is ignored** — an episome may be heavily
-    rearranged internally (chromothripsis within a micronucleus); only
-    the circularising boundary matters, never the junction count.
 
-Two guards reject amplicons that pass the geometry but are not
+**Structural QC** (`structural_qc`, default `TRUE`) — using the AA
+graph’s own segment copy numbers, `source` (open-end) edges and junction
+copy numbers, a bracketed amplicon is downgraded to `complex` unless
+**all** hold:
+
+- both boundary-DUP breakends are **amplified** (≥ `qc_amp_frac` ×
+  circle-body CN);
+- the boundary is **not open** (no source edge ≥ `qc_src_frac` × circle
+  CN within `qc_edge_tol` of a breakend — an *internal* open
+  co-amplification is tolerated);
+- the boundary DUP’s **jcn ≥ `qc_jcn_frac` × circle CN** (default `0.1`)
+  — it explains the amplification, not a passenger partial duplication;
+- **no INV/TRA at a boundary out-copies the DUP**.
+
+Set `structural_qc = FALSE` for the earlier bracket-and-occupancy-only
+behaviour.
+
+**Ploidy / tandem-duplication gate** — in unphased short-read data a
+boundary DUP plus a copy-number step is indistinguishable from an
+in-place tandem duplication; only magnitude separates them. The
+circle-body CN must therefore exceed `min_cn_ratio` × ploidy (default
+`3`×, matching
+[`call_simple_excision()`](https://alhafidzhamdan.github.io/EpiTracer/reference/call_simple_excision.md)).
+Ploidy is taken from `ploidy`, or the genome-wide median of a `cnv_file`
+(`*_CNV_CALLS.bed`); when neither resolves, `default_ploidy` (default
+`2`) applies an absolute CN \> 6 floor and flags
+`ploidy_assumed = TRUE`. Amplicons below the threshold are downgraded
+(`qc_fail = "below_ploidy"`).
+
+Two further guards reject amplicons that pass the geometry but are not
 self-contained circles:
 
 - **Occupancy guard** (`min_occupancy`, default `0.05`) — the

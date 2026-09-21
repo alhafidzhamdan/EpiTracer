@@ -75,9 +75,15 @@ an <strong>episome</strong> — rather than by a complex, breakage-driven
 process. For each amplicon it inspects the structural-variant
 breakpoints at the boundaries and applies the <em>episome
 heuristic</em>: a boundary duplication (DUP) carrying the highest
-variant fraction (<code>VF</code>), non-gained flanking segments
-(consistent with a circle excised from an otherwise diploid region), and
-a candidate deletion “excision scar”.</p>
+variant fraction (<code>VF</code>), both breakends
+<strong>amplified</strong> (copy number &gt; <code>min_cn_ratio</code> ×
+ploidy, default <code>3</code>×), <strong>non-gained flanking</strong>
+segments (a circle excised from an otherwise diploid region), and a
+candidate deletion <strong>excision scar</strong> — while disqualifying
+amplicons with an inversion or translocation at the boundary, a
+chromosomal bridge, or sequence bridged outside the circle. The
+circularisation junction’s microhomology (NHEJ / MMEJ / HR) is also
+annotated.</p>
 <div class="section level2">
 <h2 id="the-example-data">The example data<a class="anchor" aria-label="anchor" href="#the-example-data"></a>
 </h2>

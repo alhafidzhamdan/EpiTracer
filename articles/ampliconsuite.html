@@ -169,17 +169,17 @@ DUP:</p>
 <code class="sourceCode R"><span><span class="va">gbm39</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite</a></span><span class="op">(</span><span class="va">gbm39_graph</span>, <span class="va">gbm39_bed</span><span class="op">)</span></span>
 <span><span class="va">colo</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/call_episomal_from_ampliconsuite.html">call_episomal_from_ampliconsuite</a></span><span class="op">(</span><span class="va">colo_graph</span>,  <span class="va">colo_bed</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"status"</span>, <span class="st">"episomal"</span>, <span class="st">"chimeric"</span>, <span class="st">"n_chr"</span>,</span>
-<span>          <span class="st">"bd_chr"</span>, <span class="st">"bd_pe_support"</span>, <span class="st">"bd_occupancy"</span>, <span class="st">"n_junctions"</span><span class="op">)</span></span>
+<span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"status"</span>, <span class="st">"episomal"</span>, <span class="st">"chimeric"</span>, <span class="st">"bd_chr"</span>, <span class="st">"bd_occupancy"</span>,</span>
+<span>          <span class="st">"bd_jcn_frac"</span>, <span class="st">"cn_over_ploidy"</span>, <span class="st">"qc_pass"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>cell_line <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GBM39"</span>, <span class="st">"COLO320DM"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">gbm39</span>, <span class="va">colo</span><span class="op">)</span><span class="op">[</span>, <span class="va">cols</span>, with <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    cell_line   status episomal chimeric n_chr bd_chr bd_pe_support bd_occupancy</span></span>
-<span><span class="co">#&gt;       &lt;char&gt;   &lt;char&gt;   &lt;lgcl&gt;   &lt;lgcl&gt; &lt;int&gt; &lt;char&gt;         &lt;num&gt;        &lt;num&gt;</span></span>
-<span><span class="co">#&gt; 1:     GBM39 episomal     TRUE    FALSE     1   chr7             8    0.9776461</span></span>
-<span><span class="co">#&gt; 2: COLO320DM  complex    FALSE    FALSE     1   &lt;NA&gt;            NA           NA</span></span>
-<span><span class="co">#&gt;    n_junctions</span></span>
-<span><span class="co">#&gt;          &lt;int&gt;</span></span>
-<span><span class="co">#&gt; 1:           3</span></span>
-<span><span class="co">#&gt; 2:          25</span></span></code></pre></div>
+<span><span class="co">#&gt;    cell_line   status episomal chimeric bd_chr bd_occupancy bd_jcn_frac</span></span>
+<span><span class="co">#&gt;       &lt;char&gt;   &lt;char&gt;   &lt;lgcl&gt;   &lt;lgcl&gt; &lt;char&gt;        &lt;num&gt;       &lt;num&gt;</span></span>
+<span><span class="co">#&gt; 1:     GBM39 episomal     TRUE    FALSE   chr7    0.9776461   0.9798862</span></span>
+<span><span class="co">#&gt; 2: COLO320DM  complex    FALSE    FALSE   &lt;NA&gt;           NA          NA</span></span>
+<span><span class="co">#&gt;    cn_over_ploidy qc_pass</span></span>
+<span><span class="co">#&gt;             &lt;num&gt;  &lt;lgcl&gt;</span></span>
+<span><span class="co">#&gt; 1:       78.32235    TRUE</span></span>
+<span><span class="co">#&gt; 2:             NA      NA</span></span></code></pre></div>
 <p><strong>GBM39</strong> is <code>episomal</code> — a boundary DUP
 brackets the EGFR extent, which is fully amplified
 (<code>bd_occupancy ≈ 1</code>). <strong>COLO320DM</strong> is
@@ -191,8 +191,12 @@ for.</p>
 <div class="section level2">
 <h2 id="the-episome-model">The episome model<a class="anchor" aria-label="anchor" href="#the-episome-model"></a>
 </h2>
-<p>An amplicon is <strong>episomal</strong> when a <strong>boundary
-DUP</strong> exists:</p>
+<p>A bracketing <strong>boundary DUP</strong> is <em>necessary but not
+sufficient</em>. The caller first fixes the boundary geometry, then
+applies structural and amplitude checks (ported from the PURPLE-native
+<code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code>) so that passenger, open-ended and
+tandem-duplication circles are not mis-called episomal.</p>
+<p><strong>Boundary geometry</strong></p>
 <ol style="list-style-type: decimal">
 <li>
 <strong>Extent</strong> comes from AmpliconSuite itself (the AC
@@ -207,25 +211,48 @@ DUP (internal low-CN scars are kept).</li>
 <strong>Boundary DUP</strong> = an intra-chromosomal duplication
 whose two ends <em>bracket</em> the ecDNA’s outer boundary on its
 chromosome (<code>lo ≤ extent start</code> and
-<code>hi ≥ extent end</code>).</li>
-<li>
-<strong>Episomal</strong> if ≥ 1 boundary DUP exists. The boundary
-DUP reported is the one with the <strong>highest read-pair
-support</strong> <em>among the spanning DUPs</em> — a selector, not a
-gate: a higher-support DEL or INV elsewhere in the amplicon does
-<strong>not</strong> veto the call.</li>
+<code>hi ≥ extent end</code>); the one with the <strong>highest
+read-pair support</strong> is reported.</li>
 <li>
 <strong>Chimeric episomal</strong> — a multi-chromosome ecDNA where
 <em>every</em> chromosome is bracketed by its own boundary DUP
 <strong>and</strong> at least one translocation joins them (two episomes
 fused into one circle).</li>
-<li>
-<strong>Internal structure is ignored</strong> — an episome may be
-heavily rearranged internally (chromothripsis within a micronucleus);
-only the circularising boundary matters, never the junction count.</li>
 </ol>
-<p>Two guards reject amplicons that pass the geometry but are not
-self-contained circles:</p>
+<p><strong>Structural QC</strong> (<code>structural_qc</code>, default
+<code>TRUE</code>) — using the AA graph’s own segment copy numbers,
+<code>source</code> (open-end) edges and junction copy numbers, a
+bracketed amplicon is downgraded to <code>complex</code> unless
+<strong>all</strong> hold:</p>
+<ul>
+<li>both boundary-DUP breakends are <strong>amplified</strong> (≥
+<code>qc_amp_frac</code> × circle-body CN);</li>
+<li>the boundary is <strong>not open</strong> (no source edge ≥
+<code>qc_src_frac</code> × circle CN within <code>qc_edge_tol</code> of
+a breakend — an <em>internal</em> open co-amplification is
+tolerated);</li>
+<li>the boundary DUP’s <strong>jcn ≥ <code>qc_jcn_frac</code> × circle
+CN</strong> (default <code>0.1</code>) — it explains the amplification,
+not a passenger partial duplication;</li>
+<li>
+<strong>no INV/TRA at a boundary out-copies the DUP</strong>.</li>
+</ul>
+<p>Set <code>structural_qc = FALSE</code> for the earlier
+bracket-and-occupancy-only behaviour.</p>
+<p><strong>Ploidy / tandem-duplication gate</strong> — in unphased
+short-read data a boundary DUP plus a copy-number step is
+indistinguishable from an in-place tandem duplication; only magnitude
+separates them. The circle-body CN must therefore exceed
+<code>min_cn_ratio</code> × ploidy (default <code>3</code>×, matching
+<code><a href="../reference/call_simple_excision.html">call_simple_excision()</a></code>). Ploidy is taken from
+<code>ploidy</code>, or the genome-wide median of a
+<code>cnv_file</code> (<code>*_CNV_CALLS.bed</code>); when neither
+resolves, <code>default_ploidy</code> (default <code>2</code>) applies
+an absolute CN &gt; 6 floor and flags
+<code>ploidy_assumed = TRUE</code>. Amplicons below the threshold are
+downgraded (<code>qc_fail = "below_ploidy"</code>).</p>
+<p>Two further guards reject amplicons that pass the geometry but are
+not self-contained circles:</p>
 <ul>
 <li>
 <strong>Occupancy guard</strong> (<code>min_occupancy</code>,

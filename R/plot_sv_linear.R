@@ -142,6 +142,9 @@
 #' @param highlight_colour Colour for highlighted SVs (default `"#d95f0e"`).
 #' @param dim_unhighlighted Logical; when `TRUE`, non-highlighted SVs are greyed
 #'   so the highlighted set stands out (default `FALSE`).
+#' @param sv_lwd Line width of the SV arcs and breakpoint verticals (default
+#'   `0.2`); inter-chromosomal arcs are drawn at `1.5 x` this, and highlighted
+#'   SVs at `3 x`. Increase to make internal SVs more visible.
 #' @param wgd_sample_col Optional name of the sample column in `wgd_data`
 #'   (default: `sample`, falling back to `WGS_ID`).
 #' @param snv_data Optional SNV/SSM table as a `data.frame` or
@@ -266,6 +269,7 @@ plot_sv_linear <- function(sample,
                            highlight_id_col = NULL,
                            highlight_colour = "#d95f0e",
                            dim_unhighlighted = FALSE,
+                           sv_lwd = 0.2,
                            wgd_sample_col = NULL,
                            snv_data = NULL,
                            snv_sample_col = NULL,
@@ -531,7 +535,7 @@ plot_sv_linear <- function(sample,
   ## ---- Colours / sizes ----------------------------------------------------
   color_minor_cn <- "#3a9387"; color_major_cn <- "#d92a05"
   color_homdel <- "#0077b6"; color_loh <- "#bde0fe"
-  cn_size <- 0.9; size_sv_line <- 0.2; size_interchr_line <- 0.3
+  cn_size <- 0.9; size_sv_line <- sv_lwd; size_interchr_line <- sv_lwd * 1.5
   size_gene_label <- 3; size_text <- 8
   curv_intra <- 0.18; curv_inter <- -0.18
 

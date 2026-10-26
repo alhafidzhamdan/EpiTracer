@@ -49,6 +49,7 @@ plot_sv_linear(
   highlight_id_col = NULL,
   highlight_colour = "#d95f0e",
   dim_unhighlighted = FALSE,
+  sv_lwd = 0.2,
   wgd_sample_col = NULL,
   snv_data = NULL,
   snv_sample_col = NULL,
@@ -296,6 +297,12 @@ plot_sv_linear(
 
   Logical; when `TRUE`, non-highlighted SVs are greyed so the
   highlighted set stands out (default `FALSE`).
+
+- sv_lwd:
+
+  Line width of the SV arcs and breakpoint verticals (default `0.2`);
+  inter-chromosomal arcs are drawn at `1.5 x` this, and highlighted SVs
+  at `3 x`. Increase to make internal SVs more visible.
 
 - wgd_sample_col:
 

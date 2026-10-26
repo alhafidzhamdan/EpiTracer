@@ -98,6 +98,7 @@ of a multi-fragment / hub ecDNA) are drawn as arcs spanning the loci.</p>
 <span>  highlight_id_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  highlight_colour <span class="op">=</span> <span class="st">"#d95f0e"</span>,</span>
 <span>  dim_unhighlighted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  sv_lwd <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  wgd_sample_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  snv_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  snv_sample_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -337,6 +338,12 @@ identifiers matched by <code>highlight_events</code>; <code>NULL</code> (default
 <dt id="arg-dim-unhighlighted">dim_unhighlighted<a class="anchor" aria-label="anchor" href="#arg-dim-unhighlighted"></a></dt>
 <dd><p>Logical; when <code>TRUE</code>, non-highlighted SVs are greyed
 so the highlighted set stands out (default <code>FALSE</code>).</p></dd>
+
+
+<dt id="arg-sv-lwd">sv_lwd<a class="anchor" aria-label="anchor" href="#arg-sv-lwd"></a></dt>
+<dd><p>Line width of the SV arcs and breakpoint verticals (default
+<code>0.2</code>); inter-chromosomal arcs are drawn at <code>1.5 x</code> this, and highlighted
+SVs at <code>3 x</code>. Increase to make internal SVs more visible.</p></dd>
 
 
 <dt id="arg-wgd-sample-col">wgd_sample_col<a class="anchor" aria-label="anchor" href="#arg-wgd-sample-col"></a></dt>
